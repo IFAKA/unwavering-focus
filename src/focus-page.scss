@@ -1,272 +1,325 @@
-.focus-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+/* CSS Custom Properties for Theme */
+:root {
+  /* Light theme (default) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-muted: #adb5bd;
+  --border-color: #dee2e6;
+  --accent-primary: #495057;
+  --accent-secondary: #6c757d;
+  --success-color: #198754;
+  --danger-color: #dc3545;
+  --warning-color: #fd7e14;
+  --info-color: #0dcaf0;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.2);
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #212529;
+    --bg-secondary: #343a40;
+    --bg-tertiary: #495057;
+    --text-primary: #f8f9fa;
+    --text-secondary: #adb5bd;
+    --text-muted: #6c757d;
+    --border-color: #495057;
+    --accent-primary: #adb5bd;
+    --accent-secondary: #6c757d;
+    --success-color: #20c997;
+    --danger-color: #ff6b6b;
+    --warning-color: #ffd43b;
+    --info-color: #74c0fc;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --glass-bg: rgba(52, 58, 64, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.1);
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 40px 20px;
 }
 
-.focus-header {
+.header {
   text-align: center;
-  margin-bottom: 40px;
-
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0 0 20px 0;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .mastery-score {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 20px;
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
-
-    .score-label {
-      font-size: 14px;
-      font-weight: 500;
-      opacity: 0.9;
-      margin-bottom: 8px;
-    }
-
-    .score-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #fbbf24;
-    }
-  }
+  margin-bottom: 60px;
+  padding: 40px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
 }
 
-.focus-header h1 {
-  font-size: 2.5rem;
+.header h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 48px;
   font-weight: 700;
-  margin: 0 0 20px 0;
-  text-shadow: 0 2px 4px rgba(0,0,0,.1);
-  line-height: 1.3;
+  margin-bottom: 16px;
 }
 
-.focus-header .quote-author {
-  font-size: 1.2rem;
+.header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.quote-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 40px;
+  margin-bottom: 40px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.quote-text {
+  font-size: 24px;
   font-weight: 500;
-  margin: 0 0 20px 0;
-  opacity: 0.8;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  line-height: 1.6;
   font-style: italic;
 }
 
-.focus-content {
-  max-width: 800px;
-  margin: 0 auto;
+.quote-author {
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
-.habits-dashboard {
-  background: rgba(255, 255, 255, 0.1);
+.dashboard-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
-  padding: 30px;
-  margin-bottom: 30px;
+  padding: 40px;
+  margin-bottom: 40px;
   backdrop-filter: blur(10px);
-
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0 0 30px 0;
-    text-align: center;
-  }
-
-  .empty-habits {
-    text-align: center;
-    padding: 40px 20px;
-
-    p {
-      margin: 10px 0;
-      opacity: 0.8;
-    }
-  }
-
-  .habits-list {
-    display: grid;
-    gap: 30px;
-  }
-
-  .habit-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    padding: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-
-    .habit-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-
-      h3 {
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin: 0;
-      }
-
-      .consistency {
-        font-size: 14px;
-        opacity: 0.8;
-        font-weight: 500;
-      }
-    }
-
-    .habit-grid {
-      display: grid;
-      grid-template-columns: repeat(30, 1fr);
-      gap: 2px;
-      margin-bottom: 20px;
-      padding: 16px;
-      background: rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-
-      .grid-cell {
-        width: 12px;
-        height: 12px;
-        border-radius: 2px;
-        transition: transform 0.2s;
-
-        &:hover {
-          transform: scale(1.2);
-        }
-      }
-    }
-
-    .habit-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-
-      .action-btn {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-
-        &:hover:not(:disabled) {
-          background: rgba(255, 255, 255, 0.2);
-          transform: translateY(-1px);
-        }
-
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        &.excellent {
-          &.active {
-            background: #22c55e;
-            border-color: #22c55e;
-          }
-        }
-
-        &.good {
-          &.active {
-            background: #4ade80;
-            border-color: #4ade80;
-          }
-        }
-
-        &.not-done {
-          &.active {
-            background: #ef4444;
-            border-color: #ef4444;
-          }
-        }
-      }
-    }
-  }
 }
 
-.reinforcement-section {
+.dashboard-header {
   text-align: center;
+  margin-bottom: 40px;
+}
 
-  .reinforcement-message {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 30px;
-    backdrop-filter: blur(10px);
+.dashboard-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
 
-    h3 {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin: 0 0 15px 0;
-      color: #fbbf24;
-    }
+.dashboard-subtitle {
+  font-size: 18px;
+  color: var(--text-secondary);
+}
 
-    p {
-      font-size: 1.1rem;
-      line-height: 1.6;
-      margin: 0;
-      opacity: 0.9;
-    }
-  }
+.habits-grid {
+  display: grid;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.habit-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.habit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.habit-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.consistency-score {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.habit-grid {
+  display: grid;
+  grid-template-columns: repeat(30, 1fr);
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.habit-day {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.habit-day.excellent {
+  background: var(--success-color);
+  color: var(--bg-primary);
+  border-color: var(--success-color);
+}
+
+.habit-day.good {
+  background: var(--info-color);
+  color: var(--bg-primary);
+  border-color: var(--info-color);
+}
+
+.habit-day.partial {
+  background: var(--warning-color);
+  color: var(--bg-primary);
+  border-color: var(--warning-color);
+}
+
+.habit-day.missed {
+  background: var(--danger-color);
+  color: var(--bg-primary);
+  border-color: var(--danger-color);
+}
+
+.habit-day.future {
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  border-color: var(--border-color);
+}
+
+.habit-day:hover {
+  transform: scale(1.2);
+}
+
+.habit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn.excellent {
+  background: var(--success-color);
+  color: var(--bg-primary);
+}
+
+.action-btn.excellent:hover {
+  background: var(--success-color);
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+.action-btn.good {
+  background: var(--info-color);
+  color: var(--bg-primary);
+}
+
+.action-btn.good:hover {
+  background: var(--info-color);
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+.action-btn.missed {
+  background: var(--danger-color);
+  color: var(--bg-primary);
+}
+
+.action-btn.missed:hover {
+  background: var(--danger-color);
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mastery-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.mastery-score {
+  font-size: 64px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  margin-bottom: 16px;
+}
+
+.mastery-label {
+  font-size: 20px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.reinforcement-message {
+  font-size: 18px;
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.6;
 }
 
 .loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: 400px;
   font-size: 18px;
-  opacity: 0.8;
+  color: var(--text-secondary);
 }
 
 .error {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: 400px;
   font-size: 18px;
-  color: #fca5a5;
-}
-
-@media (max-width: 768px) {
-  .focus-page {
-    padding: 20px 10px;
-  }
-
-  .focus-header h1 {
-    font-size: 2rem;
-  }
-
-  .habits-dashboard {
-    padding: 20px;
-  }
-
-  .habit-card {
-    padding: 20px;
-
-    .habit-header {
-      flex-direction: column;
-      gap: 10px;
-      text-align: center;
-    }
-
-    .habit-grid {
-      grid-template-columns: repeat(15, 1fr);
-      gap: 1px;
-
-      .grid-cell {
-        width: 10px;
-        height: 10px;
-      }
-    }
-
-    .habit-actions {
-      flex-direction: column;
-      gap: 8px;
-    }
-  }
+  color: var(--danger-color);
 } 

@@ -63,6 +63,7 @@ export interface StorageData {
   habitEntries: HabitEntry[];
   config: ExtensionConfig;
   eyeCareLastNotification?: number;
+  nextEyeCareAlarm?: number;
   tabCount: number;
 }
 

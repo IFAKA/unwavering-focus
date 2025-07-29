@@ -1,5 +1,5 @@
 import StorageService from './services/storage';
-import { shouldRedirect, extractDomain } from './utils/urlUtils';
+import { shouldRedirect, extractDomain, isHomepage } from './utils/urlUtils';
 import { getDateString } from './utils/habitUtils';
 import { DistractingDomain, ExtensionConfig } from './types';
 
@@ -26,7 +26,6 @@ const defaultConfig: ExtensionConfig = {
 async function initializeStorage() {
   try {
     const existingData = await storage.getAll();
-    console.log('Existing storage data:', existingData);
     
     // Always ensure we have the complete data structure
     const completeData = {
@@ -39,10 +38,8 @@ async function initializeStorage() {
     
     // If no config exists, initialize with defaults
     if (!existingData.config) {
-      console.log('Initializing extension with default configuration');
       await storage.setMultiple(completeData);
     } else {
-      console.log('Extension already configured, ensuring defaults are set');
       // Ensure default values are set even if config exists
       const updatedConfig = {
         ...defaultConfig,
@@ -67,7 +64,16 @@ async function initializeStorage() {
 async function setupEyeCareAlarm() {
   const config = await storage.get('config');
   if (config?.eyeCare.enabled) {
+    // Clear existing alarms
+    await chrome.alarms.clear('eyeCare20');
+    await chrome.alarms.clear('eyeCare20Second');
+    
+    // Create the 20-minute alarm
     await chrome.alarms.create('eyeCare20', { delayInMinutes: 20, periodInMinutes: 20 });
+    
+    // Store the next alarm time for countdown
+    const nextAlarmTime = Date.now() + (20 * 60 * 1000);
+    await storage.set('nextEyeCareAlarm', nextAlarmTime);
   }
 }
 
@@ -76,73 +82,71 @@ async function handleEyeCareNotification() {
   const config = await storage.get('config');
   if (!config?.eyeCare.enabled) return;
 
-  console.log('Playing eye care notification sound');
-
   try {
-    // Create a simple beep sound using Web Audio API
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
+    // Play initial sound
+    await playEyeCareSound();
     
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    // Set up 20-second follow-up
+    setTimeout(async () => {
+      const currentConfig = await storage.get('config');
+      if (currentConfig?.eyeCare.enabled) {
+        await playEyeCareSound();
+      }
+    }, 20000); // 20 seconds
     
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-    oscillator.type = 'sine';
+  } catch (error) {
+    console.error('Error in eye care notification:', error);
+  }
+}
+
+// Play eye care sound
+async function playEyeCareSound() {
+  try {
+    const config = await storage.get('config');
+    const volume = config?.eyeCare?.soundVolume || 0.5;
     
-    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(config.eyeCare.soundVolume, audioContext.currentTime + 0.01);
-    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
+    // Try to play in active tab first
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    let soundPlayed = false;
     
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.5);
+    for (const tab of tabs) {
+      if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+        try {
+          await chrome.tabs.sendMessage(tab.id!, { 
+            type: 'PLAY_EYE_CARE_SOUND',
+            volume: volume
+          });
+          soundPlayed = true;
+          break;
+        } catch (error) {
+          // Continue to next tab
+          continue;
+        }
+      }
+    }
     
-    console.log('Eye care sound played successfully');
+    // If no content script available, inject script to play sound
+    if (!soundPlayed && tabs.length > 0) {
+      const tab = tabs[0];
+      if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id! },
+            func: (volume) => {
+              const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-beep.mp3'));
+              audio.volume = volume;
+              audio.play();
+            },
+            args: [volume]
+          });
+        } catch (error) {
+          console.error('Failed to inject sound script:', error);
+        }
+      }
+    }
   } catch (error) {
     console.error('Error playing eye care sound:', error);
   }
-
-  // Show notification
-  try {
-    await chrome.notifications.create({
-      type: 'basic',
-      iconUrl: chrome.runtime.getURL('assets/icon.svg'),
-      title: 'Eye Care Reminder',
-      message: 'Look 20 feet away for 20 seconds.'
-    });
-    console.log('Eye care notification created');
-  } catch (error) {
-    console.error('Error creating notification:', error);
-  }
-
-  // Set 20-second timer for second notification
-  setTimeout(async () => {
-    if (config?.eyeCare.enabled) {
-      console.log('Playing second eye care notification sound');
-      try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
-        oscillator.type = 'sine';
-        
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(config.eyeCare.soundVolume, audioContext.currentTime + 0.01);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.5);
-        
-        console.log('Second eye care sound played successfully');
-      } catch (error) {
-        console.error('Error playing second eye care sound:', error);
-      }
-    }
-  }, 20000);
 }
 
 // Handle distraction blocking
@@ -204,14 +208,10 @@ async function handleTabCreated(tab: chrome.tabs.Tab) {
     );
   });
 
-  console.log(`Tab created. Total tabs: ${tabs.length}, Non-excluded (excluding new): ${nonExcludedTabs.length}, Limit: ${maxTabs}`);
-
   if (nonExcludedTabs.length >= maxTabs) {
-    console.log(`Tab limit exceeded. Closing the newly created tab.`);
     // Close the newly created tab instead of the oldest
     if (tab.id) {
       await chrome.tabs.remove(tab.id);
-      console.log(`Closed newly created tab ${tab.id}`);
     }
   }
   
@@ -224,16 +224,59 @@ async function updateTabCount() {
   try {
     const tabs = await chrome.tabs.query({});
     const tabCount = tabs.length;
-    console.log(`Updating tab count: ${tabCount}`);
     await storage.set('tabCount', tabCount);
   } catch (error) {
     console.error('Error updating tab count:', error);
   }
 }
 
+// Handle commands (keyboard shortcuts)
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'open-smart-search') {
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs.length > 0) {
+        const tab = tabs[0];
+        if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+          let modalShown = false;
+          
+          // Try to send message to content script first
+          try {
+            await chrome.tabs.sendMessage(tab.id!, { type: 'SHOW_SMART_SEARCH_MODAL' });
+            modalShown = true;
+          } catch (error) {
+            // Content script not available, try injection
+          }
+          
+          // If content script failed, inject script directly
+          if (!modalShown) {
+            try {
+              await chrome.scripting.executeScript({
+                target: { tabId: tab.id! },
+                files: ['content.js']
+              });
+              // Try sending message again after injecting
+              setTimeout(async () => {
+                try {
+                  await chrome.tabs.sendMessage(tab.id!, { type: 'SHOW_SMART_SEARCH_MODAL' });
+                } catch (error) {
+                  console.error('Could not show smart search modal:', error);
+                }
+              }, 100);
+            } catch (error) {
+              console.error('Failed to inject content script:', error);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error handling smart search command:', error);
+    }
+  }
+});
+
 // Initialize extension
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log('Extension installed, initializing...');
   await initializeStorage();
   await setupEyeCareAlarm();
   await updateTabCount();
@@ -241,7 +284,6 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 // Also initialize on startup
 chrome.runtime.onStartup.addListener(async () => {
-  console.log('Extension starting up...');
   await initializeStorage();
   await updateTabCount();
 });
@@ -254,44 +296,96 @@ chrome.alarms.onAlarm.addListener(async (alarm: chrome.alarms.Alarm) => {
 });
 
 // Handle tab events
-chrome.tabs.onUpdated.addListener(handleTabUpdate);
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    // Check if this is a distracting domain that needs overlay
+    try {
+      const config = await storage.get('config');
+      if (config?.distractionBlocker?.enabled) {
+        const domain = extractDomain(tab.url);
+        const distractingDomain = config.distractionBlocker.domains.find(d => d.domain === domain);
+        
+        if (distractingDomain && isHomepage(tab.url)) {
+          console.log('Tab updated on distracting domain:', domain);
+          // Try to send message to content script
+          try {
+            await chrome.tabs.sendMessage(tabId, { type: 'CHECK_DISTRACTING_DOMAIN', url: tab.url });
+          } catch (error) {
+            console.log('Content script not available, injecting...');
+            // Content script not available, inject it
+            try {
+              await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                files: ['content.js']
+              });
+              // Wait a bit then try sending message again
+              setTimeout(async () => {
+                try {
+                  await chrome.tabs.sendMessage(tabId, { type: 'CHECK_DISTRACTING_DOMAIN', url: tab.url });
+                } catch (error) {
+                  console.error('Failed to send message after injection:', error);
+                }
+              }, 500);
+            } catch (injectionError) {
+              console.error('Failed to inject content script:', injectionError);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error handling tab update:', error);
+    }
+  }
+});
 chrome.tabs.onCreated.addListener(handleTabCreated);
 chrome.tabs.onRemoved.addListener(updateTabCount);
 
 // Handle messages from popup/content scripts
 chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
-  console.log('Background script received message:', message);
   
   try {
     switch (message.type) {
       case 'GET_STORAGE_DATA':
-        console.log('Handling GET_STORAGE_DATA request');
-        // Get actual data from storage
-        storage.getAll().then(data => {
-          const responseData = {
-            savedSearches: data.savedSearches || [],
-            distractingDomains: data.distractingDomains || [],
-            habitEntries: data.habitEntries || [],
-            config: data.config || defaultConfig,
-            tabCount: data.tabCount || 0
+        Promise.all([
+          storage.get('savedSearches'),
+          storage.get('distractingDomains'),
+          storage.get('habitEntries'),
+          storage.get('config'),
+          storage.get('tabCount'),
+          storage.get('nextEyeCareAlarm')
+        ]).then(([savedSearches, distractingDomains, habitEntries, config, tabCount, nextEyeCareAlarm]) => {
+          const completeData = {
+            savedSearches: savedSearches || [],
+            distractingDomains: distractingDomains || [],
+            habitEntries: habitEntries || [],
+            config: config || defaultConfig,
+            tabCount: tabCount || 0,
+            nextEyeCareAlarm
           };
-          console.log('Sending storage data:', responseData);
-          sendResponse(responseData);
+          
+          sendResponse(completeData);
+        }).catch(error => {
+          console.error('Error getting storage data:', error);
+          sendResponse({
+            savedSearches: [],
+            distractingDomains: [],
+            habitEntries: [],
+            config: defaultConfig,
+            tabCount: 0,
+            nextEyeCareAlarm: undefined
+          });
         });
         break;
       
       case 'GET_TAB_COUNT':
-        console.log('Handling GET_TAB_COUNT request');
         updateTabCount().then(() => {
           storage.get('tabCount').then(tabCount => {
-            console.log('Sending tab count:', tabCount);
             sendResponse({ tabCount: tabCount || 0 });
           });
         });
         break;
       
       case 'SAVE_SEARCH':
-        console.log('Handling SAVE_SEARCH request:', message.query);
         storage.get('savedSearches').then(searches => {
           const currentSearches = searches || [];
           const newSearch = {
@@ -301,26 +395,28 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           };
           currentSearches.push(newSearch);
           storage.set('savedSearches', currentSearches).then(() => {
-            console.log('Search saved successfully');
             sendResponse({ success: true });
           });
         });
         break;
       
       case 'DELETE_SEARCH':
-        console.log('Handling DELETE_SEARCH request:', message.id);
         storage.get('savedSearches').then(searches => {
           const currentSearches = searches || [];
           const filteredSearches = currentSearches.filter(s => s.id !== message.id);
           storage.set('savedSearches', filteredSearches).then(() => {
-            console.log('Search deleted successfully');
             sendResponse({ success: true });
           });
         });
         break;
       
+      case 'CLEAR_ALL_SEARCHES':
+        storage.set('savedSearches', []).then(() => {
+          sendResponse({ success: true });
+        });
+        break;
+      
       case 'UPDATE_HABIT_ENTRY':
-        console.log('Handling UPDATE_HABIT_ENTRY request');
         storage.get('habitEntries').then(entries => {
           const currentEntries = entries || [];
           const existingIndex = currentEntries.findIndex(e => 
@@ -338,87 +434,155 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           }
           
           storage.set('habitEntries', currentEntries).then(() => {
-            console.log('Habit entry updated successfully');
             sendResponse({ success: true });
           });
         });
         break;
       
       case 'UPDATE_CONFIG':
-        console.log('Handling UPDATE_CONFIG request');
+        console.log('Handling UPDATE_CONFIG request:', message.config);
         storage.set('config', message.config).then(() => {
-          console.log('Config updated successfully');
+          console.log('Config saved successfully');
           sendResponse({ success: true });
+        }).catch(error => {
+          console.error('Error saving config:', error);
+          sendResponse({ error: 'Failed to save config' });
         });
         break;
       
       case 'TEST_EYE_CARE':
-        console.log('Handling TEST_EYE_CARE request');
-        handleEyeCareNotification().then(() => {
-          console.log('Eye care test completed');
+        console.log('Testing eye care reminder...');
+        playEyeCareSound().then(() => {
           sendResponse({ success: true });
+        }).catch(error => {
+          console.error('Error testing eye care:', error);
+          sendResponse({ error: 'Failed to test eye care' });
         });
         break;
       
       case 'CHECK_DISTRACTING_DOMAIN':
         console.log('Handling CHECK_DISTRACTING_DOMAIN request:', message.url);
         storage.get('config').then(config => {
+          console.log('Current config:', config);
+          console.log('Distraction blocker enabled:', config?.distractionBlocker?.enabled);
+          console.log('Distracting domains:', config?.distractionBlocker?.domains);
+          
           if (!config?.distractionBlocker?.enabled) {
+            console.log('Distraction blocker disabled');
             sendResponse({ shouldBlock: false, shouldShowOverlay: false });
             return;
           }
 
           const domain = extractDomain(message.url);
-          const distractingDomain = config.distractionBlocker.domains.find(d => d.domain === domain);
+          console.log('Extracted domain:', domain);
+          console.log('Looking for domain in:', config.distractionBlocker.domains.map(d => d.domain));
+          
+          // More flexible domain matching
+          const distractingDomain = config.distractionBlocker.domains.find(d => {
+            const configuredDomain = d.domain.toLowerCase();
+            const extractedDomain = domain.toLowerCase();
+            
+            // Exact match
+            if (configuredDomain === extractedDomain) return true;
+            
+            // www subdomain match (www.facebook.com matches facebook.com)
+            if (extractedDomain.startsWith('www.') && extractedDomain.slice(4) === configuredDomain) return true;
+            
+            // Subdomain match (facebook.com matches www.facebook.com)
+            if (configuredDomain.startsWith('www.') && configuredDomain.slice(4) === extractedDomain) return true;
+            
+            return false;
+          });
+          
+          console.log('Found distracting domain:', distractingDomain);
           
           if (!distractingDomain) {
+            console.log('Domain not in distracting list');
             sendResponse({ shouldBlock: false, shouldShowOverlay: false });
             return;
           }
 
-          // Check if it's a homepage visit (not specific content)
-          const isHomepage = !message.url.includes('/') || message.url.split('/').length <= 3;
-          
-          if (!isHomepage) {
+          // Check if it's a homepage (not specific content)
+          const isHomepageResult = isHomepage(message.url);
+          console.log('Is homepage:', isHomepageResult);
+          console.log('URL being checked:', message.url);
+          if (!isHomepageResult) {
+            console.log('Not a homepage, allowing access');
             sendResponse({ shouldBlock: false, shouldShowOverlay: false });
             return;
           }
 
-          // Check daily limit
           const today = new Date().toISOString().split('T')[0];
           if (distractingDomain.lastResetDate !== today) {
-            // Reset counter for new day
             distractingDomain.currentCount = 0;
             distractingDomain.lastResetDate = today;
+            console.log('Reset counter for new day');
           }
 
           const remainingVisits = Math.max(0, distractingDomain.dailyLimit - distractingDomain.currentCount);
+          console.log('Remaining visits:', remainingVisits, 'Current count:', distractingDomain.currentCount, 'Daily limit:', distractingDomain.dailyLimit);
           
           if (remainingVisits <= 0) {
-            // Daily limit exceeded - redirect to focus page
+            console.log('No visits left, redirecting to focus page');
+            // No visits left - redirect to focus page
             sendResponse({ 
               shouldBlock: true, 
               shouldShowOverlay: false,
-              domain: domain, 
+              domain: domain,
               remainingVisits: 0 
             });
           } else {
-            // Still have visits left - show overlay
-            distractingDomain.currentCount++;
-            storage.set('config', config).then(() => {
-              sendResponse({ 
-                shouldBlock: false,
-                shouldShowOverlay: true,
-                domain: domain, 
-                remainingVisits: remainingVisits - 1 
-              });
+            console.log('Showing overlay with remaining visits');
+            // Show overlay with remaining visits
+            sendResponse({ 
+              shouldBlock: false, 
+              shouldShowOverlay: true,
+              domain: domain,
+              remainingVisits: remainingVisits 
             });
           }
         });
         break;
       
+      case 'INCREMENT_DISTRACTING_DOMAIN':
+        console.log('Handling INCREMENT_DISTRACTING_DOMAIN request:', message.domain);
+        storage.get('config').then(config => {
+          if (!config?.distractionBlocker?.enabled) {
+            sendResponse({ success: false });
+            return;
+          }
+
+          // Use the same flexible domain matching
+          const distractingDomain = config.distractionBlocker.domains.find(d => {
+            const configuredDomain = d.domain.toLowerCase();
+            const requestedDomain = message.domain.toLowerCase();
+            
+            // Exact match
+            if (configuredDomain === requestedDomain) return true;
+            
+            // www subdomain match (www.facebook.com matches facebook.com)
+            if (requestedDomain.startsWith('www.') && requestedDomain.slice(4) === configuredDomain) return true;
+            
+            // Subdomain match (facebook.com matches www.facebook.com)
+            if (configuredDomain.startsWith('www.') && configuredDomain.slice(4) === requestedDomain) return true;
+            
+            return false;
+          });
+          
+          if (distractingDomain) {
+            distractingDomain.currentCount++;
+            console.log('Incremented counter for domain:', message.domain, 'New count:', distractingDomain.currentCount);
+            storage.set('config', config).then(() => {
+              sendResponse({ success: true });
+            });
+          } else {
+            console.log('Domain not found for increment:', message.domain);
+            sendResponse({ success: false });
+          }
+        });
+        break;
+      
       default:
-        console.log('Unknown message type:', message.type);
         sendResponse({ error: 'Unknown message type' });
     }
   } catch (error) {

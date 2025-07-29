@@ -43,12 +43,12 @@
   "options_page": "options.html",
   "web_accessible_resources": [
     {
-      "resources": ["focus-page.html"],
+      "resources": ["focus-page.html", "sounds/*", "assets/*"],
       "matches": ["<all_urls>"]
     }
   ],
   "commands": {
-    "_execute_action": {
+    "open-smart-search": {
       "suggested_key": {
         "default": "Alt+Shift+S"
       },

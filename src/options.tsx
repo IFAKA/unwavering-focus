@@ -26,6 +26,10 @@ const Options: React.FC<OptionsProps> = () => {
   const [config, setConfig] = useState<ExtensionConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [newDomain, setNewDomain] = useState('');
+  const [newDomainLimit, setNewDomainLimit] = useState(3);
+  const [saving, setSaving] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     loadConfig();
@@ -33,16 +37,14 @@ const Options: React.FC<OptionsProps> = () => {
 
   const loadConfig = async () => {
     try {
-      console.log('Loading options config...');
+      setLoading(true);
       const response = await chrome.runtime.sendMessage({ type: 'GET_STORAGE_DATA' });
-      console.log('Received options data:', response);
-      
-      // Set default config regardless of response
-      setConfig(defaultConfig);
-      
-      // If we got a valid response with config, use it
-      if (response && typeof response === 'object' && response.config) {
+      console.log('Options page received response:', response);
+      if (response && response.config) {
         setConfig(response.config);
+      } else {
+        console.log('No config in response, using default');
+        setConfig(defaultConfig);
       }
     } catch (error) {
       console.error('Error loading config:', error);
@@ -56,65 +58,55 @@ const Options: React.FC<OptionsProps> = () => {
     if (!config) return;
     
     try {
-      setLoading(true);
+      setSaving(true);
       await chrome.runtime.sendMessage({ type: 'UPDATE_CONFIG', config });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+      setStatusMessage({ text: 'Settings saved successfully!', type: 'success' });
       console.log('Config saved successfully');
     } catch (error) {
       console.error('Error saving config:', error);
+      setStatusMessage({ text: 'Failed to save settings.', type: 'error' });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const updateConfig = (updates: Partial<ExtensionConfig>) => {
+  const updateConfig = (path: string, value: any) => {
     if (!config) return;
-    setConfig({ ...config, ...updates });
+    const keys = path.split('.');
+    let current: any = config;
+    for (let i = 0; i < keys.length - 1; i++) {
+      current = current[keys[i]];
+      if (!current) return;
+    }
+    current[keys[keys.length - 1]] = value;
+    setConfig({ ...config });
   };
 
-  const addDistractingDomain = () => {
+  const addDomain = () => {
     if (!config) return;
     
-    const newDomain: DistractingDomain = {
-      domain: '',
-      dailyLimit: 3,
-      currentCount: 0,
-      lastResetDate: new Date().toISOString().split('T')[0]
-    };
-    
-    updateConfig({
-      distractionBlocker: {
-        ...config.distractionBlocker,
-        domains: [...config.distractionBlocker.domains, newDomain]
-      }
-    });
+    const domainName = newDomain.trim();
+    if (domainName && newDomainLimit > 0) {
+      const newDomainObj: DistractingDomain = {
+        domain: domainName,
+        dailyLimit: newDomainLimit,
+        currentCount: 0,
+        lastResetDate: new Date().toISOString().split('T')[0]
+      };
+      
+      updateConfig('distractionBlocker.domains', [...config.distractionBlocker.domains, newDomainObj]);
+      setNewDomain('');
+      setNewDomainLimit(3);
+    }
   };
 
-  const updateDistractingDomain = (index: number, updates: Partial<DistractingDomain>) => {
-    if (!config) return;
-    
-    const domains = [...config.distractionBlocker.domains];
-    domains[index] = { ...domains[index], ...updates };
-    
-    updateConfig({
-      distractionBlocker: {
-        ...config.distractionBlocker,
-        domains
-      }
-    });
-  };
-
-  const removeDistractingDomain = (index: number) => {
+  const removeDomain = (index: number) => {
     if (!config) return;
     
     const domains = config.distractionBlocker.domains.filter((_, i) => i !== index);
-    updateConfig({
-      distractionBlocker: {
-        ...config.distractionBlocker,
-        domains
-      }
-    });
+    updateConfig('distractionBlocker.domains', domains);
   };
 
   const addHabit = () => {
@@ -126,12 +118,7 @@ const Options: React.FC<OptionsProps> = () => {
       color: '#3b82f6'
     };
     
-    updateConfig({
-      focusPage: {
-        ...config.focusPage,
-        habits: [...config.focusPage.habits, newHabit]
-      }
-    });
+    updateConfig('focusPage.habits', [...config.focusPage.habits, newHabit]);
   };
 
   const updateHabit = (index: number, updates: Partial<Habit>) => {
@@ -140,24 +127,26 @@ const Options: React.FC<OptionsProps> = () => {
     const habits = [...config.focusPage.habits];
     habits[index] = { ...habits[index], ...updates };
     
-    updateConfig({
-      focusPage: {
-        ...config.focusPage,
-        habits
-      }
-    });
+    updateConfig('focusPage.habits', habits);
   };
 
   const removeHabit = (index: number) => {
     if (!config) return;
     
     const habits = config.focusPage.habits.filter((_, i) => i !== index);
-    updateConfig({
-      focusPage: {
-        ...config.focusPage,
-        habits
-      }
-    });
+    updateConfig('focusPage.habits', habits);
+  };
+
+  const testEyeCare = async () => {
+    try {
+      setStatusMessage({ text: 'Testing eye care sound...', type: 'success' });
+      await chrome.runtime.sendMessage({ type: 'TEST_EYE_CARE' });
+      setStatusMessage({ text: 'Eye care reminder test successful!', type: 'success' });
+      console.log('Eye care test triggered');
+    } catch (error) {
+      setStatusMessage({ text: 'Failed to test eye care reminder.', type: 'error' });
+      console.error('Error testing eye care:', error);
+    }
   };
 
   if (loading) {
@@ -172,287 +161,216 @@ const Options: React.FC<OptionsProps> = () => {
   const configToUse = config || defaultConfig;
 
   return (
-    <div className="options">
-      <div className="options-header">
-        <h1>Unwavering Focus - Options</h1>
-        <button 
-          className={`save-btn ${saved ? 'saved' : ''}`}
-          onClick={saveConfig}
-        >
-          {saved ? 'Saved!' : 'Save Changes'}
-        </button>
+    <div className="container">
+      <div className="header">
+        <h1>⚙️ Extension Settings</h1>
+        <p>Configure your focus and productivity preferences</p>
       </div>
 
-      <div className="options-content">
-        {/* Smart Search Management */}
-        <section className="option-section">
-          <h2>Smart Search Management</h2>
-          <div className="option-item">
-            <label>
-              <input
-                type="checkbox"
-                checked={configToUse.smartSearch.enabled}
-                onChange={(e) => updateConfig({
-                  smartSearch: { ...configToUse.smartSearch, enabled: e.target.checked }
-                })}
-              />
-              Enable Smart Search Management
-            </label>
-            <p className="option-description">
-              Use Alt+Shift+S to save search queries for later. Access them from the extension popup.
-            </p>
+      <div className="section">
+        <h2><span className="section-icon">🔍</span>Smart Search Management</h2>
+        <div className="form-group">
+          <div className="toggle-group">
+            <input
+              type="checkbox"
+              id="smartSearchEnabled"
+              checked={config?.smartSearch?.enabled || false}
+              onChange={(e) => updateConfig('smartSearch.enabled', e.target.checked)}
+            />
+            <label htmlFor="smartSearchEnabled">Enable Smart Search Management</label>
           </div>
-        </section>
+          <p className="option-description">
+            Use Alt+Shift+S to save search queries for later. Prevents rabbit-holing during focused work.
+          </p>
+        </div>
+      </div>
 
-        {/* Distraction Blocker */}
-        <section className="option-section">
-          <h2>Distraction Blocker</h2>
-          <div className="option-item">
-            <label>
-              <input
-                type="checkbox"
-                checked={configToUse.distractionBlocker.enabled}
-                onChange={(e) => updateConfig({
-                  distractionBlocker: { ...configToUse.distractionBlocker, enabled: e.target.checked }
-                })}
-              />
-              Enable Distraction Blocker
-            </label>
-            <p className="option-description">
-              Block access to distracting websites after reaching daily limits.
-            </p>
+      <div className="section">
+        <h2><span className="section-icon">🚫</span>Distraction Blocker</h2>
+        <div className="form-group">
+          <div className="toggle-group">
+            <input
+              type="checkbox"
+              id="distractionBlockerEnabled"
+              checked={config?.distractionBlocker?.enabled || false}
+              onChange={(e) => updateConfig('distractionBlocker.enabled', e.target.checked)}
+            />
+            <label htmlFor="distractionBlockerEnabled">Enable Distraction Blocker</label>
           </div>
+          <p className="option-description">
+            Block distracting websites and limit daily visits to maintain focus.
+          </p>
+        </div>
 
-          {configToUse.distractionBlocker.enabled && (
-            <div className="domains-list">
-              <h3>Distracting Domains</h3>
-              {configToUse.distractionBlocker.domains.map((domain, index) => (
-                <div key={index} className="domain-item">
-                  <input
-                    type="text"
-                    placeholder="Domain (e.g., facebook.com)"
-                    value={domain.domain}
-                    onChange={(e) => updateDistractingDomain(index, { domain: e.target.value })}
-                  />
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    placeholder="Daily limit"
-                    value={domain.dailyLimit}
-                    onChange={(e) => updateDistractingDomain(index, { dailyLimit: parseInt(e.target.value) || 1 })}
-                  />
-                  <button
-                    className="remove-btn"
-                    onClick={() => removeDistractingDomain(index)}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button className="add-btn" onClick={addDistractingDomain}>
+        {config?.distractionBlocker?.enabled && (
+          <div className="domain-management">
+            <h3>Distracting Domains</h3>
+            <div className="add-domain-form">
+              <input
+                type="text"
+                placeholder="Enter domain (e.g., facebook.com)"
+                value={newDomain}
+                onChange={(e) => setNewDomain(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addDomain()}
+              />
+              <input
+                type="number"
+                placeholder="Daily limit"
+                value={newDomainLimit}
+                onChange={(e) => setNewDomainLimit(parseInt(e.target.value) || 0)}
+                min="1"
+                max="50"
+              />
+              <button className="btn btn-primary" onClick={addDomain}>
                 Add Domain
               </button>
             </div>
-          )}
-        </section>
 
-        {/* Eye Care */}
-        <section className="option-section">
-          <h2>Eye Care Reminder</h2>
-          <div className="option-item">
-            <label>
-              <input
-                type="checkbox"
-                checked={configToUse.eyeCare.enabled}
-                onChange={(e) => updateConfig({
-                  eyeCare: { ...configToUse.eyeCare, enabled: e.target.checked }
-                })}
-              />
-              Enable 20-20-20 Eye Care Reminder
-            </label>
-            <p className="option-description">
-              Get reminded every 20 minutes to look 20 feet away for 20 seconds.
-            </p>
-          </div>
-
-          {configToUse.eyeCare.enabled && (
-            <div className="option-item">
-              <label>
-                Sound Volume:
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={configToUse.eyeCare.soundVolume}
-                  onChange={(e) => updateConfig({
-                    eyeCare: { ...configToUse.eyeCare, soundVolume: parseFloat(e.target.value) }
-                  })}
-                />
-                {Math.round(configToUse.eyeCare.soundVolume * 100)}%
-              </label>
-              <button 
-                className="test-btn"
-                onClick={async () => {
-                  try {
-                    await chrome.runtime.sendMessage({ type: 'TEST_EYE_CARE' });
-                    console.log('Eye care test triggered');
-                  } catch (error) {
-                    console.error('Error testing eye care:', error);
-                  }
-                }}
-              >
-                Test Eye Care Reminder
-              </button>
+            <div className="domain-list">
+              {config.distractionBlocker.domains.map((domain, index) => (
+                <div key={index} className="domain-item">
+                  <div className="domain-info">
+                    <div className="domain-name">{domain.domain}</div>
+                    <div className="domain-limit">{domain.dailyLimit} visits per day</div>
+                  </div>
+                  <div className="domain-actions">
+                    <button
+                      className="btn btn-danger btn-small"
+                      onClick={() => removeDomain(index)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-        </section>
-
-        {/* Tab Limiter */}
-        <section className="option-section">
-          <h2>Tab Limiter</h2>
-          <div className="option-item">
-            <label>
-              Maximum Tabs:
-              <input
-                type="number"
-                min="1"
-                max="50"
-                value={configToUse.tabLimiter.maxTabs}
-                onChange={(e) => updateConfig({
-                  tabLimiter: { ...configToUse.tabLimiter, maxTabs: parseInt(e.target.value) || 1 }
-                })}
-              />
-            </label>
-            <p className="option-description">
-              Maximum number of tabs allowed. Older tabs will be closed when limit is exceeded.
-            </p>
           </div>
+        )}
+      </div>
 
-          <div className="option-item">
-            <label>
-              Excluded Domains (comma-separated):
-              <input
-                type="text"
-                placeholder="google.com, mail.google.com"
-                value={configToUse.tabLimiter.excludedDomains.join(', ')}
-                onChange={(e) => updateConfig({
-                  tabLimiter: { 
-                    ...configToUse.tabLimiter, 
-                    excludedDomains: e.target.value.split(',').map(d => d.trim()).filter(Boolean)
-                  }
-                })}
-              />
-            </label>
-            <p className="option-description">
-              Tabs from these domains won't count towards the limit.
-            </p>
+      <div className="section">
+        <h2><span className="section-icon">👁️</span>Eye Care Reminder</h2>
+        <div className="form-group">
+          <div className="toggle-group">
+            <input
+              type="checkbox"
+              id="eyeCareEnabled"
+              checked={config?.eyeCare?.enabled || false}
+              onChange={(e) => updateConfig('eyeCare.enabled', e.target.checked)}
+            />
+            <label htmlFor="eyeCareEnabled">Enable 20-20-20 Eye Care Reminder</label>
           </div>
-        </section>
+          <p className="option-description">
+            Get reminded every 20 minutes to look 20 feet away for 20 seconds.
+          </p>
+        </div>
 
-        {/* Focus Page */}
-        <section className="option-section">
-          <h2>Focus Page</h2>
-          <div className="option-item">
-            <label>
-              Motivational Message:
-              <textarea
-                value={configToUse.focusPage.motivationalMessage}
-                onChange={(e) => updateConfig({
-                  focusPage: { ...configToUse.focusPage, motivationalMessage: e.target.value }
-                })}
-                placeholder="Enter your motivational message..."
-              />
-            </label>
-          </div>
-
-          <div className="option-item">
-            <h3>Pillar Habits</h3>
-            <p className="option-description">
-              Define your key habits to track daily performance.
-            </p>
-            
-            {configToUse.focusPage.habits.map((habit, index) => (
-              <div key={habit.id} className="habit-item">
-                <input
-                  type="text"
-                  placeholder="Habit name"
-                  value={habit.name}
-                  onChange={(e) => updateHabit(index, { name: e.target.value })}
-                />
-                <input
-                  type="color"
-                  value={habit.color}
-                  onChange={(e) => updateHabit(index, { color: e.target.value })}
-                />
-                <button
-                  className="remove-btn"
-                  onClick={() => removeHabit(index)}
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-            <button className="add-btn" onClick={addHabit}>
-              Add Habit
+        {config?.eyeCare?.enabled && (
+          <div className="form-group">
+            <label htmlFor="soundVolume">Sound Volume</label>
+            <input
+              type="range"
+              id="soundVolume"
+              min="0"
+              max="1"
+              step="0.1"
+              value={config.eyeCare.soundVolume}
+              onChange={(e) => updateConfig('eyeCare.soundVolume', parseFloat(e.target.value))}
+            />
+            <div className="volume-display">{Math.round(config.eyeCare.soundVolume * 100)}%</div>
+            <button className="btn btn-warning test-btn" onClick={testEyeCare}>
+              Test Sound
             </button>
           </div>
+        )}
+      </div>
 
-          <div className="option-item">
-            <h3>Reinforcement Messages</h3>
-            <div className="message-inputs">
-              <label>
-                High Performance (greater than 80%):
-                <input
-                  type="text"
-                  value={configToUse.focusPage.reinforcementMessages.high}
-                  onChange={(e) => updateConfig({
-                    focusPage: {
-                      ...configToUse.focusPage,
-                      reinforcementMessages: {
-                        ...configToUse.focusPage.reinforcementMessages,
-                        high: e.target.value
-                      }
-                    }
-                  })}
-                />
-              </label>
-              <label>
-                Medium Performance (50-80%):
-                <input
-                  type="text"
-                  value={configToUse.focusPage.reinforcementMessages.medium}
-                  onChange={(e) => updateConfig({
-                    focusPage: {
-                      ...configToUse.focusPage,
-                      reinforcementMessages: {
-                        ...configToUse.focusPage.reinforcementMessages,
-                        medium: e.target.value
-                      }
-                    }
-                  })}
-                />
-              </label>
-                              <label>
-                  Low Performance (less than 50%):
-                  <input
-                    type="text"
-                    value={configToUse.focusPage.reinforcementMessages.low}
-                    onChange={(e) => updateConfig({
-                      focusPage: {
-                        ...configToUse.focusPage,
-                        reinforcementMessages: {
-                          ...configToUse.focusPage.reinforcementMessages,
-                          low: e.target.value
-                        }
-                      }
-                    })}
-                  />
-                </label>
-            </div>
+      <div className="section">
+        <h2><span className="section-icon">📑</span>Tab Limiter</h2>
+        <div className="form-group">
+          <div className="toggle-group">
+            <input
+              type="checkbox"
+              id="tabLimiterEnabled"
+              checked={(config?.tabLimiter?.maxTabs || 0) > 0}
+              onChange={(e) => updateConfig('tabLimiter.maxTabs', e.target.checked ? 3 : 0)}
+            />
+            <label htmlFor="tabLimiterEnabled">Enable Tab Limiter</label>
           </div>
-        </section>
+          <p className="option-description">
+            Limit the number of open tabs to prevent tab overload and maintain focus.
+          </p>
+        </div>
+
+        {(config?.tabLimiter?.maxTabs || 0) > 0 && (
+          <div className="form-group">
+            <label htmlFor="maxTabs">Maximum Tabs</label>
+            <input
+              type="number"
+              id="maxTabs"
+              min="1"
+              max="20"
+              value={config?.tabLimiter?.maxTabs || 3}
+              onChange={(e) => updateConfig('tabLimiter.maxTabs', parseInt(e.target.value))}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="section">
+        <h2><span className="section-icon">🎯</span>Focus Page</h2>
+        <div className="form-group">
+          <label htmlFor="motivationalMessage">Motivational Message</label>
+          <input
+            type="text"
+            id="motivationalMessage"
+            value={config?.focusPage?.motivationalMessage || ''}
+            onChange={(e) => updateConfig('focusPage.motivationalMessage', e.target.value)}
+            placeholder="Enter your motivational message"
+          />
+        </div>
+
+        <div className="messages-section">
+          <h3>Reinforcement Messages</h3>
+          <div className="message-group">
+            <label htmlFor="highMessage">High Performance Message</label>
+            <textarea
+              id="highMessage"
+              value={config?.focusPage?.reinforcementMessages?.high || ''}
+              onChange={(e) => updateConfig('focusPage.reinforcementMessages.high', e.target.value)}
+              placeholder="Message shown when performance is high"
+            />
+          </div>
+          <div className="message-group">
+            <label htmlFor="mediumMessage">Medium Performance Message</label>
+            <textarea
+              id="mediumMessage"
+              value={config?.focusPage?.reinforcementMessages?.medium || ''}
+              onChange={(e) => updateConfig('focusPage.reinforcementMessages.medium', e.target.value)}
+              placeholder="Message shown when performance is medium"
+            />
+          </div>
+          <div className="message-group">
+            <label htmlFor="lowMessage">Low Performance Message</label>
+            <textarea
+              id="lowMessage"
+              value={config?.focusPage?.reinforcementMessages?.low || ''}
+              onChange={(e) => updateConfig('focusPage.reinforcementMessages.low', e.target.value)}
+              placeholder="Message shown when performance is low"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="save-section">
+        <button className="btn btn-success save-btn" onClick={saveConfig}>
+          {saving ? 'Saving...' : 'Save Changes'}
+        </button>
+        {statusMessage && (
+          <div className={`status-message ${statusMessage.type}`}>
+            {statusMessage.text}
+          </div>
+        )}
       </div>
     </div>
   );

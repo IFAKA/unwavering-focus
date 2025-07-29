@@ -28,10 +28,48 @@ const Popup: React.FC<PopupProps> = () => {
   const [config, setConfig] = useState<ExtensionConfig | null>(null);
   const [tabCount, setTabCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState<string>('');
+  const [nextEyeCareAlarm, setNextEyeCareAlarm] = useState<number | undefined>();
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Countdown timer for eye care
+  useEffect(() => {
+    if (config?.eyeCare?.enabled && nextEyeCareAlarm) {
+      const updateCountdown = () => {
+        const now = Date.now();
+        const timeUntilAlarm = nextEyeCareAlarm - now;
+        
+        if (timeUntilAlarm <= 0) {
+          // Alarm is due, check if we're in the 20-second period
+          const timeSinceAlarm = Math.abs(timeUntilAlarm);
+          if (timeSinceAlarm <= 20000) { // 20 seconds
+            // Show 20-second countdown
+            const remainingSeconds = Math.max(0, Math.ceil((20000 - timeSinceAlarm) / 1000));
+            setCountdown(`20s: ${remainingSeconds}s`);
+          } else {
+            // Show next 20-minute countdown
+            const nextAlarm = nextEyeCareAlarm + (20 * 60 * 1000);
+            const timeUntilNext = nextAlarm - now;
+            const minutes = Math.floor(timeUntilNext / 60000);
+            const seconds = Math.floor((timeUntilNext % 60000) / 1000);
+            setCountdown(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+          }
+        } else {
+          // Show normal countdown
+          const minutes = Math.floor(timeUntilAlarm / 60000);
+          const seconds = Math.floor((timeUntilAlarm % 60000) / 1000);
+          setCountdown(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        }
+      };
+
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [config?.eyeCare?.enabled, nextEyeCareAlarm]);
 
   const loadData = async () => {
     try {
@@ -49,6 +87,7 @@ const Popup: React.FC<PopupProps> = () => {
         setSavedSearches(response.savedSearches || []);
         setConfig(response.config || defaultConfig);
         setTabCount(response.tabCount || 0);
+        setNextEyeCareAlarm(response.nextEyeCareAlarm);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -75,22 +114,42 @@ const Popup: React.FC<PopupProps> = () => {
     }
   };
 
-  const performSearch = (query: string) => {
+  const performSearch = async (query: string, searchId?: string) => {
     const searchUrl = getSearchUrl(query);
     chrome.tabs.create({ url: searchUrl });
+    
+    // If a searchId is provided, delete the search from the list
+    if (searchId) {
+      try {
+        await chrome.runtime.sendMessage({ type: 'DELETE_SEARCH', id: searchId });
+        // Update the local state immediately
+        setSavedSearches(prev => prev.filter(search => search.id !== searchId));
+      } catch (error) {
+        console.error('Error deleting search after performing:', error);
+      }
+    }
   };
 
-  const performAllSearches = () => {
+  const performAllSearches = async () => {
     if (savedSearches.length === 0) return;
     
     if (savedSearches.length > 5) {
       if (!confirm(`Open ${savedSearches.length} search tabs?`)) return;
     }
     
+    // Perform all searches
     savedSearches.forEach(search => {
       const searchUrl = getSearchUrl(search.query);
       chrome.tabs.create({ url: searchUrl });
     });
+    
+    // Delete all searches from the list
+    try {
+      await chrome.runtime.sendMessage({ type: 'CLEAR_ALL_SEARCHES' });
+      setSavedSearches([]);
+    } catch (error) {
+      console.error('Error clearing all searches:', error);
+    }
   };
 
   const openFocusPage = () => {
@@ -117,87 +176,94 @@ const Popup: React.FC<PopupProps> = () => {
 
   return (
     <div className="popup">
-      <div className="popup-header">
-        <h1>Unwavering Focus</h1>
-        <div className="tab-count">
-          Tabs: {tabCount}/{maxTabs}
-        </div>
-      </div>
-
       <div className="popup-content">
-        <div className="section">
-          <h2>Saved Searches ({savedSearches.length})</h2>
+        {/* Eye Care Countdown + Tab Counter - Compact */}
+        {config?.eyeCare.enabled && (
+          <div className="compact-section">
+            <div className="status-row">
+              <div className="status-item">
+                <span className="icon">👁️</span>
+                <span className="countdown">{countdown}</span>
+              </div>
+              <div className="status-item">
+                <span className="icon">📑</span>
+                <span className="tab-counter">{tabCount}/{maxTabs}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Saved Searches - Compact */}
+        <div className="compact-section">
+          <div className="section-header">
+            <span className="icon">🔍</span>
+            <span className="count">{savedSearches.length}</span>
+          </div>
           {savedSearches.length === 0 ? (
-            <p className="empty-state">
-              No saved searches yet. Use Alt+Shift+S to save a search query.
-            </p>
+            <div className="empty-hint">Alt+Shift+S to save</div>
           ) : (
-            <div className="search-list">
-              {savedSearches.map(search => (
-                <div key={search.id} className="search-item">
-                  <div className="search-info">
-                    <div className="search-query">{search.query}</div>
-                    <div className="search-date">{formatDate(search.timestamp)}</div>
+            <div className="search-list-compact">
+              {savedSearches.slice(0, 3).map(search => (
+                <div key={search.id} className="search-item-compact">
+                  <div className="search-query-compact" title={search.query}>
+                    {search.query.length > 25 ? search.query.substring(0, 25) + '...' : search.query}
                   </div>
-                  <div className="search-actions">
+                  <div className="search-actions-compact">
                     <button
-                      className="search-btn"
-                      onClick={() => performSearch(search.query)}
-                      title="Perform this search"
+                      className="search-btn-compact"
+                      onClick={() => performSearch(search.query, search.id)}
+                      title="Search"
                     >
-                      Search
+                      →
                     </button>
-                    <button
-                      className="delete-btn"
+                    <button 
+                      className="delete-btn-compact"
                       onClick={() => deleteSearch(search.id)}
-                      title="Delete this search"
+                      title="Delete"
                     >
                       ×
                     </button>
                   </div>
                 </div>
               ))}
+              {savedSearches.length > 3 && (
+                <div className="more-indicator">+{savedSearches.length - 3} more</div>
+              )}
               {savedSearches.length > 1 && (
-                <button className="search-all-btn" onClick={performAllSearches}>
-                  Search All ({savedSearches.length})
+                <button className="search-all-btn-compact" onClick={performAllSearches}>
+                  Search All
                 </button>
               )}
             </div>
           )}
         </div>
 
-        <div className="section">
-          <h2>Quick Actions</h2>
-          <div className="action-buttons">
-            <button className="action-btn focus-btn" onClick={openFocusPage}>
-              Focus Page
+        {/* Quick Actions - Compact */}
+        <div className="compact-section">
+          <div className="quick-actions">
+            <button className="action-btn primary" onClick={openFocusPage}>
+              Focus
             </button>
-            <button className="action-btn options-btn" onClick={openOptions}>
-              Options
+            <button className="action-btn secondary" onClick={openOptions}>
+              Settings
             </button>
           </div>
         </div>
 
-        <div className="section">
-          <h2>Status</h2>
+        {/* Status - Compact */}
+        <div className="compact-section">
           <div className="status-grid">
-            <div className="status-item">
-              <span className="status-label">Distraction Blocker:</span>
-              <span className={`status-value ${config?.distractionBlocker?.enabled ? 'enabled' : 'disabled'}`}>
-                {config?.distractionBlocker?.enabled ? 'Enabled' : 'Disabled'}
-              </span>
+            <div className={`status-item ${config?.distractionBlocker.enabled ? 'enabled' : 'disabled'}`}>
+              <span className="status-icon">🚫</span>
+              <span className="status-text">Block</span>
             </div>
-            <div className="status-item">
-              <span className="status-label">Eye Care:</span>
-              <span className={`status-value ${config?.eyeCare?.enabled ? 'enabled' : 'disabled'}`}>
-                {config?.eyeCare?.enabled ? 'Enabled' : 'Disabled'}
-              </span>
+            <div className={`status-item ${config?.eyeCare.enabled ? 'enabled' : 'disabled'}`}>
+              <span className="status-icon">👁️</span>
+              <span className="status-text">Eye</span>
             </div>
-            <div className="status-item">
-              <span className="status-label">Tab Limiter:</span>
-              <span className={`status-value ${maxTabs > 0 ? 'enabled' : 'disabled'}`}>
-                {maxTabs > 0 ? 'Enabled' : 'Disabled'}
-              </span>
+            <div className={`status-item ${config?.tabLimiter.maxTabs ? 'enabled' : 'disabled'}`}>
+              <span className="status-icon">📑</span>
+              <span className="status-text">Tabs</span>
             </div>
           </div>
         </div>

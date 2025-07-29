@@ -167,20 +167,28 @@ The extension includes comprehensive console logging for debugging:
 - **Distraction blocker with full-screen overlay**
 - **Stoic quotes API integration**
 
+## ✅ **Features Implemented**
+
 ✅ **Smart Search Management**:
-- Press `Alt+Shift+S` on any webpage to open search modal
-- Modal appears centered on the current page
+- Alt+Shift+S shortcut opens a **clean, centered input modal** (like the image)
 - Pre-populates with selected text if any
-- Saves search queries to persistent storage
-- Access saved searches from extension popup
+- Saves searches to persistent storage
+- Displays saved searches in popup
+- Click to perform searches or delete them
 
 ✅ **Distraction Blocker**:
-- Full-screen overlay when visiting distracting domains (with remaining visits)
-- **Redirects to Focus Page when daily limit exceeded**
-- Shows remaining visits for the day
-- "Proceed Anyway" or "Go Back" options (when visits remain)
-- Tracks daily limits per domain
-- Only blocks homepage visits, allows specific content
+- Configurable distracting domains with daily visit limits
+- **Redirects to Focus Page when limit exceeded**
+- Shows overlay with remaining visits
+- Allows specific content access (not just homepages)
+
+✅ **Eye Care Reminder (20-20-20)**:
+- **Visual countdown timer in popup** showing time until next reminder
+- **Uses macOS system beep sound** for notifications
+- **Simple beep-only approach** - no visual notifications or alerts
+- 20-minute intervals with 20-second follow-up beep
+- Configurable volume and enable/disable
+- **Test button in options page** (now working properly)
 
 ✅ **Tab Limiter**:
 - Correctly counts non-excluded tabs
@@ -188,23 +196,18 @@ The extension includes comprehensive console logging for debugging:
 - **Closes newly created tab when limit is reached (not exceeded)**
 - Updates tab count in popup
 
-✅ **Eye Care Reminder**:
-- **Working sound notifications using Web Audio API**
-- Test button in Options page
-- 20-minute intervals with 20-second breaks
-- Configurable sound volume
-
 ✅ **Focus Page**:
+- Clean, motivational interface
 - **Random Stoic quotes from API**
-- Habit tracking and consistency scoring
-- Mastery score calculation
-- Daily habit input buttons
+- Habit tracking with visual grid
+- Performance dashboard with consistency scores
 
-✅ **Configuration Management**:
-- All settings save properly
-- Default values applied correctly
-- Test button for Eye Care reminder
-- Distraction domain management
+✅ **Extension Popup**:
+- **Real-time eye care countdown timer**
+- Tab counter with current/limit display
+- Saved searches list with click-to-search
+- Feature status indicators
+- Quick access to Focus Page and Options
 
 🔄 **In Development**:
 - Advanced distraction blocking with domain-specific limits

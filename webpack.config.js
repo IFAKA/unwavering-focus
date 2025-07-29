@@ -47,7 +47,8 @@ module.exports = {
       patterns: [
         { from: 'manifest.json', to: 'manifest.json' },
         { from: 'src/content.css', to: 'content.css' },
-        { from: 'src/assets', to: 'assets' }
+        { from: 'src/assets', to: 'assets' },
+        { from: 'src/assets/sounds', to: 'sounds' }
       ]
     }),
     new HtmlWebpackPlugin({
