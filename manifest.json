@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "description": "Maximize productivity, eliminate digital distractions, and cultivate disciplined focus",
   "icons": {
-    "16": "assets/icon.svg",
-    "32": "assets/icon.svg",
-    "48": "assets/icon.svg",
-    "128": "assets/icon.svg"
+    "16": "assets/icon16.png",
+    "32": "assets/icon32.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
   },
   "permissions": [
     "activeTab",
@@ -34,10 +34,10 @@
     "default_popup": "popup.html",
     "default_title": "Unwavering Focus",
     "default_icon": {
-      "16": "assets/icon.svg",
-      "32": "assets/icon.svg",
-      "48": "assets/icon.svg",
-      "128": "assets/icon.svg"
+      "16": "assets/icon16.png",
+      "32": "assets/icon32.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
     }
   },
   "options_page": "options.html",

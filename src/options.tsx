@@ -25,11 +25,8 @@ interface OptionsProps {}
 const Options: React.FC<OptionsProps> = () => {
   const [config, setConfig] = useState<ExtensionConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saved, setSaved] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const [newDomainLimit, setNewDomainLimit] = useState(3);
-  const [saving, setSaving] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     loadConfig();
@@ -54,24 +51,6 @@ const Options: React.FC<OptionsProps> = () => {
     }
   };
 
-  const saveConfig = async () => {
-    if (!config) return;
-    
-    try {
-      setSaving(true);
-      await chrome.runtime.sendMessage({ type: 'UPDATE_CONFIG', config });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-      setStatusMessage({ text: 'Settings saved successfully!', type: 'success' });
-      console.log('Config saved successfully');
-    } catch (error) {
-      console.error('Error saving config:', error);
-      setStatusMessage({ text: 'Failed to save settings.', type: 'error' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const updateConfig = (path: string, value: any) => {
     if (!config) return;
     const keys = path.split('.');
@@ -82,6 +61,19 @@ const Options: React.FC<OptionsProps> = () => {
     }
     current[keys[keys.length - 1]] = value;
     setConfig({ ...config });
+    
+    // Auto-save immediately
+    saveConfig();
+  };
+
+  const saveConfig = async () => {
+    if (!config) return;
+    try {
+      await chrome.runtime.sendMessage({ type: 'UPDATE_CONFIG', config });
+      console.log('Config auto-saved successfully');
+    } catch (error) {
+      console.error('Error auto-saving config:', error);
+    }
   };
 
   const addDomain = () => {
@@ -139,12 +131,9 @@ const Options: React.FC<OptionsProps> = () => {
 
   const testEyeCare = async () => {
     try {
-      setStatusMessage({ text: 'Testing eye care sound...', type: 'success' });
       await chrome.runtime.sendMessage({ type: 'TEST_EYE_CARE' });
-      setStatusMessage({ text: 'Eye care reminder test successful!', type: 'success' });
       console.log('Eye care test triggered');
     } catch (error) {
-      setStatusMessage({ text: 'Failed to test eye care reminder.', type: 'error' });
       console.error('Error testing eye care:', error);
     }
   };
@@ -360,17 +349,6 @@ const Options: React.FC<OptionsProps> = () => {
             />
           </div>
         </div>
-      </div>
-
-      <div className="save-section">
-        <button className="btn btn-success save-btn" onClick={saveConfig}>
-          {saving ? 'Saving...' : 'Save Changes'}
-        </button>
-        {statusMessage && (
-          <div className={`status-message ${statusMessage.type}`}>
-            {statusMessage.text}
-          </div>
-        )}
       </div>
     </div>
   );

@@ -48,7 +48,8 @@ module.exports = {
         { from: 'manifest.json', to: 'manifest.json' },
         { from: 'src/content.css', to: 'content.css' },
         { from: 'src/assets', to: 'assets' },
-        { from: 'src/assets/sounds', to: 'sounds' }
+        { from: 'src/assets/sounds', to: 'sounds' },
+        { from: 'assets/icon*.png', to: 'assets/[name][ext]' }
       ]
     }),
     new HtmlWebpackPlugin({
