@@ -23,6 +23,19 @@ const defaultConfig: ExtensionConfig = {
       medium: "Stay consistent. Progress builds momentum.",
       low: "Regain control. Small actions today build momentum."
     }
+  },
+  youtubeDistraction: {
+    hideSecondary: true,
+    hideMasthead: true,
+    hideOwner: true,
+    hideButtonShape: true,
+    hideAuthorThumbnail: true,
+    hideSegmentedButtons: true,
+    hideGridShelf: true,
+    hideMiniGuide: true,
+    hideSections: true,
+    hideStart: true,
+    hideButtons: true
   }
 };
 
@@ -87,8 +100,8 @@ async function handleEyeCareNotification() {
   if (!config?.eyeCare.enabled) return;
 
   try {
-    // Play end sound (original version) - signals the start of the 20-minute period
-    await playEyeCareEndSound();
+    // Play start sound (inverted version) - signals the start of the 20-minute period
+    await playEyeCareStartSound();
     
     // Reset the next alarm time for countdown display
     const nextAlarmTime = Date.now() + (20 * 60 * 1000);
@@ -98,8 +111,8 @@ async function handleEyeCareNotification() {
     setTimeout(async () => {
       const currentConfig = await storage.get('config');
       if (currentConfig?.eyeCare.enabled) {
-        // Play start sound (inverted version) - signals the start of the 20-second period
-        await playEyeCareStartSound();
+        // Play end sound (original version) - signals the start of the 20-second period
+        await playEyeCareEndSound();
       }
     }, 20000); // 20 seconds
     
@@ -108,7 +121,7 @@ async function handleEyeCareNotification() {
   }
 }
 
-// Play eye care start sound (inverted - low to high)
+// Play eye care start sound (inverted - low to high) - used for 20-minute reminder
 async function playEyeCareStartSound() {
   try {
     const config = await storage.get('config');
@@ -121,12 +134,14 @@ async function playEyeCareStartSound() {
     for (const tab of tabs) {
       if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
         try {
-          await chrome.tabs.sendMessage(tab.id!, { 
+          const response = await chrome.tabs.sendMessage(tab.id!, { 
             type: 'PLAY_EYE_CARE_START_SOUND',
             volume: volume
           });
-          soundPlayed = true;
-          break;
+          if (response && response.success) {
+            soundPlayed = true;
+            break;
+          }
         } catch (error) {
           // Continue to next tab
           continue;
@@ -134,7 +149,7 @@ async function playEyeCareStartSound() {
       }
     }
     
-    // If no content script available, inject script to play sound
+    // If no content script available or audio failed, inject script to play sound
     if (!soundPlayed && tabs.length > 0) {
       const tab = tabs[0];
       if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
@@ -142,9 +157,23 @@ async function playEyeCareStartSound() {
           await chrome.scripting.executeScript({
             target: { tabId: tab.id! },
             func: (volume) => {
-              const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-start.mp3'));
-              audio.volume = volume;
-              audio.play();
+              try {
+                const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-start.mp3'));
+                audio.volume = volume;
+                audio.play().catch(error => {
+                  console.error('Failed to play start sound:', error);
+                  // Try vibration as fallback
+                  if (typeof navigator.vibrate === 'function') {
+                    navigator.vibrate([100, 50, 100]);
+                  }
+                });
+              } catch (error) {
+                console.error('Failed to create audio:', error);
+                // Try vibration as fallback
+                if (typeof navigator.vibrate === 'function') {
+                  navigator.vibrate([100, 50, 100]);
+                }
+              }
             },
             args: [volume]
           });
@@ -158,7 +187,7 @@ async function playEyeCareStartSound() {
   }
 }
 
-// Play eye care end sound (original - high to low)
+// Play eye care end sound (original - high to low) - used for 20-second reminder
 async function playEyeCareEndSound() {
   try {
     const config = await storage.get('config');
@@ -171,12 +200,14 @@ async function playEyeCareEndSound() {
     for (const tab of tabs) {
       if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
         try {
-          await chrome.tabs.sendMessage(tab.id!, { 
+          const response = await chrome.tabs.sendMessage(tab.id!, { 
             type: 'PLAY_EYE_CARE_END_SOUND',
             volume: volume
           });
-          soundPlayed = true;
-          break;
+          if (response && response.success) {
+            soundPlayed = true;
+            break;
+          }
         } catch (error) {
           // Continue to next tab
           continue;
@@ -184,7 +215,7 @@ async function playEyeCareEndSound() {
       }
     }
     
-    // If no content script available, inject script to play sound
+    // If no content script available or audio failed, inject script to play sound
     if (!soundPlayed && tabs.length > 0) {
       const tab = tabs[0];
       if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
@@ -192,9 +223,23 @@ async function playEyeCareEndSound() {
           await chrome.scripting.executeScript({
             target: { tabId: tab.id! },
             func: (volume) => {
-              const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-beep.mp3'));
-              audio.volume = volume;
-              audio.play();
+              try {
+                const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-beep.mp3'));
+                audio.volume = volume;
+                audio.play().catch(error => {
+                  console.error('Failed to play end sound:', error);
+                  // Try vibration as fallback
+                  if (typeof navigator.vibrate === 'function') {
+                    navigator.vibrate(200);
+                  }
+                });
+              } catch (error) {
+                console.error('Failed to create audio:', error);
+                // Try vibration as fallback
+                if (typeof navigator.vibrate === 'function') {
+                  navigator.vibrate(200);
+                }
+              }
             },
             args: [volume]
           });
@@ -641,6 +686,33 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           } else {
             console.log('Domain not found for increment:', message.domain);
             sendResponse({ success: false });
+          }
+        });
+        break;
+      
+      case 'UPDATE_YOUTUBE_DISTRACTION_CONFIG':
+        console.log('Handling UPDATE_YOUTUBE_DISTRACTION_CONFIG request:', message.config);
+        storage.get('config').then(config => {
+          if (config) {
+            config.youtubeDistraction = { ...config.youtubeDistraction, ...message.config };
+            storage.set('config', config).then(() => {
+              // Notify all YouTube tabs about the config change
+              chrome.tabs.query({ url: '*://*.youtube.com/*' }).then(tabs => {
+                tabs.forEach(tab => {
+                  if (tab.id) {
+                    chrome.tabs.sendMessage(tab.id, {
+                      type: 'UPDATE_YOUTUBE_DISTRACTION_CONFIG',
+                      config: message.config
+                    }).catch(error => {
+                      console.error('Error sending YouTube config update to tab:', error);
+                    });
+                  }
+                });
+              });
+              sendResponse({ success: true });
+            });
+          } else {
+            sendResponse({ error: 'Config not found' });
           }
         });
         break;

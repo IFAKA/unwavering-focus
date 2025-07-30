@@ -30,6 +30,19 @@ const defaultConfig: ExtensionConfig = {
       medium: "Stay consistent. Progress builds momentum.",
       low: "Regain control. Small actions today build momentum."
     }
+  },
+  youtubeDistraction: {
+    hideSecondary: true,
+    hideMasthead: true,
+    hideOwner: true,
+    hideButtonShape: true,
+    hideAuthorThumbnail: true,
+    hideSegmentedButtons: true,
+    hideGridShelf: true,
+    hideMiniGuide: true,
+    hideSections: true,
+    hideStart: true,
+    hideButtons: true
   }
 };
 

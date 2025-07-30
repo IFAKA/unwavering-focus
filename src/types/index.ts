@@ -41,6 +41,20 @@ export interface EyeCareConfig {
   customSound?: string;
 }
 
+export interface YouTubeDistractionConfig {
+  hideSecondary: boolean;
+  hideMasthead: boolean;
+  hideOwner: boolean;
+  hideButtonShape: boolean;
+  hideAuthorThumbnail: boolean;
+  hideSegmentedButtons: boolean;
+  hideGridShelf: boolean;
+  hideMiniGuide: boolean;
+  hideSections: boolean;
+  hideStart: boolean;
+  hideButtons: boolean;
+}
+
 export interface FocusPageConfig {
   motivationalMessage: string;
   habits: Habit[];
@@ -64,6 +78,7 @@ export interface ExtensionConfig {
   eyeCare: EyeCareConfig;
   tabLimiter: TabLimiterConfig;
   focusPage: FocusPageConfig;
+  youtubeDistraction: YouTubeDistractionConfig;
 }
 
 export interface StorageData {

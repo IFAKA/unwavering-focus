@@ -14,8 +14,15 @@ A Chrome extension designed to maximize productivity, eliminate digital distract
 - Configure domains and daily limits in options
 - **Enabled by default**
 
+### ✅ **YouTube Distraction Blocking**
+- Automatically hides distracting elements on YouTube pages
+- Removes recommended videos, comments, and engagement buttons
+- Works on video pages and search results
+- **Enabled by default**
+
 ### ✅ **Eye Care Reminder (20-20-20)**
 - Get reminded every 20 minutes to look 20 feet away for 20 seconds
+- **Corrected sound order**: Start sound (low-to-high) for 20-minute reminder, end sound (high-to-low) for 20-second reminder
 - Configurable sound volume
 - **Enabled by default**
 
@@ -99,7 +106,7 @@ A Chrome extension designed to maximize productivity, eliminate digital distract
 ```
 src/
 ├── background.ts          # Service worker (background script)
-├── content.ts            # Content script for Smart Search
+├── content.ts            # Content script for Smart Search & YouTube blocking
 ├── popup.tsx            # Extension popup UI
 ├── options.tsx          # Options page UI
 ├── focus-page.tsx       # Focus page UI
@@ -107,7 +114,8 @@ src/
 │   └── storage.ts       # Chrome storage abstraction
 ├── utils/
 │   ├── urlUtils.ts      # URL parsing and domain utilities
-│   └── habitUtils.ts    # Habit tracking utilities
+│   ├── habitUtils.ts    # Habit tracking utilities
+│   └── youtubeUtils.ts  # YouTube distraction blocking utilities
 ├── types/
 │   └── index.ts         # TypeScript type definitions
 └── assets/
@@ -151,7 +159,21 @@ src/
 The extension includes comprehensive console logging for debugging:
 - Background script logs all message handling
 - React components log data loading and errors
+- YouTube distraction blocker logs element detection and hiding
 - Check browser console for detailed information
+
+### YouTube Distraction Blocking Technical Details
+
+The YouTube distraction blocking uses a multi-layered approach:
+
+1. **Direct ID targeting**: `document.getElementById('secondary')`
+2. **Class/ID pattern matching**: Elements with classes/IDs containing "secondary", "related", "recommendations"
+3. **YouTube-specific selectors**: 
+   - `ytd-watch-next-secondary-results-renderer`
+   - `#secondary #contents`
+   - `#secondary ytd-watch-next-secondary-results-renderer`
+4. **Dynamic monitoring**: MutationObserver continuously watches for new elements
+5. **Periodic checks**: Additional checks every 2 seconds for robustness
 
 ## Current Status
 
@@ -166,6 +188,8 @@ The extension includes comprehensive console logging for debugging:
 - **Eye Care test button with working sound**
 - **Distraction blocker with full-screen overlay**
 - **Stoic quotes API integration**
+- **YouTube distraction blocking with multi-layered detection**
+- **Corrected eye care sound order**
 
 ## ✅ **Features Implemented**
 
@@ -182,8 +206,18 @@ The extension includes comprehensive console logging for debugging:
 - Shows overlay with remaining visits
 - Allows specific content access (not just homepages)
 
+✅ **YouTube Distraction Blocking**:
+- Automatically detects YouTube pages and hides distracting elements
+- **Video pages**: Hides secondary content (recommended videos sidebar), comments, like/dislike buttons, download/clip buttons
+- **Search pages**: Hides grid shelves and mini guide elements
+- **Multi-layered detection**: Uses multiple selectors to ensure comprehensive element hiding
+- **Dynamic content**: Continuously monitors for new distracting elements with MutationObserver
+- **Debug logging**: Console logs to track element detection and hiding
+- **Configurable**: Each element type can be enabled/disabled in options
+
 ✅ **Eye Care Reminder (20-20-20)**:
 - **Visual countdown timer in popup** showing time until next reminder
+- **Corrected sound order**: Start sound (low-to-high) for 20-minute reminder, end sound (high-to-low) for 20-second reminder
 - **Uses macOS system beep sound** for notifications
 - **Simple beep-only approach** - no visual notifications or alerts
 - 20-minute intervals with 20-second follow-up beep

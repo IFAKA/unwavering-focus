@@ -1,4 +1,8 @@
 import { getSearchUrl } from './utils/urlUtils';
+import { YouTubeDistractionBlocker, isYouTubePage } from './utils/youtubeUtils';
+
+// YouTube Distraction Blocker instance
+let youtubeBlocker: YouTubeDistractionBlocker | null = null;
 
 // Distraction Blocker Overlay
 class DistractionBlocker {
@@ -196,16 +200,49 @@ chrome.runtime.sendMessage({
   console.error('Error checking distracting domain:', error);
 });
 
+// Initialize YouTube distraction blocking if on YouTube
+if (isYouTubePage()) {
+  console.log('YouTube page detected, initializing distraction blocker');
+  // Get configuration from storage
+  chrome.runtime.sendMessage({ type: 'GET_STORAGE_DATA' }).then(data => {
+    if (data && data.config && data.config.youtubeDistraction) {
+      youtubeBlocker = new YouTubeDistractionBlocker(data.config.youtubeDistraction);
+    } else {
+      youtubeBlocker = new YouTubeDistractionBlocker();
+    }
+    youtubeBlocker.start();
+  }).catch(error => {
+    console.error('Error getting YouTube distraction config:', error);
+    youtubeBlocker = new YouTubeDistractionBlocker();
+    youtubeBlocker.start();
+  });
+}
+
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PLAY_EYE_CARE_END_SOUND') {
     try {
       const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-beep.mp3'));
       audio.volume = message.volume || 0.5;
+      
+      // Add error handling for audio loading
+      audio.addEventListener('error', (e) => {
+        console.error('Audio loading error:', e);
+        sendResponse({ error: 'Failed to load audio file' });
+      });
+      
       audio.play().then(() => {
         sendResponse({ success: true });
       }).catch(error => {
         console.error('Error playing eye care end sound in content script:', error);
+        // Try fallback - use system beep if available
+        try {
+          if (typeof window.navigator.vibrate === 'function') {
+            window.navigator.vibrate(200); // Short vibration as fallback
+          }
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+        }
         sendResponse({ error: 'Failed to play sound' });
       });
     } catch (error) {
@@ -219,10 +256,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-start.mp3'));
       audio.volume = message.volume || 0.5;
+      
+      // Add error handling for audio loading
+      audio.addEventListener('error', (e) => {
+        console.error('Audio loading error:', e);
+        sendResponse({ error: 'Failed to load audio file' });
+      });
+      
       audio.play().then(() => {
         sendResponse({ success: true });
       }).catch(error => {
         console.error('Error playing eye care start sound in content script:', error);
+        // Try fallback - use system beep if available
+        try {
+          if (typeof window.navigator.vibrate === 'function') {
+            window.navigator.vibrate([100, 50, 100]); // Pattern vibration as fallback
+          }
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+        }
         sendResponse({ error: 'Failed to play sound' });
       });
     } catch (error) {
@@ -254,6 +306,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }).catch(error => {
       console.error('Error checking distracting domain:', error);
     });
+    return true;
+  }
+
+  if (message.type === 'UPDATE_YOUTUBE_DISTRACTION_CONFIG') {
+    if (youtubeBlocker && isYouTubePage()) {
+      youtubeBlocker.updateConfig(message.config);
+      sendResponse({ success: true });
+    } else {
+      sendResponse({ error: 'YouTube blocker not available or not on YouTube' });
+    }
     return true;
   }
 }); 
