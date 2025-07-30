@@ -17,6 +17,13 @@ export interface Habit {
   color: string;
 }
 
+export interface Pillar {
+  id: string;
+  quote: string;
+  description: string;
+  color: string;
+}
+
 export interface HabitEntry {
   habitId: string;
   date: string;
@@ -37,6 +44,7 @@ export interface EyeCareConfig {
 export interface FocusPageConfig {
   motivationalMessage: string;
   habits: Habit[];
+  pillars: Pillar[];
   reinforcementMessages: {
     high: string;
     medium: string;

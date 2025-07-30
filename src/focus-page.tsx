@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { ExtensionConfig, Habit, HabitEntry } from './types';
+import { ExtensionConfig, Habit, HabitEntry, Pillar } from './types';
 import { 
   getHabitGridData, 
   calculateConsistency, 
@@ -24,6 +24,7 @@ const defaultConfig: ExtensionConfig = {
   focusPage: {
     motivationalMessage: "Enfócate. Tu tiempo es oro.",
     habits: [],
+    pillars: [],
     reinforcementMessages: {
       high: "Your discipline forges your excellence.",
       medium: "Stay consistent. Progress builds momentum.",
@@ -129,6 +130,7 @@ const FocusPage: React.FC<FocusPageProps> = () => {
   }
 
   const habits = config?.focusPage?.habits || [];
+  const pillars = config?.focusPage?.pillars || [];
   const masteryScore = calculateOverallMasteryScore(habits, habitEntries);
   const reinforcementMessage = getReinforcementMessage(masteryScore, config?.focusPage?.reinforcementMessages || {
     high: "Your discipline forges your excellence.",
@@ -138,32 +140,136 @@ const FocusPage: React.FC<FocusPageProps> = () => {
 
   return (
     <div className="focus-container">
-      {/* Apple Watch Style Header - Essential Metrics */}
-      <div className="watch-header">
-        <div className="metric-group">
-          <div className="metric-item">
+      {/* Header - Metrics Row */}
+      <div className="header-section">
+        <div className="metrics-row">
+          <div className="metric-card">
             <div className="metric-icon">🎯</div>
             <div className="metric-value">{masteryScore}%</div>
             <div className="metric-label">Mastery</div>
           </div>
-          <div className="metric-item">
+          <div className="metric-card">
             <div className="metric-icon">📊</div>
             <div className="metric-value">{habits.length}</div>
             <div className="metric-label">Habits</div>
           </div>
+          <div className="metric-card">
+            <div className="metric-icon">⚡</div>
+            <div className="metric-value">{pillars.length}</div>
+            <div className="metric-label">Pillars</div>
+          </div>
         </div>
       </div>
 
-      {/* Quick Actions - Minimal, Essential */}
-      <div className="quick-actions">
+      {/* Main Content - Two Column Layout */}
+      <div className="main-content">
+        {/* Left Column - Pillars */}
+        <div className="content-column">
+          <div className="section-header">
+            <span className="section-title">Core Pillars</span>
+            <span className="section-subtitle">Your fundamental triggers</span>
+          </div>
+          {pillars.length > 0 ? (
+            <div className="pillars-grid">
+              {pillars.map((pillar) => (
+                <div 
+                  key={pillar.id} 
+                  className="pillar-card"
+                  style={{ borderLeft: `4px solid ${pillar.color}` }}
+                >
+                  <div className="pillar-quote">{pillar.quote}</div>
+                  <div className="pillar-description">{pillar.description}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">⚡</div>
+              <div className="empty-title">No Pillars</div>
+              <div className="empty-message">Configure your core principles in settings</div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column - Habits */}
+        <div className="content-column">
+          <div className="section-header">
+            <span className="section-title">Today's Habits</span>
+            <span className="section-count">{habits.length}</span>
+          </div>
+          {habits.length > 0 ? (
+            <div className="habits-list">
+              {habits.slice(0, 4).map((habit) => {
+                const todayStatus = getTodayStatus(habit.id);
+                return (
+                  <div key={habit.id} className="habit-item">
+                    <div className="habit-info">
+                      <div className="habit-name" title={habit.name}>
+                        {habit.name.length > 18 ? habit.name.substring(0, 18) + '...' : habit.name}
+                      </div>
+                      <div className="habit-status">
+                        {todayStatus ? (
+                          <span className={`status-badge ${todayStatus}`}>
+                            {getStatusLabel(todayStatus)}
+                          </span>
+                        ) : (
+                          <span className="status-badge pending">Not Done</span>
+                        )}
+                      </div>
+                    </div>
+                    {!todayStatus && (
+                      <div className="habit-actions">
+                        <button 
+                          className="status-btn excellent"
+                          onClick={() => updateHabitEntry(habit.id, 'excellent')}
+                          title="Mark as excellent"
+                        >
+                          ⭐
+                        </button>
+                        <button 
+                          className="status-btn good"
+                          onClick={() => updateHabitEntry(habit.id, 'good')}
+                          title="Mark as good"
+                        >
+                          ✓
+                        </button>
+                        <button 
+                          className="status-btn not-done"
+                          onClick={() => updateHabitEntry(habit.id, 'not-done')}
+                          title="Mark as not done"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {habits.length > 4 && (
+                <div className="more-indicator">
+                  +{habits.length - 4} more habits
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">📊</div>
+              <div className="empty-title">No Habits</div>
+              <div className="empty-message">Configure habits in settings</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="actions-section">
         <button 
           className="action-btn primary"
           onClick={() => chrome.runtime.openOptionsPage()}
-          title="Configure habits"
+          title="Configure habits and settings"
         >
-          ⚙️ Configure Habits
+          ⚙️ Configure
         </button>
-        
         <div className="action-row">
           <button 
             className="action-btn secondary"
@@ -177,81 +283,12 @@ const FocusPage: React.FC<FocusPageProps> = () => {
             onClick={() => chrome.tabs.create({ url: 'https://www.google.com' })}
             title="Start working"
           >
-            🚀 Start Work
+            🚀 Work
           </button>
         </div>
       </div>
 
-      {/* Today's Habits - Compact, Scrollable */}
-      {habits.length > 0 ? (
-        <div className="habits-list">
-          <div className="list-header">
-            <span className="list-title">Today's Habits</span>
-            <span className="list-count">{habits.length}</span>
-          </div>
-          <div className="list-content">
-            {habits.slice(0, 3).map((habit) => {
-              const todayStatus = getTodayStatus(habit.id);
-              return (
-                <div key={habit.id} className="habit-item">
-                  <div className="habit-info">
-                    <div className="habit-name" title={habit.name}>
-                      {habit.name.length > 20 ? habit.name.substring(0, 20) + '...' : habit.name}
-                    </div>
-                    <div className="habit-status">
-                      {todayStatus ? (
-                        <span className={`status-badge ${todayStatus}`}>
-                          {getStatusLabel(todayStatus)}
-                        </span>
-                      ) : (
-                        <span className="status-badge pending">Not Done</span>
-                      )}
-                    </div>
-                  </div>
-                  {!todayStatus && (
-                    <div className="habit-actions">
-                      <button 
-                        className="status-btn excellent"
-                        onClick={() => updateHabitEntry(habit.id, 'excellent')}
-                        title="Mark as excellent"
-                      >
-                        ⭐
-                      </button>
-                      <button 
-                        className="status-btn good"
-                        onClick={() => updateHabitEntry(habit.id, 'good')}
-                        title="Mark as good"
-                      >
-                        ✓
-                      </button>
-                      <button 
-                        className="status-btn not-done"
-                        onClick={() => updateHabitEntry(habit.id, 'not-done')}
-                        title="Mark as not done"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {habits.length > 3 && (
-              <div className="more-indicator">
-                +{habits.length - 3} more habits
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="empty-state">
-          <div className="empty-icon">📊</div>
-          <div className="empty-title">No Habits Configured</div>
-          <div className="empty-message">Configure your pillar habits in settings to start tracking</div>
-        </div>
-      )}
-
-      {/* Status Indicators - Minimal */}
+      {/* Status Indicators */}
       <div className="status-indicators">
         <div className={`status-dot ${habits.length > 0 ? 'active' : 'inactive'}`} title="Habits Configured">
           📊

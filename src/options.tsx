@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { ExtensionConfig, DistractingDomain, Habit } from './types';
+import { ExtensionConfig, DistractingDomain, Habit, Pillar } from './types';
 import './options.scss';
 
 // Define default config locally
@@ -15,6 +15,7 @@ const defaultConfig: ExtensionConfig = {
   focusPage: {
     motivationalMessage: "Enfócate. Tu tiempo es oro.",
     habits: [],
+    pillars: [],
     reinforcementMessages: {
       high: "Your discipline forges your excellence.",
       medium: "Stay consistent. Progress builds momentum.",
@@ -30,6 +31,11 @@ const Options: React.FC<OptionsProps> = () => {
   const [loading, setLoading] = useState(true);
   const [newDomain, setNewDomain] = useState('');
   const [newDomainLimit, setNewDomainLimit] = useState(3);
+  const [newHabitName, setNewHabitName] = useState('');
+  const [newHabitColor, setNewHabitColor] = useState('#3b82f6');
+  const [newPillarQuote, setNewPillarQuote] = useState('');
+  const [newPillarDescription, setNewPillarDescription] = useState('');
+  const [newPillarColor, setNewPillarColor] = useState('#007aff');
 
   useEffect(() => {
     loadConfig();
@@ -107,13 +113,18 @@ const Options: React.FC<OptionsProps> = () => {
   const addHabit = () => {
     if (!config) return;
     
-    const newHabit: Habit = {
-      id: Date.now().toString(),
-      name: '',
-      color: '#3b82f6'
-    };
-    
-    updateConfig('focusPage.habits', [...config.focusPage.habits, newHabit]);
+    const habitName = newHabitName.trim();
+    if (habitName) {
+      const newHabit: Habit = {
+        id: Date.now().toString(),
+        name: habitName,
+        color: newHabitColor
+      };
+      
+      updateConfig('focusPage.habits', [...config.focusPage.habits, newHabit]);
+      setNewHabitName('');
+      setNewHabitColor('#3b82f6');
+    }
   };
 
   const updateHabit = (index: number, updates: Partial<Habit>) => {
@@ -130,6 +141,42 @@ const Options: React.FC<OptionsProps> = () => {
     
     const habits = config.focusPage.habits.filter((_, i) => i !== index);
     updateConfig('focusPage.habits', habits);
+  };
+
+  // Pillar management functions
+  const addPillar = () => {
+    if (!config) return;
+    
+    const pillarQuote = newPillarQuote.trim();
+    const pillarDescription = newPillarDescription.trim();
+    if (pillarQuote) {
+      const newPillar: Pillar = {
+        id: Date.now().toString(),
+        quote: pillarQuote,
+        description: pillarDescription || "Your core principle",
+        color: newPillarColor
+      };
+      
+      updateConfig('focusPage.pillars', [...config.focusPage.pillars, newPillar]);
+      setNewPillarQuote('');
+      setNewPillarDescription('');
+      setNewPillarColor('#007aff');
+    }
+  };
+
+  const updatePillar = (index: number, updates: Partial<Pillar>) => {
+    if (!config) return;
+    
+    const pillars = [...config.focusPage.pillars];
+    pillars[index] = { ...pillars[index], ...updates };
+    updateConfig('focusPage.pillars', pillars);
+  };
+
+  const removePillar = (index: number) => {
+    if (!config) return;
+    
+    const pillars = config.focusPage.pillars.filter((_, i) => i !== index);
+    updateConfig('focusPage.pillars', pillars);
   };
 
   const testEyeCare = async () => {
@@ -362,6 +409,117 @@ const Options: React.FC<OptionsProps> = () => {
               onChange={(e) => updateConfig('focusPage.reinforcementMessages.low', e.target.value)}
               placeholder="Message shown when performance is low"
             />
+          </div>
+        </div>
+
+        <div className="habits-section">
+          <h3>Habits</h3>
+          <p className="section-description">Define your daily habits to track progress and build consistency.</p>
+          
+          <div className="add-habit-form">
+            <input
+              type="text"
+              placeholder="Enter habit name"
+              value={newHabitName}
+              onChange={(e) => setNewHabitName(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addHabit()}
+            />
+            <input
+              type="color"
+              value={newHabitColor}
+              onChange={(e) => setNewHabitColor(e.target.value)}
+            />
+            <button className="btn btn-primary" onClick={addHabit}>
+              Add Habit
+            </button>
+          </div>
+
+          <div className="habits-list">
+            {config?.focusPage?.habits?.map((habit, index) => (
+              <div key={index} className="habit-item">
+                <div className="habit-inputs">
+                  <input
+                    type="text"
+                    value={habit.name}
+                    onChange={(e) => updateHabit(index, { name: e.target.value })}
+                    placeholder="Habit name"
+                  />
+                  <input
+                    type="color"
+                    value={habit.color}
+                    onChange={(e) => updateHabit(index, { color: e.target.value })}
+                  />
+                </div>
+                <button
+                  className="btn btn-danger btn-small"
+                  onClick={() => removeHabit(index)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="pillars-section">
+          <h3>Core Pillars</h3>
+          <p className="section-description">Define your fundamental principles and triggers for focus.</p>
+          
+          <div className="add-pillar-form">
+            <input
+              type="text"
+              placeholder="Enter pillar quote (e.g., EXECUTE. NOW.)"
+              value={newPillarQuote}
+              onChange={(e) => setNewPillarQuote(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addPillar()}
+            />
+            <input
+              type="text"
+              placeholder="Enter description"
+              value={newPillarDescription}
+              onChange={(e) => setNewPillarDescription(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addPillar()}
+            />
+            <input
+              type="color"
+              value={newPillarColor}
+              onChange={(e) => setNewPillarColor(e.target.value)}
+            />
+            <button className="btn btn-primary" onClick={addPillar}>
+              Add Pillar
+            </button>
+          </div>
+
+          <div className="pillars-list">
+            {config?.focusPage?.pillars?.map((pillar, index) => (
+              <div key={index} className="pillar-item">
+                <div className="pillar-inputs">
+                  <input
+                    type="text"
+                    value={pillar.quote}
+                    onChange={(e) => updatePillar(index, { quote: e.target.value })}
+                    placeholder="Pillar quote (e.g., EXECUTE. NOW.)"
+                  />
+                  <input
+                    type="text"
+                    value={pillar.description}
+                    onChange={(e) => updatePillar(index, { description: e.target.value })}
+                    placeholder="Description"
+                  />
+                  <input
+                    type="color"
+                    value={pillar.color}
+                    onChange={(e) => updatePillar(index, { color: e.target.value })}
+                  />
+                </div>
+                <button
+                  className="btn btn-danger btn-small"
+                  onClick={() => removePillar(index)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </div>

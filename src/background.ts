@@ -17,6 +17,7 @@ const defaultConfig: ExtensionConfig = {
   focusPage: {
     motivationalMessage: "Enfócate. Tu tiempo es oro.",
     habits: [],
+    pillars: [],
     reinforcementMessages: {
       high: "Your discipline forges your excellence.",
       medium: "Stay consistent. Progress builds momentum.",
