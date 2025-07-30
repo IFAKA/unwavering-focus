@@ -47,6 +47,7 @@ export interface FocusPageConfig {
 export interface ExtensionConfig {
   smartSearch: {
     enabled: boolean;
+    searchAllEnabled: boolean;
   };
   distractionBlocker: {
     enabled: boolean;

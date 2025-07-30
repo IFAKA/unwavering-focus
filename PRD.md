@@ -20,6 +20,7 @@ This document outlines the features, user experience, and technical specificatio
 * To prevent tab overload and encourage focused Browse.
 * To offer a personal performance tracking dashboard that reinforces discipline and long-term goals.
 * To ensure the extension is performant, secure, and user-friendly.
+* To implement Apple Watch design principles across all UI components for optimal glanceability and minimal interaction.
 
 ### 3. Key Features & User Experience (UX)
 
@@ -43,6 +44,8 @@ This document outlines the features, user experience, and technical specificatio
         * A clickable element (e.g., a "Search" button or the query text itself) that, when clicked, opens a new tab with the search results (default search engine or configurable).
         * A discrete "X" or "Delete" button to remove the query from the list.
     4.  An optional "Search All" button that opens all current queries in separate new tabs (with a confirmation dialog if many).
+    5. **Auto-remove behavior:** After performing a search (individual or bulk), the item(s) are automatically removed from the list.
+    6. **Configurable Search All:** Users can enable/disable the "Search All" feature from settings.
 
 #### 3.2. Distraction Blocker & Doomscrolling Prevention (DBDP)
 
@@ -54,6 +57,7 @@ This document outlines the features, user experience, and technical specificatio
     2.  The extension tracks these visits using `chrome.storage.local`.
     3.  When a user attempts to navigate to a *homepage* URL of a distracting domain (e.g., `https://www.facebook.com/`, `https://www.youtube.com/`), the counter for that domain increments.
     4.  If the counter for a domain reaches its daily limit, any subsequent attempts to access that domain's *homepage* for the rest of the day will immediately **redirect to the "Focus Page"** (see 3.5).
+    5. **Overlay System:** When a user has remaining visits, show a modal overlay with visit count and "Continue/Go Back" options.
 * **Content Exception:** The system *must not* redirect if the URL indicates specific content access (e.g., `https://www.youtube.com/watch?v=XYZ`, `https://www.youtube.com/results?search_query=ABC`, `https://www.reddit.com/r/programming/comments/123/`). This allows direct search, video watching, or sub-content access without triggering the homepage limit or redirection. Implementation should use robust URL pattern matching (e.g., regular expressions) to differentiate homepages from specific content paths.
 * **Custom Element Hider (Optional - V2 Consideration):** User can select and hide specific HTML elements on any configured website (e.g., news feeds, suggested videos). This feature might be deferred to a V2 for initial release simplicity.
 
@@ -65,6 +69,7 @@ This document outlines the features, user experience, and technical specificatio
 * **First Notification:** After 20 minutes, a **subtle, configurable audio cue** plays, and a **small, non-intrusive visual notification** (e.g., a small pop-up in the corner or a temporary change to the extension icon) appears with a message like "Look 20 feet away for 20 seconds."
 * **Second Notification:** After an additional 20 seconds, a **second subtle audio cue** plays, indicating the break is over.
 * **Configurability:** Users can enable/disable the feature, adjust sound volume, and potentially customize the sound.
+* **Countdown Display:** Show remaining time in the popup with proper 20-minute and 20-second cycle management.
 
 #### 3.4. Tab Limiter
 
@@ -85,53 +90,140 @@ This document outlines the features, user experience, and technical specificatio
 **Objective:** Redirect distractions, provide motivation, and track key personal performance metrics.
 
 * **Trigger:** This page is displayed when a user is redirected by the DBDP feature. It can also be accessed directly via a button in the extension pop-up.
-* **Layout:** A clean, minimalistic full-page HTML page.
+* **Layout:** A clean, minimalistic full-page HTML page following Apple Watch design principles.
 * **Core Components:**
-    1.  **Main Message Area:** A configurable motivational message (e.g., "Enfócate. Tu tiempo es oro." / "Unwavering Focus. Your time is your wealth.")
-    2.  **"Daily Mastery" Performance Dashboard:**
-        * **Configurable Habits:** User defines 3-5 "pillar habits" (e.g., "Morning Exercise", "Deep Work (2h)", "Journaling"). These are set in the extension's options page.
-        * **Visual Tracking Grid:** For each habit, display a horizontal row of small circles/squares representing the last **30 days** (configurable period).
-        * **Color-coded Status:**
-            * **Bright Green:** Habit completed with excellence.
-            * **Light Green:** Habit completed adequately/well.
-            * **Orange:** Habit partially completed or completed with significant effort/struggle.
-            * **Red:** Habit not completed.
-            * **Gray/Outline:** Future days or unrecorded.
-        * **Quick Daily Input:** For the *current day's* habits, display three clear buttons next to each: "Excellent", "Good", "Not Done". Clicking one records the status for that habit for the day, and the buttons for that habit become disabled/disappear until the next day.
-        * **Consistency Score:** Next to each habit, show a percentage indicating consistency over the displayed period (e.g., "85% (30 days)").
-        * **Overall "Mastery Score":** A prominent number or percentage representing the average consistency across all defined habits for the displayed period.
-    3.  **Dynamic Reinforcement Message:** Below the dashboard, a text area that displays a message dynamically generated based on the overall mastery score or consistency trends (e.g., "Your discipline forges your excellence." if high, or "Regain control. Small actions today build momentum." if low). These messages should be user-customizable in the options.
-    4.  **Simplified Trend Graphs (Optional):** Small, line graphs (similar to the image provided) for each habit showing the trend over the last 30 days, visually representing "MAKE", "RISE", "KEEP" concepts.
+    1.  **Header Metrics:** Display the 2-3 most important metrics (Mastery Score, Habit Count) in distinct cards.
+    2.  **Quick Actions:** One primary action (Configure Habits) and two secondary actions (Back, Start Work).
+    3.  **Today's Habits:** A compact, scrollable list limited to 3-5 high-priority habits with one-tap status updates.
+    4.  **Status Indicators:** Minimal, glanceable status dots at the bottom.
+    5.  **Empty State:** Helpful guidance when no habits are configured.
+* **Habit Tracking:**
+    * **Configurable Habits:** User defines 3-5 "pillar habits" (e.g., "Morning Exercise", "Deep Work (2h)", "Journaling"). These are set in the extension's options page.
+    * **Visual Status:** For each habit, display current status with color-coded badges (Excellent/Good/Not Done).
+    * **Quick Daily Input:** For the *current day's* habits, display three clear buttons: "Excellent" (⭐), "Good" (✓), "Not Done" (✕). Clicking one records the status and the buttons disappear.
+    * **Consistency Score:** Show mastery percentage prominently in the header.
+* **Dynamic Reinforcement Message:** Below the dashboard, a text area that displays a message dynamically generated based on the overall mastery score or consistency trends (e.g., "Your discipline forges your excellence." if high, or "Regain control. Small actions today build momentum." if low). These messages should be user-customizable in the options.
 
 #### 3.6. Extension Pop-up UI
 
 * Accessible by clicking the extension icon.
-* Displays the Smart Search Management list (as described in 3.1).
-* Provides quick toggles for key features (e.g., enable/disable Distraction Blocker).
-* Link to the full "Options" page.
-* Link to the "Focus Page".
-* Current tab count vs. limit.
+* **Apple Watch Design:** Follows all Apple Watch design principles for glanceability.
+* **Header Metrics:** Eye care countdown and tab counter in prominent cards.
+* **Quick Actions:** Primary action (Search All) and secondary actions (Focus, Settings).
+* **Smart Search List:** Compact, scrollable list with auto-remove functionality.
+* **Empty State:** Helpful guidance when no searches exist.
+* **Status Indicators:** Minimal status dots at the bottom.
 
 #### 3.7. Options Page
 
-* Full configuration for all features:
-    * Smart Search Management: Clear all saved searches.
-    * Distraction Blocker: Add/remove distracting domains, set daily homepage limits per domain.
-    * 20-20-20 Reminder: Enable/disable, sound selection.
-    * Tab Limiter: Set max tabs, add/remove domain/subdomain exclusions.
-    * Focus Page: Customize motivational messages, define pillar habits, reset daily counters.
+* Full configuration for all features with auto-save functionality.
+* **Apple Watch Design:** Follows all Apple Watch design principles.
+* **Smart Search Management:** Enable/disable features, configure Search All toggle.
+* **Distraction Blocker:** Add/remove distracting domains, set daily homepage limits per domain.
+* **20-20-20 Reminder:** Enable/disable, sound selection, test functionality.
+* **Tab Limiter:** Set max tabs, add/remove domain/subdomain exclusions.
+* **Focus Page:** Customize motivational messages, define pillar habits, reset daily counters.
 
-### 4. Technical Specifications & Best Practices
+### 4. Apple Watch Design Principles
+
+**Core Requirement:** All UI components must follow Apple Watch design principles for optimal glanceability and minimal interaction.
+
+#### 4.1. Core Directives
+
+* **Drastic Content Reduction:** Eliminate approximately 80% of current content, displaying only essential information.
+* **Glanceable Design:** Optimize for 2-3 second interactions.
+* **Compact Card Layouts:** Utilize card-based elements for all primary content.
+* **Minimal Interaction:** Limit user input to simple, one-tap actions. Avoid nested menus or complex workflows.
+* **Metric Prioritization:** Focus on the 2-3 most critical metrics, ensuring they are immediately visible.
+* **Clear Visual Hierarchy:** Implement a prominent primary action with supporting secondary actions.
+
+#### 4.2. Design System Requirements
+
+**Theming:**
+* Dark theme as default, with full support for a light theme.
+* CSS custom properties for consistent theming across all components.
+
+**Geometry:**
+* Rounded Corners: Apply a 12px border-radius consistently.
+* Compact Spacing: Adhere to a strict spacing scale (4px, 8px, 12px, 16px, 20px).
+
+**Typography:**
+* Utilize the SF Pro Display font family exclusively.
+* Font sizes: 10px, 12px, 13px, 14px, 16px, 18px for hierarchy.
+
+**Color Palette:**
+* Employ standard iOS-style colors:
+  * Blue: #007aff
+  * Green: #34c759
+  * Orange: #ff9500
+  * Red: #ff3b30
+  * Purple: #5856d6
+
+**Animations:**
+* Use minimal animations and transitions, prioritizing responsiveness.
+* Hover effects and subtle transforms for feedback.
+
+#### 4.3. Layout Structure
+
+**Header:**
+* Display the 2-3 most important metrics within distinct cards.
+* Metric cards with icons, values, and labels.
+
+**Quick Actions:**
+* Feature one primary action and two secondary actions, clearly identifiable.
+* Consistent button styling with hover effects.
+
+**Content:**
+* A compact, scrollable list, limited to a maximum of 3-5 high-priority items.
+* "+X more" indicators for longer lists.
+
+**Footer:**
+* Include minimal, glanceable status indicators.
+* Status dots with tooltips for feature status.
+
+#### 4.4. Interaction Principles
+
+**Single-Tap Engagement:**
+* All actions must be completable with a single tap.
+* No nested menus or complex workflows.
+
+**Immediate Feedback:**
+* Provide instant visual feedback for every user action.
+* Hover effects and status changes.
+
+**Auto-Save:**
+* All settings changes must be automatically saved without explicit user confirmation.
+* No save buttons required.
+
+#### 4.5. Information Architecture Guidelines
+
+**Priority by Frequency:**
+* Information and actions should be prioritized based on user frequency of use.
+* Most common actions should be most prominent.
+
+**At-a-Glance Status:**
+* Display counts and status indicators for immediate comprehension.
+* Color-coded badges and status dots.
+
+**Iconography & Color:**
+* Utilize clear icons and color coding for rapid recognition.
+* Consistent icon usage across all components.
+
+**Text Truncation:**
+* Implement ellipsis for any long text content to maintain conciseness.
+* Tooltips for full text on hover.
+
+### 5. Technical Specifications & Best Practices
 
 * **Technology Stack:**
     * **Manifest V3:** The extension *must* be built using Chrome Extension Manifest V3 for security and future compatibility.
     * **Frontend:** React (preferred for components, state management, and reusability) or Vue.js for the pop-up, options page, and Focus Page.
     * **State Management:** Minimal, context-based state management for React/Vue, or simple `chrome.storage.local` directly for persistent data. Avoid heavy libraries like Redux unless truly necessary for complexity.
-    * **Styling:** SCSS/CSS Modules for scoped and maintainable styles. Prioritize clean, minimalistic UI.
+    * **Styling:** SCSS/CSS Modules for scoped and maintainable styles. Prioritize clean, minimalistic UI following Apple Watch design principles.
     * **Bundler:** Webpack or Vite for efficient bundling and development workflow.
 * **Architecture:**
     * **Clean Architecture / Layered Design:**
-        * **Presentation Layer (UI):** React/Vue components for pop-up, options, Focus Page.
+        * **Presentation Layer (UI):** React/Vue components for pop-up, options, Focus Page following Apple Watch design principles.
         * **Application Layer (Services/Use Cases):** Business logic, interaction with Chrome APIs (e.g., `chrome.storage`, `chrome.tabs`, `chrome.alarms`). This layer should be framework-agnostic.
         * **Infrastructure Layer (Chrome API Wrapper):** Abstractions/wrappers around `chrome` APIs to make them testable and replaceable.
     * **Background Script:** Handle `chrome.alarms` for 20-20-20, `chrome.tabs.onUpdated` for DBDP, `chrome.tabs.onCreated`/`onRemoved` for Tab Limiter. Use event-driven programming.
@@ -152,20 +244,22 @@ This document outlines the features, user experience, and technical specificatio
 * **Security:**
     * **CSP (Content Security Policy):** Strict CSP defined in `manifest.json`.
     * **Sanitize User Input:** If any user-generated content is displayed, ensure it's properly sanitized.
-    * **Minimize Permissions:** Request only the necessary permissions in `manifest.json` (e.g., `activeTab`, `storage`, `tabs`, `scripting` for content scripts).
+    * **Minimize Permissions:** Request only the necessary permissions in `manifest.json` (e.g., `activeTab`, `storage`, `tabs`, `scripting`).
 * **Testing (Guidance for AI):**
     * Emphasize writing unit tests for core logic (e.g., URL matching, habit tracking logic).
     * Consider basic integration tests for interactions between components and Chrome APIs.
 
-### 5. Development Workflow (Implied for AI)
+### 6. Development Workflow (Implied for AI)
 
 * Modular development, focusing on one feature at a time.
 * Clear separation of concerns for easy debugging and future enhancements.
-* Prioritize core functionality first, then refine UI/UX.
+* Prioritize core functionality first, then refine UI/UX following Apple Watch design principles.
+* All UI components must adhere to the Apple Watch design system from initial development.
 
-### 6. Deliverables
+### 7. Deliverables
 
 * Complete Chrome Extension source code, ready for packaging.
 * `manifest.json` configured for Manifest V3.
 * README.md with build instructions, usage, and configuration options.
+* All UI components following Apple Watch design principles for optimal glanceability.
 * (Optional, but good to think about) Basic test suite.

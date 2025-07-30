@@ -31,7 +31,7 @@ interface HabitEntry {
 }
 
 interface ExtensionConfig {
-  smartSearch: { enabled: boolean };
+  smartSearch: { enabled: boolean; searchAllEnabled: boolean };
   distractionBlocker: { enabled: boolean; domains: DistractingDomain[] };
   eyeCare: { enabled: boolean; soundVolume: number };
   tabLimiter: { maxTabs: number; excludedDomains: string[] };
@@ -99,6 +99,7 @@ const Popup: React.FC = () => {
     try {
       const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query.query)}`;
       await chrome.tabs.create({ url: searchUrl });
+      // Remove the search item after performing the search
       await chrome.runtime.sendMessage({ type: 'DELETE_SEARCH', id: query.id });
       loadData(); // Refresh the list
     } catch (error) {
@@ -108,10 +109,17 @@ const Popup: React.FC = () => {
 
   const performAllSearches = async () => {
     try {
+      // Check if Search All is enabled in settings
+      if (!data?.config?.smartSearch?.searchAllEnabled) {
+        console.log('Search All is disabled in settings');
+        return;
+      }
+
       for (const query of data?.savedSearches || []) {
         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query.query)}`;
         await chrome.tabs.create({ url: searchUrl });
       }
+      // Remove all search items after performing all searches
       await chrome.runtime.sendMessage({ type: 'CLEAR_ALL_SEARCHES' });
       loadData();
     } catch (error) {
@@ -151,38 +159,8 @@ const Popup: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Actions - Minimal, Essential */}
-      <div className="quick-actions">
-        {hasSearches && (
-          <button 
-            className="action-btn primary"
-            onClick={performAllSearches}
-            title="Search all saved queries"
-          >
-            🔍 Search All ({savedSearches.length})
-          </button>
-        )}
-        
-        <div className="action-row">
-          <button 
-            className="action-btn secondary"
-            onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('focus-page.html') })}
-            title="Go to Focus Page"
-          >
-            🎯 Focus
-          </button>
-          <button 
-            className="action-btn secondary"
-            onClick={() => chrome.runtime.openOptionsPage()}
-            title="Open Settings"
-          >
-            ⚙️ Settings
-          </button>
-        </div>
-      </div>
-
       {/* Smart Search List - Compact, Scrollable */}
-      {hasSearches && (
+      {hasSearches ? (
         <div className="search-list">
           <div className="list-header">
             <span className="list-title">Saved Searches</span>
@@ -219,7 +197,43 @@ const Popup: React.FC = () => {
             )}
           </div>
         </div>
+      ) : (
+        <div className="empty-state">
+          <div className="empty-icon">🔍</div>
+          <div className="empty-title">No Saved Searches</div>
+          <div className="empty-message">Use Alt+Shift+S to save search queries for later</div>
+        </div>
       )}
+
+      {/* Quick Actions - Minimal, Essential */}
+      <div className="quick-actions">
+        {hasSearches && config?.smartSearch?.searchAllEnabled && (
+          <button 
+            className="action-btn primary"
+            onClick={performAllSearches}
+            title="Search all saved queries"
+          >
+            🔍 Search All ({savedSearches.length})
+          </button>
+        )}
+        
+        <div className="action-row">
+          <button 
+            className="action-btn secondary"
+            onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('focus-page.html') })}
+            title="Go to Focus Page"
+          >
+            🎯 Focus
+          </button>
+          <button 
+            className="action-btn secondary"
+            onClick={() => chrome.runtime.openOptionsPage()}
+            title="Open Settings"
+          >
+            ⚙️ Settings
+          </button>
+        </div>
+      </div>
 
       {/* Status Indicators - Minimal */}
       <div className="status-indicators">

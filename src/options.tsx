@@ -5,7 +5,10 @@ import './options.scss';
 
 // Define default config locally
 const defaultConfig: ExtensionConfig = {
-  smartSearch: { enabled: true },
+  smartSearch: { 
+    enabled: true,
+    searchAllEnabled: true 
+  },
   distractionBlocker: { enabled: true, domains: [] },
   eyeCare: { enabled: true, soundVolume: 0.5 },
   tabLimiter: { maxTabs: 3, excludedDomains: [] },
@@ -156,23 +159,35 @@ const Options: React.FC<OptionsProps> = () => {
         <p>Configure your focus and productivity preferences</p>
       </div>
 
-      <div className="section">
-        <h2><span className="section-icon">🔍</span>Smart Search Management</h2>
-        <div className="form-group">
-          <div className="toggle-group">
-            <input
-              type="checkbox"
-              id="smartSearchEnabled"
-              checked={config?.smartSearch?.enabled || false}
-              onChange={(e) => updateConfig('smartSearch.enabled', e.target.checked)}
-            />
-            <label htmlFor="smartSearchEnabled">Enable Smart Search Management</label>
+        {/* Smart Search Management */}
+        <div className="section">
+          <h3>Smart Search Management</h3>
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={config?.smartSearch?.enabled || false}
+                onChange={(e) => updateConfig('smartSearch.enabled', e.target.checked)}
+              />
+              <span className="checkmark"></span>
+              Enable Smart Search
+            </label>
+            <p className="help-text">Save search queries for later with Alt+Shift+S</p>
           </div>
-          <p className="option-description">
-            Use Alt+Shift+S to save search queries for later. Prevents rabbit-holing during focused work.
-          </p>
+          
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={config?.smartSearch?.searchAllEnabled || false}
+                onChange={(e) => updateConfig('smartSearch.searchAllEnabled', e.target.checked)}
+              />
+              <span className="checkmark"></span>
+              Enable "Search All" Button
+            </label>
+            <p className="help-text">Allow searching all saved queries at once</p>
+          </div>
         </div>
-      </div>
 
       <div className="section">
         <h2><span className="section-icon">🚫</span>Distraction Blocker</h2>

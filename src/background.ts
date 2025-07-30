@@ -7,7 +7,10 @@ const storage = StorageService.getInstance();
 
 // Initialize default configuration
 const defaultConfig: ExtensionConfig = {
-  smartSearch: { enabled: true },
+  smartSearch: { 
+    enabled: true,
+    searchAllEnabled: true 
+  },
   distractionBlocker: { enabled: true, domains: [] },
   eyeCare: { enabled: true, soundVolume: 0.5 },
   tabLimiter: { maxTabs: 3, excludedDomains: [] },
