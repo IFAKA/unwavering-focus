@@ -87,14 +87,19 @@ async function handleEyeCareNotification() {
   if (!config?.eyeCare.enabled) return;
 
   try {
-    // Play initial sound
-    await playEyeCareSound();
+    // Play end sound (original version) - signals the start of the 20-minute period
+    await playEyeCareEndSound();
+    
+    // Reset the next alarm time for countdown display
+    const nextAlarmTime = Date.now() + (20 * 60 * 1000);
+    await storage.set('nextEyeCareAlarm', nextAlarmTime);
     
     // Set up 20-second follow-up
     setTimeout(async () => {
       const currentConfig = await storage.get('config');
       if (currentConfig?.eyeCare.enabled) {
-        await playEyeCareSound();
+        // Play start sound (inverted version) - signals the start of the 20-second period
+        await playEyeCareStartSound();
       }
     }, 20000); // 20 seconds
     
@@ -103,8 +108,8 @@ async function handleEyeCareNotification() {
   }
 }
 
-// Play eye care sound
-async function playEyeCareSound() {
+// Play eye care start sound (inverted - low to high)
+async function playEyeCareStartSound() {
   try {
     const config = await storage.get('config');
     const volume = config?.eyeCare?.soundVolume || 0.5;
@@ -117,7 +122,57 @@ async function playEyeCareSound() {
       if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
         try {
           await chrome.tabs.sendMessage(tab.id!, { 
-            type: 'PLAY_EYE_CARE_SOUND',
+            type: 'PLAY_EYE_CARE_START_SOUND',
+            volume: volume
+          });
+          soundPlayed = true;
+          break;
+        } catch (error) {
+          // Continue to next tab
+          continue;
+        }
+      }
+    }
+    
+    // If no content script available, inject script to play sound
+    if (!soundPlayed && tabs.length > 0) {
+      const tab = tabs[0];
+      if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id! },
+            func: (volume) => {
+              const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-start.mp3'));
+              audio.volume = volume;
+              audio.play();
+            },
+            args: [volume]
+          });
+        } catch (error) {
+          console.error('Failed to inject start sound script:', error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error playing eye care start sound:', error);
+  }
+}
+
+// Play eye care end sound (original - high to low)
+async function playEyeCareEndSound() {
+  try {
+    const config = await storage.get('config');
+    const volume = config?.eyeCare?.soundVolume || 0.5;
+    
+    // Try to play in active tab first
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    let soundPlayed = false;
+    
+    for (const tab of tabs) {
+      if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+        try {
+          await chrome.tabs.sendMessage(tab.id!, { 
+            type: 'PLAY_EYE_CARE_END_SOUND',
             volume: volume
           });
           soundPlayed = true;
@@ -144,12 +199,12 @@ async function playEyeCareSound() {
             args: [volume]
           });
         } catch (error) {
-          console.error('Failed to inject sound script:', error);
+          console.error('Failed to inject end sound script:', error);
         }
       }
     }
   } catch (error) {
-    console.error('Error playing eye care sound:', error);
+    console.error('Error playing eye care end sound:', error);
   }
 }
 
@@ -289,6 +344,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 // Also initialize on startup
 chrome.runtime.onStartup.addListener(async () => {
   await initializeStorage();
+  await setupEyeCareAlarm();
   await updateTabCount();
 });
 
@@ -298,6 +354,19 @@ chrome.alarms.onAlarm.addListener(async (alarm: chrome.alarms.Alarm) => {
     await handleEyeCareNotification();
   }
 });
+
+// Reset eye care alarm when config changes
+async function resetEyeCareAlarm() {
+  const config = await storage.get('config');
+  if (config?.eyeCare.enabled) {
+    await setupEyeCareAlarm();
+  } else {
+    // Clear alarms if disabled
+    await chrome.alarms.clear('eyeCare20');
+    await chrome.alarms.clear('eyeCare20Second');
+    await storage.remove('nextEyeCareAlarm');
+  }
+}
 
 // Handle tab events
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
@@ -310,12 +379,10 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         const distractingDomain = config.distractionBlocker.domains.find(d => d.domain === domain);
         
         if (distractingDomain && isHomepage(tab.url)) {
-          console.log('Tab updated on distracting domain:', domain);
           // Try to send message to content script
           try {
             await chrome.tabs.sendMessage(tabId, { type: 'CHECK_DISTRACTING_DOMAIN', url: tab.url });
           } catch (error) {
-            console.log('Content script not available, injecting...');
             // Content script not available, inject it
             try {
               await chrome.scripting.executeScript({
@@ -445,22 +512,14 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
       
       case 'UPDATE_CONFIG':
         console.log('Handling UPDATE_CONFIG request:', message.config);
-        storage.set('config', message.config).then(() => {
+        storage.set('config', message.config).then(async () => {
           console.log('Config saved successfully');
+          // Reset eye care alarm if config changed
+          await resetEyeCareAlarm();
           sendResponse({ success: true });
         }).catch(error => {
           console.error('Error saving config:', error);
           sendResponse({ error: 'Failed to save config' });
-        });
-        break;
-      
-      case 'TEST_EYE_CARE':
-        console.log('Testing eye care reminder...');
-        playEyeCareSound().then(() => {
-          sendResponse({ success: true });
-        }).catch(error => {
-          console.error('Error testing eye care:', error);
-          sendResponse({ error: 'Failed to test eye care' });
         });
         break;
       

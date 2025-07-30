@@ -198,14 +198,31 @@ chrome.runtime.sendMessage({
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'PLAY_EYE_CARE_SOUND') {
+  if (message.type === 'PLAY_EYE_CARE_END_SOUND') {
     try {
       const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-beep.mp3'));
       audio.volume = message.volume || 0.5;
       audio.play().then(() => {
         sendResponse({ success: true });
       }).catch(error => {
-        console.error('Error playing eye care sound in content script:', error);
+        console.error('Error playing eye care end sound in content script:', error);
+        sendResponse({ error: 'Failed to play sound' });
+      });
+    } catch (error) {
+      console.error('Error creating audio in content script:', error);
+      sendResponse({ error: 'Failed to create audio' });
+    }
+    return true; // Keep message channel open for async response
+  }
+  
+  if (message.type === 'PLAY_EYE_CARE_START_SOUND') {
+    try {
+      const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-start.mp3'));
+      audio.volume = message.volume || 0.5;
+      audio.play().then(() => {
+        sendResponse({ success: true });
+      }).catch(error => {
+        console.error('Error playing eye care start sound in content script:', error);
         sendResponse({ error: 'Failed to play sound' });
       });
     } catch (error) {

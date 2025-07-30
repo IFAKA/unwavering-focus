@@ -57,9 +57,9 @@ const Popup: React.FC = () => {
           // Alarm is due, check if we're in the 20-second period
           const timeSinceAlarm = Math.abs(timeUntilAlarm);
           if (timeSinceAlarm <= 20000) { // 20 seconds
-            // Show 20-second countdown
+            // Show only the remaining seconds
             const remainingSeconds = Math.max(0, Math.ceil((20000 - timeSinceAlarm) / 1000));
-            setCountdown(`20s: ${remainingSeconds}s`);
+            setCountdown(`${remainingSeconds}s`);
           } else {
             // Show next 20-minute countdown
             const nextAlarm = data.nextEyeCareAlarm! + (20 * 60 * 1000);

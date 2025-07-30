@@ -62,17 +62,17 @@ const Options: React.FC<OptionsProps> = () => {
 
   const updateConfig = (path: string, value: any) => {
     if (!config) return;
+    
+    const newConfig = { ...config };
     const keys = path.split('.');
-    let current: any = config;
+    let current: any = newConfig;
+    
     for (let i = 0; i < keys.length - 1; i++) {
       current = current[keys[i]];
-      if (!current) return;
     }
-    current[keys[keys.length - 1]] = value;
-    setConfig({ ...config });
     
-    // Auto-save immediately
-    saveConfig();
+    current[keys[keys.length - 1]] = value;
+    setConfig(newConfig);
   };
 
   const saveConfig = async () => {
@@ -177,15 +177,6 @@ const Options: React.FC<OptionsProps> = () => {
     
     const pillars = config.focusPage.pillars.filter((_, i) => i !== index);
     updateConfig('focusPage.pillars', pillars);
-  };
-
-  const testEyeCare = async () => {
-    try {
-      await chrome.runtime.sendMessage({ type: 'TEST_EYE_CARE' });
-      console.log('Eye care test triggered');
-    } catch (error) {
-      console.error('Error testing eye care:', error);
-    }
   };
 
   if (loading) {
@@ -329,9 +320,6 @@ const Options: React.FC<OptionsProps> = () => {
               onChange={(e) => updateConfig('eyeCare.soundVolume', parseFloat(e.target.value))}
             />
             <div className="volume-display">{Math.round(config.eyeCare.soundVolume * 100)}%</div>
-            <button className="btn btn-warning test-btn" onClick={testEyeCare}>
-              Test Sound
-            </button>
           </div>
         )}
       </div>
