@@ -1,5 +1,6 @@
 import { getSearchUrl } from './utils/urlUtils';
 import { YouTubeDistractionBlocker, isYouTubePage } from './utils/youtubeUtils';
+import styles from './content.css';
 
 // YouTube Distraction Blocker instance
 let youtubeBlocker: YouTubeDistractionBlocker | null = null;
@@ -14,17 +15,17 @@ class DistractionBlocker {
 
     // Create overlay
     this.overlay = document.createElement('div');
-    this.overlay.className = 'distraction-blocker-overlay';
+    this.overlay.className = styles['distraction-blocker-overlay'];
     this.overlay.innerHTML = `
-      <div class="distraction-blocker-modal">
-        <div class="modal-content">
+      <div class="${styles['distraction-blocker-modal']}">
+        <div class="${styles['modal-content']}">
           <p>You're about to visit <strong>${domain}</strong></p>
-          <div class="visits-info">
-            <span class="visits-remaining">${remainingVisits} visits remaining today</span>
+          <div class="${styles['visits-info']}">
+            <span class="${styles['visits-remaining']}">${remainingVisits} visits remaining today</span>
           </div>
-          <div class="modal-actions">
-          <button class="btn-back" id="back-btn">Go Back</button>
-          <button class="btn-continue" id="continue-btn">Continue to Site</button>
+          <div class="${styles['modal-actions']}">
+          <button class="${styles['btn-back']}" id="back-btn">Go Back</button>
+          <button class="${styles['btn-continue']}" id="continue-btn">Continue to Site</button>
           </div>
         </div>
       </div>
@@ -112,14 +113,14 @@ class SmartSearchModal {
 
   private createModal(): HTMLDivElement {
     const modal = document.createElement('div');
-    modal.className = 'smart-search-modal';
+    modal.className = styles['smart-search-modal'];
     modal.innerHTML = `
-      <div class="modal-overlay">
-        <div class="modal-content">
+      <div class="${styles['modal-overlay']}">
+        <div class="${styles['modal-content']}">
             <input 
               type="text" 
               placeholder="Enter your search query..." 
-              class="search-input"
+              class="${styles['search-input']}"
               autocomplete="off"
             />
         </div>
@@ -127,8 +128,8 @@ class SmartSearchModal {
     `;
 
     // Add event listeners
-    const input = modal.querySelector('.search-input') as HTMLInputElement;
-    const overlay = modal.querySelector('.modal-overlay');
+    const input = modal.querySelector(`.${styles['search-input']}`) as HTMLInputElement;
+    const overlay = modal.querySelector(`.${styles['modal-overlay']}`);
 
     input?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {

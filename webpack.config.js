@@ -32,7 +32,23 @@ module.exports = {
       },
       {
         test: /\.css$/,
+        exclude: /content\.css$/,
         use: ['style-loader', 'css-loader']
+      },
+      {
+        test: /content\.css$/,
+        use: [
+          'style-loader',
+          {
+            loader: 'css-loader',
+            options: {
+              modules: {
+                localIdentName: '[name]__[local]___[hash:base64:5]',
+                exportLocalsConvention: 'camelCase'
+              }
+            }
+          }
+        ]
       }
     ]
   },
@@ -46,7 +62,6 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: 'manifest.json', to: 'manifest.json' },
-        { from: 'src/content.css', to: 'content.css' },
         { from: 'src/assets', to: 'assets' },
         { from: 'src/assets/sounds', to: 'sounds' },
         { from: 'assets/icon*.png', to: 'assets/[name][ext]' }
