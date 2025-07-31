@@ -2,7 +2,7 @@
 
 **Project Title:** Unwavering Focus Chrome Extension
 
-**Version:** 1.0
+**Version:** 2.0
 
 ---
 
@@ -10,42 +10,48 @@
 
 The "Unwavering Focus" Chrome Extension is designed to empower the user to maximize productivity, eliminate digital distractions, and cultivate a disciplined approach to daily activities. It aims to provide immediate, practical steps to overcome uncertainty and fear of distraction, ensuring focused action without paralysis. The core philosophy is to build authority over one's time and attention, fostering a mindset of excellence and continuous improvement, aligned with principles of autonomy and wealth creation (broadly defined as mastery over self and environment).
 
+**Core Philosophy: "Later" Concept**
+The extension implements a "Later" mindset where users can capture thoughts, ideas, and distractions for later review, freeing their mind to focus on current tasks. This is reinforced through immediate confirmation feedback and a trust-based system that assures users their thoughts are safely stored.
+
 This document outlines the features, user experience, and technical specifications required for its development, emphasizing maintainable code, clean architecture, and modern web development best practices.
 
 ### 2. Goals & Objectives
 
-* To provide a seamless, non-intrusive mechanism for deferring non-urgent searches.
+* To provide a seamless, non-intrusive mechanism for deferring thoughts and ideas for later review.
 * To effectively block and manage access to distracting websites (social media, news feeds).
 * To promote eye health and regular breaks through timely reminders.
-* To prevent tab overload and encourage focused Browse.
+* To prevent tab overload and encourage focused browsing.
 * To offer a personal performance tracking dashboard that reinforces discipline and long-term goals.
 * To ensure the extension is performant, secure, and user-friendly.
 * To implement Apple Watch design principles across all UI components for optimal glanceability and minimal interaction.
+* To provide immediate feedback for all user actions to reinforce the "Later" concept.
 
 ### 3. Key Features & User Experience (UX)
 
-#### 3.1. Smart Search Management (SSM)
+#### 3.1. Thought Capture & "Later" Management (TCLM)
 
-**Objective:** Prevent "rabbit-holing" by deferring non-urgent searches.
+**Objective:** Prevent "rabbit-holing" by deferring thoughts and ideas for later review.
 
 * **Trigger:** User presses the keyboard shortcut `Option+Shift+S`.
 * **Action:**
     1.  A small, non-intrusive, floating input modal appears centrally on the current active tab/window.
     2.  If text is selected on the page, this text should pre-populate the input field. The user can edit or type new text.
     3.  Upon pressing `Enter` in the input field:
-        * The search query is saved to a persistent list (within Chrome's `chrome.storage.local`).
+        * The thought/idea is saved to a persistent list (within Chrome's `chrome.storage.local`).
+        * A confirmation notification appears: "Saved for later" with the captured text.
         * The input modal immediately disappears.
         * **Crucially, no new tab is opened, and no search is performed at this moment.**
-* **Accessing Saved Searches:**
+* **Accessing Saved Items:**
     1.  User clicks the extension icon in the Chrome toolbar. This opens the extension's pop-up UI.
-    2.  The pop-up UI displays a clear, scrollable list of all saved search queries.
-    3.  Each listed query should have:
-        * The query text itself.
-        * A clickable element (e.g., a "Search" button or the query text itself) that, when clicked, opens a new tab with the search results (default search engine or configurable).
-        * A discrete "X" or "Delete" button to remove the query from the list.
-    4.  An optional "Search All" button that opens all current queries in separate new tabs (with a confirmation dialog if many).
+    2.  The pop-up UI displays a clear, scrollable list of all saved thoughts/ideas.
+    3.  Each listed item should have:
+        * The item text itself (truncated if too long).
+        * Action buttons that appear on hover: Search (🔍), Copy (📋), Delete (✕).
+        * Hover-activated buttons for clean interface.
+    4.  An optional "Search All" button that opens all current items as searches in separate new tabs.
     5. **Auto-remove behavior:** After performing a search (individual or bulk), the item(s) are automatically removed from the list.
     6. **Configurable Search All:** Users can enable/disable the "Search All" feature from settings.
+    7. **Copy feedback:** When copying items, show "Copied!" confirmation with item preview.
 
 #### 3.2. Distraction Blocker & Doomscrolling Prevention (DBDP)
 
@@ -65,7 +71,7 @@ This document outlines the features, user experience, and technical specificatio
 
 **Objective:** Promote eye health and short breaks to reduce strain.
 
-* **Timer:** A background timer runs in 20-minute intervals while the user is actively Browse.
+* **Timer:** A background timer runs in 20-minute intervals while the user is actively browsing.
 * **First Notification:** After 20 minutes, a **subtle, configurable audio cue** plays, and a **small, non-intrusive visual notification** (e.g., a small pop-up in the corner or a temporary change to the extension icon) appears with a message like "Look 20 feet away for 20 seconds."
 * **Second Notification:** After an additional 20 seconds, a **second subtle audio cue** plays, indicating the break is over.
 * **Configurability:** Users can enable/disable the feature, adjust sound volume, and potentially customize the sound.
@@ -73,7 +79,7 @@ This document outlines the features, user experience, and technical specificatio
 
 #### 3.4. Tab Limiter
 
-**Objective:** Prevent tab overload and encourage focused Browse.
+**Objective:** Prevent tab overload and encourage focused browsing.
 
 * **Configurable Limit:** User sets a maximum number of active tabs allowed.
 * **Alerts:** When the tab count reaches the limit, a visual alert (e.g., a badge on the extension icon, a small pop-up) is displayed.
@@ -92,11 +98,12 @@ This document outlines the features, user experience, and technical specificatio
 * **Trigger:** This page is displayed when a user is redirected by the DBDP feature. It can also be accessed directly via a button in the extension pop-up.
 * **Layout:** A clean, minimalistic full-page HTML page following Apple Watch design principles.
 * **Core Components:**
-    1.  **Header Metrics:** Display the 2-3 most important metrics (Mastery Score, Habit Count) in distinct cards.
-    2.  **Quick Actions:** One primary action (Configure Habits) and two secondary actions (Back, Start Work).
-    3.  **Today's Habits:** A compact, scrollable list limited to 3-5 high-priority habits with one-tap status updates.
-    4.  **Status Indicators:** Minimal, glanceable status dots at the bottom.
-    5.  **Empty State:** Helpful guidance when no habits are configured.
+    1.  **Header Metrics:** Display the 3 most important metrics (Mastery Score, Habit Count, Pillar Count) in distinct cards.
+    2.  **Two-Column Layout:** Left column for Core Pillars, right column for Today's Habits.
+    3.  **Quick Actions:** One primary action (Configure) and two secondary actions (Back, Work).
+    4.  **Today's Habits:** A compact, scrollable list with one-tap status updates (Excellent ⭐, Good ✓, Not Done ✕).
+    5.  **Status Indicators:** Minimal, glanceable status dots at the bottom.
+    6.  **Empty State:** Helpful guidance when no habits or pillars are configured.
 * **Habit Tracking:**
     * **Configurable Habits:** User defines 3-5 "pillar habits" (e.g., "Morning Exercise", "Deep Work (2h)", "Journaling"). These are set in the extension's options page.
     * **Visual Status:** For each habit, display current status with color-coded badges (Excellent/Good/Not Done).
@@ -110,21 +117,25 @@ This document outlines the features, user experience, and technical specificatio
 * **Apple Watch Design:** Follows all Apple Watch design principles for glanceability.
 * **Header Metrics:** Eye care countdown and tab counter in prominent cards.
 * **Quick Actions:** Primary action (Search All) and secondary actions (Focus, Settings).
-* **Smart Search List:** Compact, scrollable list with auto-remove functionality.
-* **Empty State:** Helpful guidance when no searches exist.
+* **Saved Items List:** Compact, scrollable list with hover-activated action buttons.
+* **Empty State:** Helpful guidance when no items exist.
 * **Status Indicators:** Minimal status dots at the bottom.
+* **Feedback Systems:** Copy confirmation and search status feedback.
 
 #### 3.7. Options Page
 
 * Full configuration for all features with auto-save functionality.
 * **Apple Watch Design:** Follows all Apple Watch design principles.
-* **Smart Search Management:** Enable/disable features, configure Search All toggle.
+* **Tabbed Interface:** Focus, Blocker, Care sections for organized configuration.
+* **Header Metrics:** Key metrics displayed in compact cards.
+* **Smart Thought Management:** Enable/disable features, configure Search All toggle.
 * **Distraction Blocker:** Add/remove distracting domains, set daily homepage limits per domain.
 * **20-20-20 Reminder:** Enable/disable, sound selection, test functionality.
 * **Tab Limiter:** Set max tabs, add/remove domain/subdomain exclusions.
 * **Focus Page:** Customize motivational messages, define pillar habits, reset daily counters.
+* **Auto-Save:** All settings changes automatically save without explicit user confirmation.
 
-### 4. Apple Watch Design Principles
+### 4. Apple Watch Design System
 
 **Core Requirement:** All UI components must follow Apple Watch design principles for optimal glanceability and minimal interaction.
 
@@ -190,6 +201,7 @@ This document outlines the features, user experience, and technical specificatio
 **Immediate Feedback:**
 * Provide instant visual feedback for every user action.
 * Hover effects and status changes.
+* Confirmation messages for critical actions.
 
 **Auto-Save:**
 * All settings changes must be automatically saved without explicit user confirmation.
@@ -213,6 +225,19 @@ This document outlines the features, user experience, and technical specificatio
 * Implement ellipsis for any long text content to maintain conciseness.
 * Tooltips for full text on hover.
 
+#### 4.6. Feedback Systems
+
+**Confirmation Feedback:**
+* "Saved for later" notification when capturing thoughts.
+* "Copied!" confirmation when copying items.
+* Search status feedback ("Searching..." → "Completed").
+* Settings auto-save feedback.
+
+**Visual Feedback:**
+* Hover states for all interactive elements.
+* Loading states for async operations.
+* Status indicators for feature states.
+
 ### 5. Technical Specifications & Best Practices
 
 * **Technology Stack:**
@@ -227,7 +252,7 @@ This document outlines the features, user experience, and technical specificatio
         * **Application Layer (Services/Use Cases):** Business logic, interaction with Chrome APIs (e.g., `chrome.storage`, `chrome.tabs`, `chrome.alarms`). This layer should be framework-agnostic.
         * **Infrastructure Layer (Chrome API Wrapper):** Abstractions/wrappers around `chrome` APIs to make them testable and replaceable.
     * **Background Script:** Handle `chrome.alarms` for 20-20-20, `chrome.tabs.onUpdated` for DBDP, `chrome.tabs.onCreated`/`onRemoved` for Tab Limiter. Use event-driven programming.
-    * **Content Scripts:** Inject UI elements (like the SSM input modal) into active tabs only when needed. Use isolated worlds.
+    * **Content Scripts:** Inject UI elements (like the TCLM input modal) into active tabs only when needed. Use isolated worlds.
 * **Code Quality & Maintainability:**
     * **Functional Programming (where applicable):** Embrace immutable data structures, pure functions, and avoid side effects where possible, especially in logic related to data manipulation and transformations.
     * **Modularity:** Break down code into small, reusable modules.
@@ -255,6 +280,7 @@ This document outlines the features, user experience, and technical specificatio
 * Clear separation of concerns for easy debugging and future enhancements.
 * Prioritize core functionality first, then refine UI/UX following Apple Watch design principles.
 * All UI components must adhere to the Apple Watch design system from initial development.
+* Implement feedback systems early to reinforce user trust in the "Later" concept.
 
 ### 7. Deliverables
 
@@ -262,4 +288,5 @@ This document outlines the features, user experience, and technical specificatio
 * `manifest.json` configured for Manifest V3.
 * README.md with build instructions, usage, and configuration options.
 * All UI components following Apple Watch design principles for optimal glanceability.
+* Comprehensive feedback systems for user actions.
 * (Optional, but good to think about) Basic test suite.

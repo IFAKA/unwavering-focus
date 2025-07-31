@@ -1,24 +1,44 @@
-/* Apple Watch Style Focus Page - Essential Information Only */
+/* Apple Watch Design System - Focus Page */
 
+/* CSS Custom Properties for Apple Watch Design */
 :root {
+  /* Dark theme as default */
   --bg-primary: #000000;
   --bg-secondary: #1c1c1e;
   --bg-tertiary: #2c2c2e;
   --text-primary: #ffffff;
   --text-secondary: #8e8e93;
+  --text-muted: #48484a;
+  --border-color: #38383a;
   --accent-primary: #007aff;
   --accent-secondary: #5856d6;
-  --success: #34c759;
-  --warning: #ff9500;
-  --error: #ff3b30;
+  --success-color: #34c759;
+  --danger-color: #ff3b30;
+  --warning-color: #ff9500;
+  --info-color: #5ac8fa;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --glass-bg: rgba(28, 28, 30, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  
+  /* Geometry */
   --border-radius: 12px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 12px;
   --spacing-lg: 16px;
   --spacing-xl: 20px;
+  
+  /* Typography */
+  --font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 16px;
+  --font-size-xxl: 18px;
 }
 
+/* Light theme */
 @media (prefers-color-scheme: light) {
   :root {
     --bg-primary: #ffffff;
@@ -26,15 +46,29 @@
     --bg-tertiary: #e5e5ea;
     --text-primary: #000000;
     --text-secondary: #3c3c43;
+    --text-muted: #8e8e93;
+    --border-color: #c6c6c8;
+    --shadow: rgba(0, 0, 0, 0.1);
+    --glass-bg: rgba(242, 242, 247, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.1);
   }
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-family);
   background: var(--bg-primary);
   color: var(--text-primary);
+  line-height: 1.4;
+  font-size: var(--font-size-md);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
 }
 
@@ -84,7 +118,7 @@ body {
 }
 
 .metric-label {
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -118,7 +152,7 @@ body {
 }
 
 .section-title {
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -126,13 +160,13 @@ body {
 }
 
 .section-subtitle {
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
   font-style: italic;
 }
 
 .section-count {
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   color: var(--accent-primary);
   font-weight: 600;
 }
@@ -211,7 +245,7 @@ body {
 }
 
 .status-badge {
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;
@@ -220,17 +254,17 @@ body {
 }
 
 .status-badge.excellent {
-  background: var(--success);
+  background: var(--success-color);
   color: white;
 }
 
 .status-badge.good {
-  background: var(--warning);
+  background: var(--warning-color);
   color: white;
 }
 
 .status-badge.not-done {
-  background: var(--error);
+  background: var(--danger-color);
   color: white;
 }
 
@@ -251,22 +285,22 @@ body {
   cursor: pointer;
   padding: var(--spacing-xs);
   border-radius: 4px;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   transition: all 0.2s ease;
 }
 
 .status-btn.excellent:hover {
-  background: var(--success);
+  background: var(--success-color);
   color: white;
 }
 
 .status-btn.good:hover {
-  background: var(--warning);
+  background: var(--warning-color);
   color: white;
 }
 
 .status-btn.not-done:hover {
-  background: var(--error);
+  background: var(--danger-color);
   color: white;
 }
 
@@ -274,7 +308,7 @@ body {
   text-align: center;
   padding: var(--spacing-md);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-style: italic;
 }
 
@@ -380,12 +414,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   transition: all 0.2s ease;
 }
 
 .status-dot.active {
-  background: var(--success);
+  background: var(--success-color);
   color: white;
 }
 
