@@ -190,7 +190,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   background: var(--bg-secondary);
   border-radius: var(--border-radius);
   border: 1px solid var(--bg-tertiary);
@@ -212,6 +212,7 @@ body {
 }
 
 .search-btn,
+.copy-btn,
 .delete-btn {
   border: none;
   background: none;
@@ -225,6 +226,11 @@ body {
 
 .search-btn:hover {
   background: var(--accent-primary);
+  color: white;
+}
+
+.copy-btn:hover {
+  background: var(--accent-secondary);
   color: white;
 }
 

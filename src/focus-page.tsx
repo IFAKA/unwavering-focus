@@ -16,7 +16,7 @@ import './focus-page.scss';
 const defaultConfig: ExtensionConfig = {
   smartSearch: { 
     enabled: true,
-    searchAllEnabled: true 
+    searchAllEnabled: false 
   },
   distractionBlocker: { enabled: true, domains: [] },
   eyeCare: { enabled: true, soundVolume: 0.5 },

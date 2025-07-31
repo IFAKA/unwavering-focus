@@ -136,6 +136,16 @@ const Popup: React.FC = () => {
     }
   };
 
+  const copySearchQuery = async (query: string) => {
+    try {
+      await navigator.clipboard.writeText(query);
+      // Optional: Show a brief success indicator
+      console.log('Query copied to clipboard:', query);
+    } catch (error) {
+      console.error('Error copying query:', error);
+    }
+  };
+
   if (!data) {
     return <div className="popup-loading">Loading...</div>;
   }
@@ -179,6 +189,13 @@ const Popup: React.FC = () => {
                     title="Search this query"
                   >
                     🔍
+                  </button>
+                  <button 
+                    className="copy-btn"
+                    onClick={() => copySearchQuery(query.query)}
+                    title="Copy this query"
+                  >
+                    📋
                   </button>
                   <button 
                     className="delete-btn"
