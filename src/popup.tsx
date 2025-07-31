@@ -45,6 +45,10 @@ interface ExtensionConfig {
 const Popup: React.FC = () => {
   const [data, setData] = useState<StorageData | null>(null);
   const [countdown, setCountdown] = useState<string>('--:--');
+  const [searchStatus, setSearchStatus] = useState<'idle' | 'searching' | 'completed'>('idle');
+  const [searchingQuery, setSearchingQuery] = useState<string>('');
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+  const [copiedItem, setCopiedItem] = useState<string>('');
 
   // Countdown timer for eye care
   useEffect(() => {
@@ -97,13 +101,26 @@ const Popup: React.FC = () => {
 
   const performSearch = async (query: SearchQuery) => {
     try {
+      setSearchStatus('searching');
+      setSearchingQuery(query.query);
+      
       const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query.query)}`;
       await chrome.tabs.create({ url: searchUrl });
+      
       // Remove the search item after performing the search
       await chrome.runtime.sendMessage({ type: 'DELETE_SEARCH', id: query.id });
+      
+      setSearchStatus('completed');
+      setTimeout(() => {
+        setSearchStatus('idle');
+        setSearchingQuery('');
+      }, 1500);
+      
       loadData(); // Refresh the list
     } catch (error) {
       console.error('Error performing search:', error);
+      setSearchStatus('idle');
+      setSearchingQuery('');
     }
   };
 
@@ -115,15 +132,28 @@ const Popup: React.FC = () => {
         return;
       }
 
+      setSearchStatus('searching');
+      setSearchingQuery('All items');
+
       for (const query of data?.savedSearches || []) {
         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query.query)}`;
         await chrome.tabs.create({ url: searchUrl });
       }
+      
       // Remove all search items after performing all searches
       await chrome.runtime.sendMessage({ type: 'CLEAR_ALL_SEARCHES' });
+      
+      setSearchStatus('completed');
+      setTimeout(() => {
+        setSearchStatus('idle');
+        setSearchingQuery('');
+      }, 1500);
+      
       loadData();
     } catch (error) {
       console.error('Error performing all searches:', error);
+      setSearchStatus('idle');
+      setSearchingQuery('');
     }
   };
 
@@ -132,17 +162,23 @@ const Popup: React.FC = () => {
       await chrome.runtime.sendMessage({ type: 'DELETE_SEARCH', id });
       loadData();
     } catch (error) {
-      console.error('Error deleting search:', error);
+      console.error('Error deleting item:', error);
     }
   };
 
   const copySearchQuery = async (query: string) => {
     try {
       await navigator.clipboard.writeText(query);
-      // Optional: Show a brief success indicator
-      console.log('Query copied to clipboard:', query);
+      // Show copy feedback
+      setCopyStatus('copied');
+      setCopiedItem(query);
+      setTimeout(() => {
+        setCopyStatus('idle');
+        setCopiedItem('');
+      }, 1500);
+      console.log('Item copied to clipboard:', query);
     } catch (error) {
-      console.error('Error copying query:', error);
+      console.error('Error copying item:', error);
     }
   };
 
@@ -155,6 +191,40 @@ const Popup: React.FC = () => {
 
   return (
     <div className="popup-container">
+      {/* Copy Status Feedback */}
+      {copyStatus === 'copied' && (
+        <div className="copy-status">
+          <div className="copy-content">
+            <div className="copy-icon">📋</div>
+            <div className="copy-text">Copied!</div>
+            {copiedItem && (
+              <div className="copy-item">
+                "{copiedItem.length > 20 ? copiedItem.substring(0, 20) + '...' : copiedItem}"
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Search Status Feedback */}
+      {searchStatus !== 'idle' && (
+        <div className={`search-status ${searchStatus}`}>
+          <div className="status-content">
+            <div className="status-icon">
+              {searchStatus === 'searching' ? '🔍' : '✓'}
+            </div>
+            <div className="status-text">
+              {searchStatus === 'searching' ? 'Searching...' : 'Completed'}
+            </div>
+            {searchingQuery && (
+              <div className="status-query">
+                "{searchingQuery.length > 20 ? searchingQuery.substring(0, 20) + '...' : searchingQuery}"
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Apple Watch Style Header - Essential Metrics */}
       <div className="watch-header">
         <div className="metric-group">
@@ -173,11 +243,11 @@ const Popup: React.FC = () => {
       {hasSearches ? (
         <div className="search-list">
           <div className="list-header">
-            <span className="list-title">Saved Searches</span>
+            <span className="list-title">Saved Items</span>
             <span className="list-count">{savedSearches.length}</span>
           </div>
           <div className="list-content">
-            {savedSearches.slice(0, 3).map((query) => (
+            {savedSearches.map((query) => (
               <div key={query.id} className="search-item">
                 <div className="search-text" title={query.query}>
                   {query.query.length > 25 ? query.query.substring(0, 25) + '...' : query.query}
@@ -186,39 +256,34 @@ const Popup: React.FC = () => {
                   <button 
                     className="search-btn"
                     onClick={() => performSearch(query)}
-                    title="Search this query"
+                    title="Search this item"
                   >
                     🔍
                   </button>
                   <button 
                     className="copy-btn"
                     onClick={() => copySearchQuery(query.query)}
-                    title="Copy this query"
+                    title="Copy this item"
                   >
                     📋
                   </button>
                   <button 
                     className="delete-btn"
                     onClick={() => deleteSearch(query.id)}
-                    title="Delete this query"
+                    title="Delete this item"
                   >
                     ✕
                   </button>
                 </div>
               </div>
             ))}
-            {savedSearches.length > 3 && (
-              <div className="more-indicator">
-                +{savedSearches.length - 3} more
-              </div>
-            )}
           </div>
         </div>
       ) : (
         <div className="empty-state">
-          <div className="empty-icon">🔍</div>
-          <div className="empty-title">No Saved Searches</div>
-          <div className="empty-message">Use Alt+Shift+S to save search queries for later</div>
+          <div className="empty-icon">💭</div>
+          <div className="empty-title">No Saved Items</div>
+          <div className="empty-message">Use Alt+Shift+S to save thoughts and ideas for later</div>
         </div>
       )}
 
@@ -228,7 +293,7 @@ const Popup: React.FC = () => {
           <button 
             className="action-btn primary"
             onClick={performAllSearches}
-            title="Search all saved queries"
+            title="Search all saved items"
           >
             🔍 Search All ({savedSearches.length})
           </button>

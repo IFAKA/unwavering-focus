@@ -74,6 +74,7 @@ class DistractionBlocker {
 class SmartSearchModal {
   private modal: HTMLDivElement | null = null;
   private input: HTMLInputElement | null = null;
+  private confirmation: HTMLDivElement | null = null;
 
   constructor() {
     // Remove keyboard listener since it's now handled by command
@@ -119,10 +120,13 @@ class SmartSearchModal {
         <div class="${styles['modal-content']}">
             <input 
               type="text" 
-              placeholder="Enter your search query..." 
+              placeholder="Enter your thought or idea..." 
               class="${styles['search-input']}"
               autocomplete="off"
             />
+            <div class="${styles['input-info']}">
+              <span class="${styles['search-count']}">Press Enter to save for later</span>
+            </div>
         </div>
       </div>
     `;
@@ -133,7 +137,7 @@ class SmartSearchModal {
 
     input?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        this.saveSearch();
+        this.saveThought();
       } else if (e.key === 'Escape') {
         this.hide();
       }
@@ -157,19 +161,68 @@ class SmartSearchModal {
     }
   }
 
-  private async saveSearch() {
-    const query = this.input?.value.trim();
-    if (!query) return;
+  private showConfirmation(query: string) {
+    // Create confirmation element
+    this.confirmation = document.createElement('div');
+    this.confirmation.className = styles['save-confirmation'];
+    this.confirmation.innerHTML = `
+      <div class="${styles['confirmation-content']}">
+        <div class="${styles['confirmation-header']}">
+          <div class="${styles['confirmation-icon']}">✓</div>
+          <div class="${styles['confirmation-title']}">Saved for later</div>
+        </div>
+        <div class="${styles['confirmation-query']}">"${query}"</div>
+      </div>
+    `;
+
+    // Add to page
+    document.body.appendChild(this.confirmation);
+
+    // Animate in
+    setTimeout(() => {
+      this.confirmation?.classList.add(styles['confirmation-visible']);
+    }, 10);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+      this.hideConfirmation();
+    }, 3000);
+  }
+
+  private hideConfirmation() {
+    if (this.confirmation) {
+      this.confirmation.classList.remove(styles['confirmation-visible']);
+      setTimeout(() => {
+        if (this.confirmation && this.confirmation.parentNode) {
+          this.confirmation.parentNode.removeChild(this.confirmation);
+          this.confirmation = null;
+        }
+      }, 300);
+    }
+  }
+
+  private async saveThought() {
+    const thought = this.input?.value.trim();
+    if (!thought) return;
 
     try {
       await chrome.runtime.sendMessage({ 
         type: 'SAVE_SEARCH', 
-        query 
+        query: thought 
       });
-      console.log('Search saved:', query);
-      this.hide();
+      console.log('Thought saved:', thought);
+      
+      // Show confirmation before hiding modal
+      this.showConfirmation(thought);
+      
+      // Hide modal after a short delay
+      setTimeout(() => {
+        this.hide();
+      }, 500);
     } catch (error) {
-      console.error('Error saving search:', error);
+      console.error('Error saving thought:', error);
+      // Still hide modal even if there's an error
+      this.hide();
     }
   }
 }

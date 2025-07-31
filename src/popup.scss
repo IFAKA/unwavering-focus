@@ -194,6 +194,12 @@ body {
   background: var(--bg-secondary);
   border-radius: var(--border-radius);
   border: 1px solid var(--bg-tertiary);
+  transition: all 0.2s ease;
+}
+
+.search-item:hover {
+  background: var(--bg-tertiary);
+  transform: translateY(-1px);
 }
 
 .search-text {
@@ -209,6 +215,12 @@ body {
 .search-actions {
   display: flex;
   gap: var(--spacing-xs);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.search-item:hover .search-actions {
+  opacity: 1;
 }
 
 .search-btn,
@@ -275,6 +287,105 @@ body {
 .status-dot.inactive {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
+}
+
+/* Search Status Feedback */
+.search-status {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--bg-tertiary);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.search-status.searching {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+}
+
+.search-status.completed {
+  background: var(--success);
+  color: var(--bg-primary);
+}
+
+.status-content {
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.status-icon {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.status-text {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.status-query {
+  font-size: 12px;
+  opacity: 0.9;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Copy Status Feedback */
+.copy-status {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1001;
+  background: var(--accent-secondary);
+  color: var(--bg-primary);
+  animation: slideDown 0.3s ease-out;
+}
+
+.copy-content {
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.copy-icon {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.copy-text {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.copy-item {
+  font-size: 12px;
+  opacity: 0.9;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Loading State */
