@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingSpinner from './components/LoadingSpinner';
 import './popup.scss';
 
 interface StorageData {
@@ -30,17 +32,7 @@ interface HabitEntry {
   status: 'excellent' | 'good' | 'not_done';
 }
 
-interface ExtensionConfig {
-  smartSearch: { enabled: boolean; searchAllEnabled: boolean };
-  distractionBlocker: { enabled: boolean; domains: DistractingDomain[] };
-  eyeCare: { enabled: boolean; soundVolume: number };
-  tabLimiter: { maxTabs: number; excludedDomains: string[] };
-  focusPage: {
-    motivationalMessage: string;
-    habits: string[];
-    reinforcementMessages: { high: string; medium: string; low: string };
-  };
-}
+import { ExtensionConfig, DEFAULT_CONFIG } from './types';
 
 const Popup: React.FC = () => {
   const [data, setData] = useState<StorageData | null>(null);
@@ -183,7 +175,7 @@ const Popup: React.FC = () => {
   };
 
   if (!data) {
-    return <div className="popup-loading">Loading...</div>;
+    return <LoadingSpinner size="medium" message="Loading extension..." />;
   }
 
   const { savedSearches, config, tabCount } = data;
@@ -336,5 +328,10 @@ const Popup: React.FC = () => {
 // Render the popup
 const root = document.getElementById('root');
 if (root) {
-  ReactDOM.render(<Popup />, root);
+  ReactDOM.render(
+    <ErrorBoundary>
+      <Popup />
+    </ErrorBoundary>,
+    root
+  );
 } 

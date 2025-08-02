@@ -1,4 +1,4 @@
-export interface SavedSearch {
+export interface SearchQuery {
   id: string;
   query: string;
   timestamp: number;
@@ -9,6 +9,12 @@ export interface DistractingDomain {
   dailyLimit: number;
   currentCount: number;
   lastResetDate: string;
+}
+
+export interface HabitEntry {
+  habitId: string;
+  date: string;
+  status: 'excellent' | 'good' | 'not-done';
 }
 
 export interface Habit {
@@ -24,71 +30,100 @@ export interface Pillar {
   color: string;
 }
 
-export interface HabitEntry {
-  habitId: string;
-  date: string;
-  status: 'excellent' | 'good' | 'not-done';
-}
-
-export interface TabLimiterConfig {
-  maxTabs: number;
-  excludedDomains: string[];
-}
-
-export interface EyeCareConfig {
-  enabled: boolean;
-  soundVolume: number;
-  customSound?: string;
-}
-
-export interface YouTubeDistractionConfig {
-  hideSecondary: boolean;
-  hideMasthead: boolean;
-  hideOwner: boolean;
-  hideButtonShape: boolean;
-  hideAuthorThumbnail: boolean;
-  hideSegmentedButtons: boolean;
-  hideGridShelf: boolean;
-  hideMiniGuide: boolean;
-  hideSections: boolean;
-  hideStart: boolean;
-  hideButtons: boolean;
-}
-
-export interface FocusPageConfig {
-  motivationalMessage: string;
-  habits: Habit[];
-  pillars: Pillar[];
-  reinforcementMessages: {
-    high: string;
-    medium: string;
-    low: string;
-  };
-}
-
 export interface ExtensionConfig {
-  smartSearch: {
-    enabled: boolean;
-    searchAllEnabled: boolean;
+  smartSearch: { 
+    enabled: boolean; 
+    searchAllEnabled: boolean 
   };
-  distractionBlocker: {
-    enabled: boolean;
-    domains: DistractingDomain[];
+  distractionBlocker: { 
+    enabled: boolean; 
+    domains: DistractingDomain[] 
   };
-  eyeCare: EyeCareConfig;
-  tabLimiter: TabLimiterConfig;
-  focusPage: FocusPageConfig;
-  youtubeDistraction: YouTubeDistractionConfig;
+  eyeCare: { 
+    enabled: boolean; 
+    soundVolume: number 
+  };
+  tabLimiter: { 
+    maxTabs: number; 
+    excludedDomains: string[] 
+  };
+  focusPage: {
+    motivationalMessage: string;
+    habits: Habit[];
+    pillars: Pillar[];
+    reinforcementMessages: { 
+      high: string; 
+      medium: string; 
+      low: string 
+    };
+  };
+  youtubeDistraction: {
+    hideSecondary: boolean;
+    hideMasthead: boolean;
+    hideOwner: boolean;
+    hideButtonShape: boolean;
+    hideAuthorThumbnail: boolean;
+    hideSegmentedButtons: boolean;
+    hideGridShelf: boolean;
+    hideMiniGuide: boolean;
+    hideSections: boolean;
+    hideStart: boolean;
+    hideButtons: boolean;
+  };
 }
 
+// Storage data interface
 export interface StorageData {
-  savedSearches: SavedSearch[];
+  savedSearches: SearchQuery[];
   distractingDomains: DistractingDomain[];
   habitEntries: HabitEntry[];
   config: ExtensionConfig;
-  eyeCareLastNotification?: number;
-  nextEyeCareAlarm?: number;
   tabCount: number;
+  nextEyeCareAlarm?: number;
 }
 
-export type StorageKey = keyof StorageData; 
+// Storage key type
+export type StorageKey = keyof StorageData;
+
+// Centralized default configuration
+export const DEFAULT_CONFIG: ExtensionConfig = {
+  smartSearch: { 
+    enabled: true,
+    searchAllEnabled: false 
+  },
+  distractionBlocker: { 
+    enabled: true, 
+    domains: [] 
+  },
+  eyeCare: { 
+    enabled: true, 
+    soundVolume: 0.5 
+  },
+  tabLimiter: { 
+    maxTabs: 3, 
+    excludedDomains: [] 
+  },
+  focusPage: {
+    motivationalMessage: "Enfócate. Tu tiempo es oro.",
+    habits: [],
+    pillars: [],
+    reinforcementMessages: {
+      high: "Your discipline forges your excellence.",
+      medium: "Stay consistent. Progress builds momentum.",
+      low: "Regain control. Small actions today build momentum."
+    }
+  },
+  youtubeDistraction: {
+    hideSecondary: true,
+    hideMasthead: true,
+    hideOwner: true,
+    hideButtonShape: true,
+    hideAuthorThumbnail: true,
+    hideSegmentedButtons: true,
+    hideGridShelf: true,
+    hideMiniGuide: true,
+    hideSections: true,
+    hideStart: true,
+    hideButtons: true
+  }
+}; 

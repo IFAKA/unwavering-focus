@@ -1,43 +1,12 @@
 import StorageService from './services/storage';
 import { shouldRedirect, extractDomain, isHomepage } from './utils/urlUtils';
 import { getDateString } from './utils/habitUtils';
-import { DistractingDomain, ExtensionConfig } from './types';
+import { DistractingDomain, ExtensionConfig, DEFAULT_CONFIG, SearchQuery, HabitEntry } from './types';
 
 const storage = StorageService.getInstance();
 
-// Initialize default configuration
-const defaultConfig: ExtensionConfig = {
-  smartSearch: { 
-    enabled: true,
-    searchAllEnabled: false 
-  },
-  distractionBlocker: { enabled: true, domains: [] },
-  eyeCare: { enabled: true, soundVolume: 0.5 },
-  tabLimiter: { maxTabs: 3, excludedDomains: [] },
-  focusPage: {
-    motivationalMessage: "Enfócate. Tu tiempo es oro.",
-    habits: [],
-    pillars: [],
-    reinforcementMessages: {
-      high: "Your discipline forges your excellence.",
-      medium: "Stay consistent. Progress builds momentum.",
-      low: "Regain control. Small actions today build momentum."
-    }
-  },
-  youtubeDistraction: {
-    hideSecondary: true,
-    hideMasthead: true,
-    hideOwner: true,
-    hideButtonShape: true,
-    hideAuthorThumbnail: true,
-    hideSegmentedButtons: true,
-    hideGridShelf: true,
-    hideMiniGuide: true,
-    hideSections: true,
-    hideStart: true,
-    hideButtons: true
-  }
-};
+// Use centralized default configuration
+const defaultConfig = DEFAULT_CONFIG;
 
 // Initialize storage with default values
 async function initializeStorage() {
@@ -260,7 +229,7 @@ async function handleTabUpdate(tabId: number, changeInfo: chrome.tabs.TabChangeI
   const config = await storage.get('config');
   if (!config?.distractionBlocker.enabled) return;
 
-  const shouldBlock = shouldRedirect(tab.url, config.distractionBlocker.domains.map(d => d.domain));
+  const shouldBlock = shouldRedirect(tab.url, config.distractionBlocker.domains.map((d: DistractingDomain) => d.domain));
   
   if (shouldBlock) {
     const domain = extractDomain(tab.url);
@@ -307,7 +276,7 @@ async function handleTabCreated(tab: chrome.tabs.Tab) {
   const nonExcludedTabs = tabs.filter((t: chrome.tabs.Tab) => {
     if (!t.url || t.id === tab.id) return false; // Exclude the new tab from count
     const domain = extractDomain(t.url);
-    return !excludedDomains.some(excluded => 
+    return !excludedDomains.some((excluded: string) => 
       domain === excluded || domain.endsWith(`.${excluded}`)
     );
   });
@@ -421,7 +390,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       const config = await storage.get('config');
       if (config?.distractionBlocker?.enabled) {
         const domain = extractDomain(tab.url);
-        const distractingDomain = config.distractionBlocker.domains.find(d => d.domain === domain);
+        const distractingDomain = config.distractionBlocker.domains.find((d: DistractingDomain) => d.domain === domain);
         
         if (distractingDomain && isHomepage(tab.url)) {
           // Try to send message to content script
@@ -502,8 +471,8 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
         break;
       
       case 'SAVE_SEARCH':
-        storage.get('savedSearches').then(searches => {
-          const currentSearches = searches || [];
+        storage.get('savedSearches').then((searches: SearchQuery[] | undefined) => {
+          const currentSearches: SearchQuery[] = searches || [];
           const newSearch = {
             id: Date.now().toString(),
             query: message.query,
@@ -517,9 +486,9 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
         break;
       
       case 'DELETE_SEARCH':
-        storage.get('savedSearches').then(searches => {
-          const currentSearches = searches || [];
-          const filteredSearches = currentSearches.filter(s => s.id !== message.id);
+        storage.get('savedSearches').then((searches: SearchQuery[] | undefined) => {
+          const currentSearches: SearchQuery[] = searches || [];
+          const filteredSearches = currentSearches.filter((s: SearchQuery) => s.id !== message.id);
           storage.set('savedSearches', filteredSearches).then(() => {
             sendResponse({ success: true });
           });
@@ -533,9 +502,9 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
         break;
       
       case 'UPDATE_HABIT_ENTRY':
-        storage.get('habitEntries').then(entries => {
-          const currentEntries = entries || [];
-          const existingIndex = currentEntries.findIndex(e => 
+        storage.get('habitEntries').then((entries: HabitEntry[] | undefined) => {
+          const currentEntries: HabitEntry[] = entries || [];
+          const existingIndex = currentEntries.findIndex((e: HabitEntry) => 
             e.habitId === message.habitId && e.date === message.date
           );
           
@@ -583,7 +552,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
 
           const domain = extractDomain(message.url);
           console.log('Extracted domain:', domain);
-          console.log('Looking for domain in:', config.distractionBlocker.domains.map(d => d.domain));
+          console.log('Looking for domain in:', config.distractionBlocker.domains.map((d: DistractingDomain) => d.domain));
           
           // More flexible domain matching
           const distractingDomain = config.distractionBlocker.domains.find(d => {
@@ -661,7 +630,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           }
 
           // Use the same flexible domain matching
-          const distractingDomain = config.distractionBlocker.domains.find(d => {
+          const distractingDomain = config.distractionBlocker.domains.find((d: DistractingDomain) => {
             const configuredDomain = d.domain.toLowerCase();
             const requestedDomain = message.domain.toLowerCase();
             

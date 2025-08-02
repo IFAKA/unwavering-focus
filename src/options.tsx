@@ -1,41 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import ErrorBoundary from './components/ErrorBoundary';
 import { ExtensionConfig, DistractingDomain, Habit, Pillar } from './types';
 import './options.scss';
 
-// Define default config locally
-const defaultConfig: ExtensionConfig = {
-  smartSearch: { 
-    enabled: true,
-    searchAllEnabled: false 
-  },
-  distractionBlocker: { enabled: true, domains: [] },
-  eyeCare: { enabled: true, soundVolume: 0.5 },
-  tabLimiter: { maxTabs: 3, excludedDomains: [] },
-  focusPage: {
-    motivationalMessage: "Enfócate. Tu tiempo es oro.",
-    habits: [],
-    pillars: [],
-    reinforcementMessages: {
-      high: "Your discipline forges your excellence.",
-      medium: "Stay consistent. Progress builds momentum.",
-      low: "Regain control. Small actions today build momentum."
-    }
-  },
-  youtubeDistraction: {
-    hideSecondary: true,
-    hideMasthead: true,
-    hideOwner: true,
-    hideButtonShape: true,
-    hideAuthorThumbnail: true,
-    hideSegmentedButtons: true,
-    hideGridShelf: true,
-    hideMiniGuide: true,
-    hideSections: true,
-    hideStart: true,
-    hideButtons: true
-  }
-};
+import { DEFAULT_CONFIG } from './types';
+
+// Use centralized default config
+const defaultConfig = DEFAULT_CONFIG;
 
 interface OptionsProps {}
 
@@ -579,5 +551,10 @@ const Options: React.FC<OptionsProps> = () => {
 // Render the options page
 const root = document.getElementById('root');
 if (root) {
-  ReactDOM.render(<Options />, root);
+  ReactDOM.render(
+    <ErrorBoundary>
+      <Options />
+    </ErrorBoundary>,
+    root
+  );
 } 

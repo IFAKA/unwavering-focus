@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import ErrorBoundary from './components/ErrorBoundary';
 import { ExtensionConfig, Habit, HabitEntry, Pillar } from './types';
 import { 
   getHabitGridData, 
@@ -12,39 +13,10 @@ import {
 } from './utils/habitUtils';
 import './focus-page.scss';
 
-// Define default config locally
-const defaultConfig: ExtensionConfig = {
-  smartSearch: { 
-    enabled: true,
-    searchAllEnabled: false 
-  },
-  distractionBlocker: { enabled: true, domains: [] },
-  eyeCare: { enabled: true, soundVolume: 0.5 },
-  tabLimiter: { maxTabs: 3, excludedDomains: [] },
-  focusPage: {
-    motivationalMessage: "Enfócate. Tu tiempo es oro.",
-    habits: [],
-    pillars: [],
-    reinforcementMessages: {
-      high: "Your discipline forges your excellence.",
-      medium: "Stay consistent. Progress builds momentum.",
-      low: "Regain control. Small actions today build momentum."
-    }
-  },
-  youtubeDistraction: {
-    hideSecondary: true,
-    hideMasthead: true,
-    hideOwner: true,
-    hideButtonShape: true,
-    hideAuthorThumbnail: true,
-    hideSegmentedButtons: true,
-    hideGridShelf: true,
-    hideMiniGuide: true,
-    hideSections: true,
-    hideStart: true,
-    hideButtons: true
-  }
-};
+import { DEFAULT_CONFIG } from './types';
+
+// Use centralized default config
+const defaultConfig = DEFAULT_CONFIG;
 
 interface StoicQuote {
   text: string;
@@ -320,5 +292,10 @@ const FocusPage: React.FC<FocusPageProps> = () => {
 // Render the focus page
 const root = document.getElementById('root');
 if (root) {
-  ReactDOM.render(<FocusPage />, root);
+  ReactDOM.render(
+    <ErrorBoundary>
+      <FocusPage />
+    </ErrorBoundary>,
+    root
+  );
 } 

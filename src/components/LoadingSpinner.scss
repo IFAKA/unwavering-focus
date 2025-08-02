@@ -1,0 +1,72 @@
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+
+  &.small {
+    .spinner-container {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .loading-message {
+      font-size: 12px;
+      margin-top: var(--spacing-sm);
+    }
+  }
+
+  &.medium {
+    .spinner-container {
+      width: 32px;
+      height: 32px;
+    }
+    
+    .loading-message {
+      font-size: 14px;
+      margin-top: var(--spacing-md);
+    }
+  }
+
+  &.large {
+    .spinner-container {
+      width: 48px;
+      height: 48px;
+    }
+    
+    .loading-message {
+      font-size: 16px;
+      margin-top: var(--spacing-lg);
+    }
+  }
+}
+
+.spinner-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--bg-tertiary);
+  border-top: 2px solid var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-message {
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-align: center;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+} 
