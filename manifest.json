@@ -39,7 +39,6 @@
       "128": "assets/icon128.png"
     }
   },
-  "options_page": "options.html",
   "web_accessible_resources": [
     {
       "resources": ["focus-page.html", "sounds/*", "assets/*"],

@@ -250,8 +250,8 @@ const FocusPage: React.FC<FocusPageProps> = () => {
       <div className="actions-section">
         <button 
           className="action-btn primary"
-          onClick={() => chrome.runtime.openOptionsPage()}
-          title="Configure habits and settings"
+          onClick={() => window.close()}
+          title="Open extension popup to configure settings"
         >
           ⚙️ Configure
         </button>

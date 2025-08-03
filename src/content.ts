@@ -1,6 +1,5 @@
-import { getSearchUrl } from './utils/urlUtils';
-import { YouTubeDistractionBlocker, isYouTubePage } from './utils/youtubeUtils';
 import styles from './content.css';
+import { YouTubeDistractionBlocker, isYouTubePage } from './utils/youtubeUtils';
 
 // YouTube Distraction Blocker instance
 let youtubeBlocker: YouTubeDistractionBlocker | null = null;
@@ -123,6 +122,7 @@ class SmartSearchModal {
               placeholder="Enter your thought or idea..." 
               class="${styles['search-input']}"
               autocomplete="off"
+              autofocus
             />
             <div class="${styles['input-info']}">
               <span class="${styles['search-count']}">Press Enter to save for later</span>

@@ -7,7 +7,6 @@ module.exports = {
     background: './src/background.ts',
     content: './src/content.ts',
     popup: './src/popup.tsx',
-    options: './src/options.tsx',
     'focus-page': './src/focus-page.tsx'
   },
   output: {
@@ -71,11 +70,6 @@ module.exports = {
       template: './src/popup.html',
       filename: 'popup.html',
       chunks: ['popup']
-    }),
-    new HtmlWebpackPlugin({
-      template: './src/options.html',
-      filename: 'options.html',
-      chunks: ['options']
     }),
     new HtmlWebpackPlugin({
       template: './src/focus-page.html',
