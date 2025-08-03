@@ -34,7 +34,6 @@ const Popup: React.FC = () => {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
   const [copiedItem, setCopiedItem] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'main' | 'smartSearch' | 'tabLimiter' | 'habits' | 'pillars' | 'blocker' | 'care'>('main');
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   
   // Settings form states
   const [newDomain, setNewDomain] = useState('');
@@ -116,20 +115,13 @@ const Popup: React.FC = () => {
     const configToUse = configToSave || data?.config;
     if (!configToUse) return;
     
-    setSaveStatus('saving');
     try {
       const response = await chrome.runtime.sendMessage({ type: 'UPDATE_CONFIG', config: configToUse });
-      if (response && response.success) {
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      } else {
-        setSaveStatus('error');
-        setTimeout(() => setSaveStatus('idle'), 3000);
+      if (!response || !response.success) {
+        console.error('Error saving config:', response);
       }
     } catch (error) {
       console.error('Error auto-saving config:', error);
-      setSaveStatus('error');
-      setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
 
@@ -143,12 +135,9 @@ const Popup: React.FC = () => {
         h => h.name.toLowerCase() === habitName.toLowerCase()
       );
       
-      if (existingHabit) {
-        // Show error feedback
-        setSaveStatus('error');
-        setTimeout(() => setSaveStatus('idle'), 2000);
-        return;
-      }
+              if (existingHabit) {
+          return;
+        }
 
       const newHabit: Habit = {
         id: Date.now().toString(),
@@ -216,12 +205,9 @@ const Popup: React.FC = () => {
         p => p.quote.toLowerCase() === pillarQuote.toLowerCase()
       );
       
-      if (existingPillar) {
-        // Show error feedback
-        setSaveStatus('error');
-        setTimeout(() => setSaveStatus('idle'), 2000);
-        return;
-      }
+              if (existingPillar) {
+          return;
+        }
 
       const newPillar: Pillar = {
         id: Date.now().toString(),
@@ -290,12 +276,9 @@ const Popup: React.FC = () => {
         d => d.domain.toLowerCase() === domainName
       );
       
-      if (existingDomain) {
-        // Show error feedback
-        setSaveStatus('error');
-        setTimeout(() => setSaveStatus('idle'), 2000);
-        return;
-      }
+              if (existingDomain) {
+          return;
+        }
 
       const newDomainObj: DistractingDomain = {
         domain: domainName,
@@ -535,14 +518,6 @@ const Popup: React.FC = () => {
           </div>
         </div>
         
-        {/* Save Status Indicator */}
-        {saveStatus !== 'idle' && (
-          <div className={`save-status ${saveStatus}`}>
-            {saveStatus === 'saving' && <span className="save-icon">⏳</span>}
-            {saveStatus === 'saved' && <span className="save-icon">✓</span>}
-            {saveStatus === 'error' && <span className="save-icon">✕</span>}
-          </div>
-        )}
       </div>
 
       {/* Smart Search List - Compact, Scrollable */}
