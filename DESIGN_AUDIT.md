@@ -55,18 +55,20 @@ All components use the same design tokens:
 ## Component Audit
 
 ### 1. **Popup Component** ✅
-- **Header Metrics**: 3 metric cards with icons, values, labels
+- **Header Metrics**: Clickable metric cards that navigate to their respective settings
 - **Saved Items List**: Hover-activated action buttons
-- **Quick Actions**: Primary + secondary action buttons
-- **Status Indicators**: Bottom status dots
+- **Quick Actions**: Primary action (Search All) + secondary action (Focus Page)
+- **Status Indicators**: Save status indicator in header
 - **Feedback Systems**: Copy and search status feedback
+- **Navigation**: Direct navigation from metric cards to settings sections
 
-### 2. **Options Page** ✅
-- **Header Metrics**: 3 metric cards (Habits, Blocked, Tab Limit)
-- **Tabbed Interface**: Focus, Blocker, Care sections
+### 2. **Settings Sections** ✅
+- **Focus Settings**: Smart Search, Tab Limiter, Habits, Pillars
+- **Blocker Settings**: Distraction Blocker domains
+- **Care Settings**: Eye Care timer and settings
 - **Compact Forms**: Toggle switches with proper styling
 - **Auto-Save**: All changes save automatically
-- **Status Indicators**: Bottom status dots
+- **Back Navigation**: Consistent back button to main view
 
 ### 3. **Focus Page** ✅
 - **Header Metrics**: 3 metric cards (Mastery, Habits, Pillars)
@@ -81,6 +83,21 @@ All components use the same design tokens:
 - **Confirmation Feedback**: "Saved for later" notification
 - **Typography**: SF Pro Display font family
 
+## Navigation Patterns
+
+### ✅ **Direct Navigation**
+- **Metric Cards**: Click any metric card to go directly to its settings
+- **Eye Care Card** → Eye Care Settings
+- **Tab Limiter Card** → Focus Settings (Tab Limiter section)
+- **Smart Search Card** → Focus Settings (Smart Search section)
+- **Distraction Blocker Card** → Blocker Settings
+
+### ✅ **Simplified UX**
+- **No Settings Button**: Removed redundant settings button
+- **Intuitive Navigation**: Metric cards serve as navigation shortcuts
+- **Contextual Access**: Each feature's settings are one click away
+- **Apple Watch Compliance**: Minimal taps, maximum efficiency
+
 ## Feedback Systems
 
 ### ✅ **Confirmation Feedback**
@@ -90,10 +107,11 @@ All components use the same design tokens:
 4. **Settings Save**: Auto-save with visual feedback
 
 ### ✅ **Visual Feedback**
-1. **Hover States**: All interactive elements
+1. **Hover States**: All interactive elements including metric cards
 2. **Loading States**: Async operations
 3. **Status Indicators**: Feature states
 4. **Transitions**: Smooth animations (0.2s ease)
+5. **Click Feedback**: Scale animations on metric card clicks
 
 ## Interaction Patterns
 
@@ -101,11 +119,13 @@ All components use the same design tokens:
 - All primary actions complete with one tap
 - No nested menus or complex workflows
 - Immediate feedback for all actions
+- Direct navigation from metric cards
 
 ### ✅ **Hover-Activated Elements**
 - Action buttons appear on hover
 - Clean interface when not interacting
 - Smooth opacity transitions
+- Metric cards show hover states
 
 ### ✅ **Auto-Save**
 - All settings changes save automatically
@@ -115,9 +135,10 @@ All components use the same design tokens:
 ## Layout Patterns
 
 ### ✅ **Header Section**
-- Metric cards in prominent position
-- 2-3 most important metrics
-- Consistent card styling across components
+- Clickable metric cards in prominent position
+- 2-4 most important metrics (conditional based on active features)
+- Consistent card styling with hover effects
+- Direct navigation to settings sections
 
 ### ✅ **Content Section**
 - Compact, scrollable lists
@@ -125,12 +146,12 @@ All components use the same design tokens:
 - "+X more" indicators for longer lists
 
 ### ✅ **Actions Section**
-- One primary action
-- Two secondary actions
+- One primary action (Search All when applicable)
+- One secondary action (Focus Page)
 - Consistent button styling
 
 ### ✅ **Status Indicators**
-- Bottom status dots
+- Save status in header
 - Minimal, glanceable design
 - Tooltips for feature status
 
@@ -176,6 +197,7 @@ All components use the same design tokens:
 2. Implement immediate feedback systems
 3. Follow single-tap interaction patterns
 4. Ensure auto-save functionality
+5. Use direct navigation patterns
 
 ### ✅ **Code Organization**
 1. Use TypeScript for type safety
@@ -196,6 +218,13 @@ All components use the same design tokens:
 - [ ] Hover states function correctly
 - [ ] Feedback systems provide clear confirmation
 - [ ] Auto-save works for all settings
+- [ ] Metric card navigation works correctly
+
+### ✅ **Navigation**
+- [ ] Metric cards navigate to correct sections
+- [ ] Back navigation works consistently
+- [ ] No broken navigation paths
+- [ ] Settings sections load properly
 
 ### ✅ **Accessibility**
 - [ ] Color contrast meets standards

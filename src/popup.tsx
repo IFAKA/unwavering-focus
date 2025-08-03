@@ -33,7 +33,7 @@ const Popup: React.FC = () => {
   const [searchingQuery, setSearchingQuery] = useState<string>('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
   const [copiedItem, setCopiedItem] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'main' | 'focus' | 'blocker' | 'care'>('main');
+  const [activeTab, setActiveTab] = useState<'main' | 'smartSearch' | 'tabLimiter' | 'habits' | 'pillars' | 'blocker' | 'care'>('main');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   
   // Settings form states
@@ -439,18 +439,22 @@ const Popup: React.FC = () => {
   const hasSearches = savedSearches.length > 0;
 
   // Helper function to check if a feature is active
-  const isFeatureActive = (feature: string) => {
+
+
+  const getFeatureStatus = (feature: string) => {
+    if (!config) return 'disabled';
+    
     switch (feature) {
-      case 'smartSearch':
-        return config?.smartSearch?.enabled;
-      case 'distractionBlocker':
-        return config?.distractionBlocker?.enabled;
       case 'eyeCare':
-        return config?.eyeCare?.enabled;
+        return config.eyeCare?.enabled ? 'active' : 'disabled';
       case 'tabLimiter':
-        return (config?.tabLimiter?.maxTabs || 0) > 0;
+        return (config.tabLimiter?.maxTabs || 0) > 0 ? 'active' : 'disabled';
+      case 'smartSearch':
+        return config.smartSearch?.enabled ? 'active' : 'disabled';
+      case 'distractionBlocker':
+        return config.distractionBlocker?.enabled ? 'active' : 'disabled';
       default:
-        return false;
+        return 'disabled';
     }
   };
 
@@ -490,33 +494,45 @@ const Popup: React.FC = () => {
         </div>
       )}
 
-      {/* Apple Watch Style Header - Essential Metrics with Status Indicators */}
+      {/* Apple Watch Style Header - Focused, Essential Metrics */}
       <div className="watch-header">
         <div className="metric-group">
-          {isFeatureActive('eyeCare') && (
-            <div className="metric-item" title='Eye Care'>
-              <div className="metric-icon">👁</div>
-              <div className="metric-value">{countdown}</div>
-            </div>
-          )}
-          {isFeatureActive('tabLimiter') && (
-            <div className="metric-item" title='Tab Limiter'>
-              <div className="metric-icon">📑</div>
-              <div className="metric-value">{tabCount}/{config?.tabLimiter?.maxTabs || 3}</div>
-            </div>
-          )}
-          {isFeatureActive('smartSearch') && (
-            <div className="metric-item" title='Smart Search'>
-              <div className="metric-icon">💭</div>
-              <div className="metric-value">{savedSearches.length}</div>
-            </div>
-          )}
-          {isFeatureActive('distractionBlocker') && (
-            <div className="metric-item" title='Distraction Blocker'>
-              <div className="metric-icon">🚫</div>
-              <div className="metric-value">{config?.distractionBlocker?.domains?.length || 0}</div>
-            </div>
-          )}
+          <div 
+            className={`metric-item clickable ${getFeatureStatus('eyeCare') === 'disabled' ? 'disabled' : ''}`}
+            title={getFeatureStatus('eyeCare') === 'disabled' ? 'Eye Care (Disabled) - Click to enable' : 'Eye Care Settings'}
+            onClick={() => setActiveTab('care')}
+          >
+            <div className="metric-icon">👁</div>
+            <div className="metric-value">{countdown}</div>
+            {getFeatureStatus('eyeCare') === 'disabled' && <div className="disabled-indicator">OFF</div>}
+          </div>
+          <div 
+            className={`metric-item clickable ${getFeatureStatus('tabLimiter') === 'disabled' ? 'disabled' : ''}`}
+            title={getFeatureStatus('tabLimiter') === 'disabled' ? 'Tab Limiter (Disabled) - Click to enable' : 'Tab Limiter Settings'}
+            onClick={() => setActiveTab('tabLimiter')}
+          >
+            <div className="metric-icon">📑</div>
+            <div className="metric-value">{tabCount}/{config?.tabLimiter?.maxTabs || 3}</div>
+            {getFeatureStatus('tabLimiter') === 'disabled' && <div className="disabled-indicator">OFF</div>}
+          </div>
+          <div 
+            className={`metric-item clickable ${getFeatureStatus('smartSearch') === 'disabled' ? 'disabled' : ''}`}
+            title={getFeatureStatus('smartSearch') === 'disabled' ? 'Smart Search (Disabled) - Click to enable' : 'Smart Search Settings'}
+            onClick={() => setActiveTab('smartSearch')}
+          >
+            <div className="metric-icon">💭</div>
+            <div className="metric-value">{savedSearches.length}</div>
+            {getFeatureStatus('smartSearch') === 'disabled' && <div className="disabled-indicator">OFF</div>}
+          </div>
+          <div 
+            className={`metric-item clickable ${getFeatureStatus('distractionBlocker') === 'disabled' ? 'disabled' : ''}`}
+            title={getFeatureStatus('distractionBlocker') === 'disabled' ? 'Distraction Blocker (Disabled) - Click to enable' : 'Distraction Blocker Settings'}
+            onClick={() => setActiveTab('blocker')}
+          >
+            <div className="metric-icon">🚫</div>
+            <div className="metric-value">{config?.distractionBlocker?.domains?.length || 0}</div>
+            {getFeatureStatus('distractionBlocker') === 'disabled' && <div className="disabled-indicator">OFF</div>}
+          </div>
         </div>
         
         {/* Save Status Indicator */}
@@ -597,23 +613,16 @@ const Popup: React.FC = () => {
           >
             🎯 Focus
           </button>
-          <button 
-            className="action-btn secondary"
-            onClick={() => setActiveTab('focus')}
-            title="Focus Settings"
-          >
-            ⚙️ Settings
-          </button>
         </div>
       </div>
     </>
   );
 
-  const renderFocusTab = () => (
+  const renderSmartSearchTab = () => (
     <div className="settings-content">
       <div className="settings-header">
         <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
-        <h3>Focus Settings</h3>
+        <h3>Smart Search Settings</h3>
       </div>
       
       <div className="settings-section">
@@ -639,7 +648,45 @@ const Popup: React.FC = () => {
           Search All Feature
         </label>
       </div>
+    </div>
+  );
 
+  const renderTabLimiterTab = () => (
+    <div className="settings-content">
+      <div className="settings-header">
+        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+        <h3>Tab Limiter Settings</h3>
+      </div>
+      
+      <div className="settings-section">
+        <div className="section-header">
+          <h4>Maximum Tabs</h4>
+          <span className="section-subtitle">Limit the number of open tabs</span>
+        </div>
+        <div className="limit-control">
+          <input
+            type="range"
+            min="1"
+            max="10"
+            value={config?.tabLimiter?.maxTabs || 3}
+            onChange={(e) => updateConfig('tabLimiter.maxTabs', parseInt(e.target.value))}
+            className="limit-slider"
+          />
+          <span className="limit-value">{config?.tabLimiter?.maxTabs || 3}</span>
+        </div>
+      </div>
+
+
+    </div>
+  );
+
+  const renderHabitsTab = () => (
+    <div className="settings-content">
+      <div className="settings-header">
+        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+        <h3>Habits Settings</h3>
+      </div>
+      
       <div className="settings-section">
         <div className="section-header">
           <h4>Habits ({config?.focusPage?.habits?.length || 0}/5)</h4>
@@ -650,27 +697,31 @@ const Popup: React.FC = () => {
           <div className="scrollable-list">
             {config.focusPage.habits.map((habit, index) => (
               <div key={index} className="list-item">
-                <input
-                  type="text"
-                  value={habit.name}
-                  onChange={(e) => updateHabit(index, { name: e.target.value })}
-                  placeholder="Habit name"
-                  maxLength={20}
-                  className="item-input"
-                />
-                <input
-                  type="color"
-                  value={habit.color}
-                  onChange={(e) => updateHabit(index, { color: e.target.value })}
-                  className="color-input"
-                />
-                <button
-                  className="remove-btn"
-                  onClick={() => removeHabit(index)}
-                  title="Remove habit"
-                >
-                  ×
-                </button>
+                <div className="item-content">
+                  <input
+                    type="text"
+                    value={habit.name}
+                    onChange={(e) => updateHabit(index, { name: e.target.value })}
+                    placeholder="Habit name"
+                    maxLength={20}
+                    className="item-input"
+                  />
+                  <input
+                    type="color"
+                    value={habit.color}
+                    onChange={(e) => updateHabit(index, { color: e.target.value })}
+                    className="color-input"
+                  />
+                </div>
+                <div className="item-actions">
+                  <button
+                    className="remove-btn"
+                    onClick={() => removeHabit(index)}
+                    title="Remove habit"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -703,7 +754,16 @@ const Popup: React.FC = () => {
           </div>
         )}
       </div>
+    </div>
+  );
 
+  const renderPillarsTab = () => (
+    <div className="settings-content">
+      <div className="settings-header">
+        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+        <h3>Pillars Settings</h3>
+      </div>
+      
       <div className="settings-section">
         <div className="section-header">
           <h4>Pillars ({config?.focusPage?.pillars?.length || 0}/3)</h4>
@@ -714,56 +774,78 @@ const Popup: React.FC = () => {
           <div className="scrollable-list">
             {config.focusPage.pillars.map((pillar, index) => (
               <div key={index} className="list-item">
-                <input
-                  type="text"
-                  value={pillar.quote}
-                  onChange={(e) => updatePillar(index, { quote: e.target.value })}
-                  placeholder="EXECUTE. NOW."
-                  maxLength={15}
-                  className="item-input"
-                />
-                <input
-                  type="color"
-                  value={pillar.color}
-                  onChange={(e) => updatePillar(index, { color: e.target.value })}
-                  className="color-input"
-                />
-                <button
-                  className="remove-btn"
-                  onClick={() => removePillar(index)}
-                  title="Remove pillar"
-                >
-                  ×
-                </button>
+                <div className="item-content">
+                  <input
+                    type="text"
+                    value={pillar.quote}
+                    onChange={(e) => updatePillar(index, { quote: e.target.value })}
+                    placeholder="Pillar quote"
+                    maxLength={50}
+                    className="item-input"
+                  />
+                  <textarea
+                    value={pillar.description}
+                    onChange={(e) => updatePillar(index, { description: e.target.value })}
+                    placeholder="Description"
+                    maxLength={100}
+                    className="item-textarea"
+                  />
+                  <input
+                    type="color"
+                    value={pillar.color}
+                    onChange={(e) => updatePillar(index, { color: e.target.value })}
+                    className="color-input"
+                  />
+                </div>
+                <div className="item-actions">
+                  <button
+                    className="remove-btn"
+                    onClick={() => removePillar(index)}
+                    title="Remove pillar"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="empty-list">
-            <div className="empty-icon">🎯</div>
+            <div className="empty-icon">🏛️</div>
             <div className="empty-title">No Pillars</div>
-            <div className="empty-message">Add pillars to guide your focus</div>
+            <div className="empty-message">Add pillars to define your core principles</div>
           </div>
         )}
 
         {config?.focusPage?.pillars?.length < 3 && (
           <div className="add-item">
-            <input
-              type="text"
-              placeholder="Add pillar"
-              value={newPillarQuote}
-              onChange={(e) => setNewPillarQuote(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addPillar()}
-              maxLength={15}
-              className="add-input"
-            />
-            <input
-              type="color"
-              value={newPillarColor}
-              onChange={(e) => setNewPillarColor(e.target.value)}
-              className="color-input"
-            />
-            <button className="add-btn" onClick={addPillar} title="Add pillar">+</button>
+            <div className="pillar-form">
+              <input
+                type="text"
+                placeholder="Add pillar quote"
+                value={newPillarQuote}
+                onChange={(e) => setNewPillarQuote(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addPillar()}
+                maxLength={50}
+                className="add-input"
+              />
+              <textarea
+                placeholder="Description"
+                value={newPillarDescription}
+                onChange={(e) => setNewPillarDescription(e.target.value)}
+                maxLength={100}
+                className="add-textarea"
+              />
+            </div>
+            <div className="pillar-form-actions">
+              <input
+                type="color"
+                value={newPillarColor}
+                onChange={(e) => setNewPillarColor(e.target.value)}
+                className="color-input"
+              />
+              <button className="add-btn" onClick={addPillar} title="Add pillar">+</button>
+            </div>
           </div>
         )}
       </div>
@@ -800,17 +882,21 @@ const Popup: React.FC = () => {
             <div className="scrollable-list">
               {config.distractionBlocker.domains.map((domain, index) => (
                 <div key={index} className="list-item">
-                  <div className="domain-info">
-                    <div className="domain-name">{domain.domain}</div>
-                    <div className="domain-limit">{domain.dailyLimit}/day</div>
+                  <div className="item-content">
+                    <div className="domain-info">
+                      <div className="domain-name">{domain.domain}</div>
+                      <div className="domain-limit">{domain.dailyLimit}/day</div>
+                    </div>
                   </div>
-                  <button
-                    className="remove-btn"
-                    onClick={() => removeDomain(index)}
-                    title="Remove domain"
-                  >
-                    ×
-                  </button>
+                  <div className="item-actions">
+                    <button
+                      className="remove-btn"
+                      onClick={() => removeDomain(index)}
+                      title="Remove domain"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -846,33 +932,7 @@ const Popup: React.FC = () => {
         </div>
       )}
 
-      <div className="settings-section">
-        <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={(config?.tabLimiter?.maxTabs || 0) > 0}
-            onChange={(e) => updateConfig('tabLimiter.maxTabs', e.target.checked ? 3 : 0)}
-          />
-          <span className="toggle-slider"></span>
-          Tab Limiter
-        </label>
-      </div>
 
-      {(config?.tabLimiter?.maxTabs || 0) > 0 && (
-        <div className="settings-section">
-          <div className="tab-limit-section">
-            <input
-              type="number"
-              value={config?.tabLimiter?.maxTabs || 3}
-              onChange={(e) => updateConfig('tabLimiter.maxTabs', parseInt(e.target.value))}
-              min="1"
-              max="10"
-              className="tab-limit-input"
-            />
-            <span className="tab-limit-label">max tabs</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -918,33 +978,12 @@ const Popup: React.FC = () => {
 
   return (
     <div className="popup-container">
-      {/* Tab Navigation */}
-      {activeTab !== 'main' && (
-        <div className="tab-navigation">
-          <button 
-            className={`tab-btn ${activeTab === 'focus' ? 'active' : ''}`}
-            onClick={() => setActiveTab('focus')}
-          >
-            Focus
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'blocker' ? 'active' : ''}`}
-            onClick={() => setActiveTab('blocker')}
-          >
-            Blocker
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'care' ? 'active' : ''}`}
-            onClick={() => setActiveTab('care')}
-          >
-            Care
-          </button>
-        </div>
-      )}
-
       {/* Content based on active tab */}
       {activeTab === 'main' && renderMainTab()}
-      {activeTab === 'focus' && renderFocusTab()}
+      {activeTab === 'smartSearch' && renderSmartSearchTab()}
+      {activeTab === 'tabLimiter' && renderTabLimiterTab()}
+      {activeTab === 'habits' && renderHabitsTab()}
+      {activeTab === 'pillars' && renderPillarsTab()}
       {activeTab === 'blocker' && renderBlockerTab()}
       {activeTab === 'care' && renderCareTab()}
     </div>
