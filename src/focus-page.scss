@@ -330,6 +330,9 @@ body {
   border-radius: var(--border-radius);
   padding: var(--spacing-md);
   border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .add-trigger {
@@ -359,6 +362,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  flex: 1;
+  overflow-y: auto;
+  max-height: 300px;
 }
 
 .trigger-item {
@@ -369,12 +375,112 @@ body {
   border-radius: 8px;
   padding: var(--spacing-sm);
   border: 1px solid var(--border-color);
+  position: relative;
 }
 
 .trigger-text {
   font-size: var(--font-size-sm);
   color: var(--text-primary);
   flex: 1;
+}
+
+.trigger-item .remove-btn {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.trigger-item:hover .remove-btn {
+  opacity: 1;
+}
+
+/* Mindful Reminders */
+.reminders-section {
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.add-reminder {
+  margin-bottom: var(--spacing-md);
+}
+
+.reminder-input {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: var(--spacing-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-sm);
+  font-family: inherit;
+}
+
+.reminder-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+}
+
+.reminder-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.reminders-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  flex: 1;
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.reminder-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--accent-primary);
+  position: relative;
+}
+
+.reminder-content {
+  flex: 1;
+}
+
+.reminder-quote {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.3;
+}
+
+.reminder-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.reminder-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.reminder-item:hover .reminder-actions {
+  opacity: 1;
 }
 
 /* Add Button */
@@ -714,6 +820,7 @@ body {
   padding: var(--spacing-xl);
   text-align: center;
   flex: 1;
+  min-height: 120px;
 }
 
 .empty-icon {
@@ -733,6 +840,7 @@ body {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   line-height: 1.4;
+  max-width: 200px;
 }
 
 /* Actions Section */
@@ -902,5 +1010,28 @@ body {
 }
 
 .pillars-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+} 
+
+/* Scrollbar Styling */
+.triggers-list::-webkit-scrollbar,
+.reminders-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.triggers-list::-webkit-scrollbar-track,
+.reminders-list::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 2px;
+}
+
+.triggers-list::-webkit-scrollbar-thumb,
+.reminders-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.triggers-list::-webkit-scrollbar-thumb:hover,
+.reminders-list::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 } 

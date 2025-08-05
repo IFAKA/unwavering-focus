@@ -15,7 +15,6 @@ const FocusPage: React.FC<FocusPageProps> = () => {
   const [loading, setLoading] = useState(true);
   
   // Mindfulness states
-  const [isEditing, setIsEditing] = useState(false);
   const [mindfulMoment, setMindfulMoment] = useState(false);
   const [dopamineTriggers, setDopamineTriggers] = useState<string[]>([]);
   const [currentTrigger, setCurrentTrigger] = useState<string>('');
@@ -29,7 +28,6 @@ const FocusPage: React.FC<FocusPageProps> = () => {
   const [mindfulQuote, setMindfulQuote] = useState<string>('');
   
   // Editing states for pillars
-  const [editingPillarIndex, setEditingPillarIndex] = useState<number | null>(null);
   const [newPillarQuote, setNewPillarQuote] = useState('');
   const [newPillarDescription, setNewPillarDescription] = useState('');
   const [newPillarColor, setNewPillarColor] = useState('#007aff');
@@ -173,7 +171,7 @@ const FocusPage: React.FC<FocusPageProps> = () => {
     const newPillar: Pillar = {
       id: Date.now().toString(),
       quote: pillarQuote,
-      description: newPillarDescription || "Your mindful reminder",
+      description: newPillarDescription.trim() || "",
       color: newPillarColor
     };
     
@@ -208,7 +206,6 @@ const FocusPage: React.FC<FocusPageProps> = () => {
     
     setConfig(updatedConfig);
     await saveConfig(updatedConfig);
-    setEditingPillarIndex(null);
   };
 
   const removePillar = async (index: number) => {
@@ -225,7 +222,6 @@ const FocusPage: React.FC<FocusPageProps> = () => {
     
     setConfig(updatedConfig);
     await saveConfig(updatedConfig);
-    setEditingPillarIndex(null);
   };
 
   const addDopamineTrigger = () => {
@@ -295,13 +291,6 @@ const FocusPage: React.FC<FocusPageProps> = () => {
               <div className="metric-label">Reminders</div>
             </div>
           </div>
-          <button 
-            className={`edit-toggle ${isEditing ? 'active' : ''}`}
-            onClick={() => setIsEditing(!isEditing)}
-            title={isEditing ? 'Exit edit mode' : 'Edit mindful reminders'}
-          >
-            {isEditing ? '✓' : '✏️'}
-          </button>
         </div>
       </div>
 
@@ -410,19 +399,10 @@ const FocusPage: React.FC<FocusPageProps> = () => {
           <div className="section-header">
             <span className="section-title">Mindful Reminders</span>
             <span className="section-subtitle">Your core principles</span>
-            {isEditing && pillars.length < 3 && (
-              <button 
-                className="add-btn"
-                onClick={addPillar}
-                title="Add new reminder"
-              >
-                +
-              </button>
-            )}
           </div>
           
-          {isEditing && pillars.length < 3 && (
-            <div className="add-form">
+          <div className="reminders-section">
+            <div className="add-reminder">
               <input
                 type="text"
                 placeholder="Add mindful reminder"
@@ -430,14 +410,15 @@ const FocusPage: React.FC<FocusPageProps> = () => {
                 onChange={(e) => setNewPillarQuote(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addPillar()}
                 maxLength={50}
-                className="add-input"
+                className="reminder-input"
               />
-              <textarea
+              <input
+                type="text"
                 placeholder="Why this matters"
                 value={newPillarDescription}
                 onChange={(e) => setNewPillarDescription(e.target.value)}
                 maxLength={100}
-                className="add-textarea"
+                className="reminder-input"
               />
               <div className="form-actions">
                 <input
@@ -449,71 +430,43 @@ const FocusPage: React.FC<FocusPageProps> = () => {
                 <button className="add-btn" onClick={addPillar}>+</button>
               </div>
             </div>
-          )}
-
-          {pillars.length > 0 ? (
-            <div className="pillars-grid">
-              {pillars.map((pillar, index) => (
-                <div 
-                  key={pillar.id} 
-                  className="pillar-card"
-                  style={{ borderLeft: `4px solid ${pillar.color}` }}
-                >
-                  {isEditing && editingPillarIndex === index ? (
-                    <div className="edit-form">
-                      <input
-                        type="text"
-                        value={pillar.quote}
-                        onChange={(e) => updatePillar(index, { quote: e.target.value })}
-                        maxLength={50}
-                        className="edit-input"
-                      />
-                      <textarea
-                        value={pillar.description}
-                        onChange={(e) => updatePillar(index, { description: e.target.value })}
-                        maxLength={100}
-                        className="edit-textarea"
-                      />
-                      <div className="edit-actions">
-                        <input
-                          type="color"
-                          value={pillar.color}
-                          onChange={(e) => updatePillar(index, { color: e.target.value })}
-                          className="color-input"
-                        />
-                        <button
-                          className="remove-btn"
-                          onClick={() => removePillar(index)}
-                          title="Remove reminder"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div 
-                      className="pillar-content"
-                      onClick={() => isEditing && setEditingPillarIndex(index)}
-                    >
-                      <div className="pillar-quote">{pillar.quote}</div>
-                      <div className="pillar-description">{pillar.description}</div>
-                      {isEditing && (
-                        <div className="edit-indicator">✏️</div>
+            
+            {pillars.length > 0 ? (
+              <div className="reminders-list">
+                {pillars.map((pillar, index) => (
+                  <div key={pillar.id} className="reminder-item">
+                    <div className="reminder-content">
+                      <div className="reminder-quote">{pillar.quote}</div>
+                      {pillar.description && pillar.description !== "Your mindful reminder" && (
+                        <div className="reminder-description">{pillar.description}</div>
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <div className="empty-icon">⚡</div>
-              <div className="empty-title">No Reminders</div>
-              <div className="empty-message">
-                {isEditing ? 'Add your mindful reminders above' : 'Tap edit to add reminders that guide you back to what matters'}
+                    <div className="reminder-actions">
+                      <input
+                        type="color"
+                        value={pillar.color}
+                        onChange={(e) => updatePillar(index, { color: e.target.value })}
+                        className="color-input"
+                      />
+                      <button
+                        className="remove-btn"
+                        onClick={() => removePillar(index)}
+                        title="Remove reminder"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="empty-state">
+                <div className="empty-icon">⚡</div>
+                <div className="empty-title">No Reminders</div>
+                <div className="empty-message">Add reminders that guide you back to what matters</div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
