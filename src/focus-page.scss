@@ -232,6 +232,18 @@ body {
   margin: 0;
 }
 
+.mindful-quote {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-style: italic;
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-primary);
+  line-height: 1.4;
+}
+
 .breathing-progress {
   margin-bottom: var(--spacing-lg);
 }

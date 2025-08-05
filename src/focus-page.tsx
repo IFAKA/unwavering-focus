@@ -26,6 +26,7 @@ const FocusPage: React.FC<FocusPageProps> = () => {
   const [breathingInterval, setBreathingInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [countdownInterval, setCountdownInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [sessionTimer, setSessionTimer] = useState<ReturnType<typeof setInterval> | null>(null);
+  const [mindfulQuote, setMindfulQuote] = useState<string>('');
   
   // Editing states for pillars
   const [editingPillarIndex, setEditingPillarIndex] = useState<number | null>(null);
@@ -35,6 +36,7 @@ const FocusPage: React.FC<FocusPageProps> = () => {
 
   useEffect(() => {
     loadData();
+    loadMindfulQuote();
     
     // Cleanup on unmount
     return () => {
@@ -59,6 +61,20 @@ const FocusPage: React.FC<FocusPageProps> = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadMindfulQuote = () => {
+    const quotes = [
+      "Breathe in peace, breathe out tension.",
+      "This moment is your anchor.",
+      "You are not your thoughts.",
+      "Mindfulness is the key to presence.",
+      "Every breath is a fresh start.",
+      "Find stillness in the chaos.",
+      "You have the power to choose your response.",
+      "Be here now, fully present."
+    ];
+    setMindfulQuote(quotes[Math.floor(Math.random() * quotes.length)]);
   };
 
   const startBreathingExercise = () => {
@@ -302,6 +318,9 @@ const FocusPage: React.FC<FocusPageProps> = () => {
             <div className="breathing-instructions">
               <h3>Box Breathing</h3>
               <p>4 seconds each phase</p>
+              {mindfulQuote && (
+                <div className="mindful-quote">&ldquo;{mindfulQuote}&rdquo;</div>
+              )}
             </div>
             
             <div className="breathing-progress">
@@ -380,7 +399,7 @@ const FocusPage: React.FC<FocusPageProps> = () => {
               <div className="empty-state">
                 <div className="empty-icon">🎯</div>
                 <div className="empty-title">No Triggers</div>
-                <div className="empty-message">Add what triggers your dopamine seeking</div>
+                <div className="empty-message">Add what triggers your dopamine seeking to build awareness</div>
               </div>
             )}
           </div>
@@ -491,7 +510,7 @@ const FocusPage: React.FC<FocusPageProps> = () => {
               <div className="empty-icon">⚡</div>
               <div className="empty-title">No Reminders</div>
               <div className="empty-message">
-                {isEditing ? 'Add your mindful reminders above' : 'Tap edit to add reminders'}
+                {isEditing ? 'Add your mindful reminders above' : 'Tap edit to add reminders that guide you back to what matters'}
               </div>
             </div>
           )}
