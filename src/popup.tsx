@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
-import { ExtensionConfig, DistractingDomain, Habit, Pillar, DEFAULT_CONFIG } from './types';
+import { ExtensionConfig, DistractingDomain, Habit, Pillar } from './types';
 import './popup.scss';
 
 interface StorageData {
@@ -33,7 +33,7 @@ const Popup: React.FC = () => {
   const [searchingQuery, setSearchingQuery] = useState<string>('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
   const [copiedItem, setCopiedItem] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'main' | 'smartSearch' | 'tabLimiter' | 'habits' | 'pillars' | 'blocker' | 'care'>('main');
+  const [activeTab, setActiveTab] = useState<'main' | 'smartSearch' | 'tabLimiter' | 'habits' | 'pillars' | 'blocker' | 'care' | 'videoFocus'>('main');
   
   // Settings form states
   const [newDomain, setNewDomain] = useState('');
@@ -431,11 +431,13 @@ const Popup: React.FC = () => {
       case 'eyeCare':
         return config.eyeCare?.enabled ? 'active' : 'disabled';
       case 'tabLimiter':
-        return (config.tabLimiter?.maxTabs || 0) > 0 ? 'active' : 'disabled';
+        return config.tabLimiter?.enabled ? 'active' : 'disabled';
       case 'smartSearch':
         return config.smartSearch?.enabled ? 'active' : 'disabled';
       case 'distractionBlocker':
         return config.distractionBlocker?.enabled ? 'active' : 'disabled';
+      case 'videoFocus':
+        return config.videoFocus?.enabled ? 'active' : 'disabled';
       default:
         return 'disabled';
     }
@@ -451,7 +453,7 @@ const Popup: React.FC = () => {
             <div className="copy-text">Copied!</div>
             {copiedItem && (
               <div className="copy-item">
-                "{copiedItem.length > 20 ? copiedItem.substring(0, 20) + '...' : copiedItem}"
+                &ldquo;{copiedItem.length > 20 ? copiedItem.substring(0, 20) + '...' : copiedItem}&rdquo;
               </div>
             )}
           </div>
@@ -470,7 +472,7 @@ const Popup: React.FC = () => {
             </div>
             {searchingQuery && (
               <div className="status-query">
-                "{searchingQuery.length > 20 ? searchingQuery.substring(0, 20) + '...' : searchingQuery}"
+                &ldquo;{searchingQuery.length > 20 ? searchingQuery.substring(0, 20) + '...' : searchingQuery}&rdquo;
               </div>
             )}
           </div>
@@ -515,6 +517,15 @@ const Popup: React.FC = () => {
             <div className="metric-icon">🚫</div>
             <div className="metric-value">{config?.distractionBlocker?.domains?.length || 0}</div>
             {getFeatureStatus('distractionBlocker') === 'disabled' && <div className="disabled-indicator">OFF</div>}
+          </div>
+          <div 
+            className={`metric-item clickable ${getFeatureStatus('videoFocus') === 'disabled' ? 'disabled' : ''}`}
+            title={getFeatureStatus('videoFocus') === 'disabled' ? 'Video Focus (Disabled) - Click to enable' : 'Video Focus Settings'}
+            onClick={() => setActiveTab('videoFocus')}
+          >
+            <div className="metric-icon">🎬</div>
+            <div className="metric-value">ON</div>
+            {getFeatureStatus('videoFocus') === 'disabled' && <div className="disabled-indicator">OFF</div>}
           </div>
         </div>
         
@@ -633,6 +644,18 @@ const Popup: React.FC = () => {
         <h3>Tab Limiter Settings</h3>
       </div>
       
+      <div className="settings-section">
+        <label className="toggle-label">
+          <input
+            type="checkbox"
+            checked={config?.tabLimiter?.enabled}
+            onChange={(e) => updateConfig('tabLimiter.enabled', e.target.checked)}
+          />
+          <span className="toggle-slider"></span>
+          Enable Tab Limiter
+        </label>
+      </div>
+
       <div className="settings-section">
         <div className="section-header">
           <h4>Maximum Tabs</h4>
@@ -951,6 +974,74 @@ const Popup: React.FC = () => {
     </div>
   );
 
+  const renderVideoFocusTab = () => (
+    <div className="settings-content">
+      <div className="settings-header">
+        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+        <h3>Video Focus Settings</h3>
+      </div>
+      
+      <div className="settings-section">
+        <label className="toggle-label">
+          <input
+            type="checkbox"
+            checked={config?.videoFocus?.enabled}
+            onChange={(e) => updateConfig('videoFocus.enabled', e.target.checked)}
+          />
+          <span className="toggle-slider"></span>
+          Video Focus Mode
+        </label>
+      </div>
+
+      {config?.videoFocus?.enabled && (
+        <>
+          <div className="settings-section">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.videoFocus?.preventTabSwitch}
+                onChange={(e) => updateConfig('videoFocus.preventTabSwitch', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              Prevent Tab Switching
+            </label>
+          </div>
+
+          <div className="settings-section">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.videoFocus?.showIndicator}
+                onChange={(e) => updateConfig('videoFocus.showIndicator', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              Show Focus Indicator
+            </label>
+          </div>
+
+          <div className="settings-section">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.videoFocus?.autoDetectVideos}
+                onChange={(e) => updateConfig('videoFocus.autoDetectVideos', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              Auto-detect Videos
+            </label>
+          </div>
+
+          <div className="settings-section">
+            <div className="section-header">
+              <h4>Supported Platforms</h4>
+              <span className="section-subtitle">YouTube, Netflix, Vimeo, Twitch, Facebook, Instagram, TikTok</span>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="popup-container">
       {/* Content based on active tab */}
@@ -961,6 +1052,7 @@ const Popup: React.FC = () => {
       {activeTab === 'pillars' && renderPillarsTab()}
       {activeTab === 'blocker' && renderBlockerTab()}
       {activeTab === 'care' && renderCareTab()}
+      {activeTab === 'videoFocus' && renderVideoFocusTab()}
     </div>
   );
 };

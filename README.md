@@ -29,6 +29,16 @@ A Chrome extension designed to maximize productivity, eliminate digital distract
 ### ✅ **Tab Limiter**
 - Limit the number of open tabs (default: 3)
 - Configure excluded domains that don't count toward the limit
+- **Toggleable feature** - can be enabled/disabled
+- **Enabled by default**
+
+### ✅ **Video Focus Mode**
+- Automatically detects when videos are playing on supported platforms
+- Prevents tab switching while videos are playing (optional)
+- Shows a focus indicator when video is active
+- Supports YouTube, Netflix, Vimeo, Twitch, Facebook, Instagram, TikTok
+- **Excludes YouTube Music** (music.youtube.com) - designed for audio listening, not video watching
+- Works with any HTML5 video elements
 - **Enabled by default**
 
 ### ✅ **Focus Page & Performance Dashboard**
@@ -215,6 +225,17 @@ The YouTube distraction blocking uses a multi-layered approach:
 - **Debug logging**: Console logs to track element detection and hiding
 - **Configurable**: Each element type can be enabled/disabled in options
 
+✅ **Video Focus Mode**:
+- Automatically detects video playback on supported platforms
+- **Prevents tab switching** while videos are playing (configurable)
+- **Shows clean focus indicator** with smooth slide animation when video is active
+- **Supports multiple platforms**: YouTube, Netflix, Vimeo, Twitch, Facebook, Instagram, TikTok
+- **Excludes YouTube Music** (music.youtube.com) - designed for audio listening, not video watching
+- **Works with any HTML5 video elements** on any website
+- **Real-time state tracking** with background script communication
+- **Configurable settings**: Enable/disable, prevent tab switching, show indicator, auto-detect videos
+- **Visual feedback**: Notification when tab switching is blocked
+
 ✅ **Eye Care Reminder (20-20-20)**:
 - **Visual countdown timer in popup** showing time until next reminder
 - **Corrected sound order**: Start sound (low-to-high) for 20-minute reminder, end sound (high-to-low) for 20-second reminder
@@ -229,6 +250,7 @@ The YouTube distraction blocking uses a multi-layered approach:
 - Enforces tab limit (default: 3)
 - **Closes newly created tab when limit is reached (not exceeded)**
 - Updates tab count in popup
+- **Toggleable feature** - can be enabled/disabled in settings
 
 ✅ **Focus Page**:
 - Clean, motivational interface

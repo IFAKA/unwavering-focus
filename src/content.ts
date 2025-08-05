@@ -1,8 +1,12 @@
 import styles from './content.css';
 import { YouTubeDistractionBlocker, isYouTubePage } from './utils/youtubeUtils';
+import { VideoFocusManager, supportsVideoFocus } from './utils/videoFocusUtils';
 
 // YouTube Distraction Blocker instance
 let youtubeBlocker: YouTubeDistractionBlocker | null = null;
+
+// Video Focus Manager instance
+let videoFocusManager: VideoFocusManager | null = null;
 
 // Distraction Blocker Overlay
 class DistractionBlocker {
@@ -272,6 +276,35 @@ if (isYouTubePage()) {
   });
 }
 
+// Initialize video focus manager if supported
+if (supportsVideoFocus()) {
+  console.log('Video platform detected, initializing video focus manager');
+  chrome.runtime.sendMessage({ type: 'GET_STORAGE_DATA' }).then(data => {
+    if (data && data.config && data.config.videoFocus) {
+      videoFocusManager = new VideoFocusManager(data.config.videoFocus);
+    } else {
+      videoFocusManager = new VideoFocusManager({
+        enabled: true,
+        preventTabSwitch: true,
+        showIndicator: true,
+        allowedDomains: [],
+        autoDetectVideos: true
+      });
+    }
+    videoFocusManager.start();
+  }).catch(error => {
+    console.error('Error getting video focus config:', error);
+    videoFocusManager = new VideoFocusManager({
+      enabled: true,
+      preventTabSwitch: true,
+      showIndicator: true,
+      allowedDomains: [],
+      autoDetectVideos: true
+    });
+    videoFocusManager.start();
+  });
+}
+
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PLAY_EYE_CARE_END_SOUND') {
@@ -370,6 +403,51 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else {
       sendResponse({ error: 'YouTube blocker not available or not on YouTube' });
     }
+    return true;
+  }
+
+  if (message.type === 'UPDATE_VIDEO_FOCUS_CONFIG') {
+    if (videoFocusManager && supportsVideoFocus()) {
+      videoFocusManager.updateConfig(message.config);
+      sendResponse({ success: true });
+    } else {
+      sendResponse({ error: 'Video focus manager not available or not on supported platform' });
+    }
+    return true;
+  }
+
+  if (message.type === 'VIDEO_FOCUS_BLOCKED_TAB_SWITCH') {
+    // Show a notification that tab switching was blocked
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 16px;
+      z-index: 999999;
+      text-align: center;
+      max-width: 300px;
+    `;
+    notification.innerHTML = `
+      <div style="margin-bottom: 10px;">🎯</div>
+      <div>${message.message}</div>
+      <div style="font-size: 14px; margin-top: 10px; opacity: 0.8;">
+        Return to video tab to continue
+      </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+    
+    sendResponse({ success: true });
     return true;
   }
 }); 

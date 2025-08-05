@@ -1,12 +1,14 @@
 import StorageService from './services/storage';
-import { shouldRedirect, extractDomain, isHomepage } from './utils/urlUtils';
-import { getDateString } from './utils/habitUtils';
-import { DistractingDomain, ExtensionConfig, DEFAULT_CONFIG, SearchQuery, HabitEntry } from './types';
+import { extractDomain, isHomepage } from './utils/urlUtils';
+import { DistractingDomain, DEFAULT_CONFIG, SearchQuery, HabitEntry, VideoState } from './types';
 
 const storage = StorageService.getInstance();
 
 // Use centralized default configuration
 const defaultConfig = DEFAULT_CONFIG;
+
+// Video focus state tracking
+let videoFocusStates = new Map<number, VideoState>();
 
 // Initialize storage with default values
 async function initializeStorage() {
@@ -33,7 +35,7 @@ async function initializeStorage() {
         // Force these specific defaults
         distractionBlocker: { enabled: true, domains: existingData.config.distractionBlocker?.domains || [] },
         eyeCare: { enabled: true, soundVolume: existingData.config.eyeCare?.soundVolume || 0.5 },
-        tabLimiter: { maxTabs: 3, excludedDomains: existingData.config.tabLimiter?.excludedDomains || [] }
+        tabLimiter: { enabled: true, maxTabs: 3, excludedDomains: existingData.config.tabLimiter?.excludedDomains || [] }
       };
       completeData.config = updatedConfig;
       await storage.set('config', updatedConfig);
@@ -222,50 +224,12 @@ async function playEyeCareEndSound() {
   }
 }
 
-// Handle distraction blocking
-async function handleTabUpdate(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) {
-  if (changeInfo.status !== 'complete' || !tab.url) return;
 
-  const config = await storage.get('config');
-  if (!config?.distractionBlocker.enabled) return;
-
-  const shouldBlock = shouldRedirect(tab.url, config.distractionBlocker.domains.map((d: DistractingDomain) => d.domain));
-  
-  if (shouldBlock) {
-    const domain = extractDomain(tab.url);
-    const distractingDomain = config.distractionBlocker.domains.find(d => d.domain === domain);
-    
-    if (distractingDomain) {
-      const today = getDateString();
-      
-      // Reset counter if it's a new day
-      if (distractingDomain.lastResetDate !== today) {
-        distractingDomain.currentCount = 0;
-        distractingDomain.lastResetDate = today;
-      }
-      
-      // Increment counter
-      distractingDomain.currentCount++;
-      
-      // Check if limit exceeded
-      if (distractingDomain.currentCount > distractingDomain.dailyLimit) {
-        // Redirect to focus page
-        await chrome.tabs.update(tabId, {
-          url: chrome.runtime.getURL('focus-page.html')
-        });
-        return;
-      }
-      
-      // Update storage
-      await storage.set('config', config);
-    }
-  }
-}
 
 // Handle tab limiting
 async function handleTabCreated(tab: chrome.tabs.Tab) {
   const config = await storage.get('config');
-  if (!config?.tabLimiter) return;
+  if (!config?.tabLimiter?.enabled) return;
 
   const { maxTabs, excludedDomains } = config.tabLimiter;
   
@@ -300,6 +264,78 @@ async function updateTabCount() {
     await storage.set('tabCount', tabCount);
   } catch (error) {
     console.error('Error updating tab count:', error);
+  }
+}
+
+// Handle tab switching prevention during video focus
+async function handleTabActivated(activeInfo: chrome.tabs.TabActiveInfo) {
+  const config = await storage.get('config');
+  if (!config?.videoFocus?.enabled || !config?.videoFocus?.preventTabSwitch) return;
+
+  // Check if any tab has a video playing
+  let hasVideoPlaying = false;
+  for (const [, state] of videoFocusStates) {
+    if (state.isPlaying) {
+      hasVideoPlaying = true;
+      break;
+    }
+  }
+
+  if (hasVideoPlaying) {
+    // Check if the newly activated tab is the one with the video
+    const videoPlayingTab = Array.from(videoFocusStates.entries()).find(([, state]) => state.isPlaying);
+    
+    if (videoPlayingTab && videoPlayingTab[0] !== activeInfo.tabId) {
+      // Try to switch back to the video tab
+      try {
+        const videoTabId = videoPlayingTab[0];
+        await chrome.tabs.update(videoTabId, { active: true });
+        
+        // Show a notification to the user
+        chrome.tabs.sendMessage(activeInfo.tabId, {
+          type: 'VIDEO_FOCUS_BLOCKED_TAB_SWITCH',
+          message: 'Tab switching blocked while video is playing'
+        }).catch(() => {
+          // If content script not available, inject a temporary notification
+          chrome.scripting.executeScript({
+            target: { tabId: activeInfo.tabId },
+            func: (message) => {
+              const notification = document.createElement('div');
+              notification.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 16px;
+                z-index: 999999;
+                text-align: center;
+                max-width: 300px;
+              `;
+              notification.innerHTML = `
+                <div style="margin-bottom: 10px;">🎯</div>
+                <div>${message}</div>
+                <div style="font-size: 14px; margin-top: 10px; opacity: 0.8;">
+                  Return to video tab to continue
+                </div>
+              `;
+              document.body.appendChild(notification);
+              
+              setTimeout(() => {
+                notification.remove();
+              }, 3000);
+            },
+            args: ['Tab switching blocked while video is playing']
+          });
+        });
+      } catch (error) {
+        console.error('Error switching back to video tab:', error);
+      }
+    }
   }
 }
 
@@ -424,6 +460,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 chrome.tabs.onCreated.addListener(handleTabCreated);
 chrome.tabs.onRemoved.addListener(updateTabCount);
+chrome.tabs.onActivated.addListener(handleTabActivated);
 
 // Handle messages from popup/content scripts
 chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
@@ -674,6 +711,42 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
                       config: message.config
                     }).catch(error => {
                       console.error('Error sending YouTube config update to tab:', error);
+                    });
+                  }
+                });
+              });
+              sendResponse({ success: true });
+            });
+          } else {
+            sendResponse({ error: 'Config not found' });
+          }
+        });
+        break;
+      
+      case 'VIDEO_FOCUS_STATE_CHANGED':
+        console.log('Handling VIDEO_FOCUS_STATE_CHANGED request:', message.state);
+        if (sender.tab?.id) {
+          videoFocusStates.set(sender.tab.id, message.state);
+          console.log('Updated video focus state for tab:', sender.tab.id, message.state);
+        }
+        sendResponse({ success: true });
+        break;
+      
+      case 'UPDATE_VIDEO_FOCUS_CONFIG':
+        console.log('Handling UPDATE_VIDEO_FOCUS_CONFIG request:', message.config);
+        storage.get('config').then(config => {
+          if (config) {
+            config.videoFocus = { ...config.videoFocus, ...message.config };
+            storage.set('config', config).then(() => {
+              // Notify all tabs about the config change
+              chrome.tabs.query({}).then(tabs => {
+                tabs.forEach(tab => {
+                  if (tab.id && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+                    chrome.tabs.sendMessage(tab.id, {
+                      type: 'UPDATE_VIDEO_FOCUS_CONFIG',
+                      config: message.config
+                    }).catch(error => {
+                      console.error('Error sending video focus config update to tab:', error);
                     });
                   }
                 });

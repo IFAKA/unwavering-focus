@@ -44,6 +44,7 @@ export interface ExtensionConfig {
     soundVolume: number 
   };
   tabLimiter: { 
+    enabled: boolean;
     maxTabs: number; 
     excludedDomains: string[] 
   };
@@ -70,6 +71,23 @@ export interface ExtensionConfig {
     hideStart: boolean;
     hideButtons: boolean;
   };
+  videoFocus: VideoFocusConfig;
+}
+
+export interface VideoFocusConfig {
+  enabled: boolean;
+  preventTabSwitch: boolean;
+  showIndicator: boolean;
+  allowedDomains: string[];
+  autoDetectVideos: boolean;
+}
+
+export interface VideoState {
+  isPlaying: boolean;
+  platform: string;
+  title?: string;
+  duration?: number;
+  currentTime?: number;
 }
 
 // Storage data interface
@@ -100,6 +118,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     soundVolume: 0.5 
   },
   tabLimiter: { 
+    enabled: true,
     maxTabs: 3, 
     excludedDomains: [] 
   },
@@ -125,5 +144,12 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     hideSections: true,
     hideStart: true,
     hideButtons: true
+  },
+  videoFocus: {
+    enabled: true,
+    preventTabSwitch: true,
+    showIndicator: true,
+    allowedDomains: [],
+    autoDetectVideos: true
   }
 }; 
