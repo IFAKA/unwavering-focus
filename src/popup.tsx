@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useEffect, useState } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
-import { ExtensionConfig, DistractingDomain, Habit, Pillar } from './types';
 import './popup.scss';
+import { DistractingDomain, ExtensionConfig, Habit, Pillar } from './types';
 
 interface StorageData {
   savedSearches: SearchQuery[];
@@ -37,7 +36,7 @@ const Popup: React.FC = () => {
   
   // Settings form states
   const [newDomain, setNewDomain] = useState('');
-  const [newDomainLimit, setNewDomainLimit] = useState(3);
+  const [newDomainLimit, setNewDomainLimit] = useState(1);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitColor, setNewHabitColor] = useState('#007aff');
   const [newPillarQuote, setNewPillarQuote] = useState('');
@@ -298,7 +297,7 @@ const Popup: React.FC = () => {
       setData({ ...data, config: updatedConfig });
       await saveConfig(updatedConfig);
       setNewDomain('');
-      setNewDomainLimit(3);
+      setNewDomainLimit(1);
     }
   };
 
@@ -1060,10 +1059,11 @@ const Popup: React.FC = () => {
 // Render the popup
 const root = document.getElementById('root');
 if (root) {
-  ReactDOM.render(
-    <ErrorBoundary>
-      <Popup />
-    </ErrorBoundary>,
-    root
-  );
-} 
+  import('react-dom/client').then(({ createRoot }) => {
+    createRoot(root).render(
+      <ErrorBoundary>
+        <Popup />
+      </ErrorBoundary>
+    );
+  });
+}
