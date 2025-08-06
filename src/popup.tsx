@@ -34,6 +34,7 @@ const Popup: React.FC = () => {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
   const [copiedItem, setCopiedItem] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'main' | 'smartSearch' | 'tabLimiter' | 'habits' | 'pillars' | 'blocker' | 'care' | 'videoFocus' | 'contentFocus'>('main');
+  const [contentFocusSection, setContentFocusSection] = useState<'main' | 'video' | 'search' | 'global'>('main');
   
   // Settings form states
   const [newDomain, setNewDomain] = useState('');
@@ -109,6 +110,22 @@ const Popup: React.FC = () => {
     
     // Auto-save immediately
     await saveConfig(newConfig);
+    
+    // Send real-time updates for YouTube distraction settings
+    if (path.startsWith('youtubeDistraction.')) {
+      const settingName = path.split('.')[1];
+      const youtubeConfig = { [settingName]: value };
+      
+      try {
+        await chrome.runtime.sendMessage({
+          type: 'UPDATE_YOUTUBE_DISTRACTION_CONFIG',
+          config: youtubeConfig
+        });
+        console.log(`YouTube distraction setting "${settingName}" updated to: ${value}`);
+      } catch (error) {
+        console.error('Error updating YouTube distraction config:', error);
+      }
+    }
   };
 
   const saveConfig = async (configToSave?: ExtensionConfig) => {
@@ -1073,166 +1090,244 @@ const Popup: React.FC = () => {
     </div>
   );
 
-  const renderContentFocusTab = () => (
-    <div className="settings-content">
-      <div className="settings-header">
-        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
-        <h3>Content Focus Settings</h3>
-      </div>
-      
-      <div className="settings-section">
-        <div className="section-header">
-          <h4>YouTube Distractions</h4>
-          <span className="section-subtitle">Hide distracting elements on YouTube</span>
+  const renderContentFocusTab = () => {
+    // Main Content Focus Menu
+    if (contentFocusSection === 'main') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+            <h3>Content Focus</h3>
+          </div>
+          
+          <div className="section-list">
+            <div 
+              className="section-item"
+              onClick={() => setContentFocusSection('video')}
+            >
+              <div className="section-icon">🎬</div>
+              <div className="section-content">
+                <div className="section-title">Video Page</div>
+                <div className="section-subtitle">6 settings for video pages</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            <div 
+              className="section-item"
+              onClick={() => setContentFocusSection('search')}
+            >
+              <div className="section-icon">🔍</div>
+              <div className="section-content">
+                <div className="section-title">Search Page</div>
+                <div className="section-subtitle">1 setting for search results</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            <div 
+              className="section-item"
+              onClick={() => setContentFocusSection('global')}
+            >
+              <div className="section-icon">🌐</div>
+              <div className="section-content">
+                <div className="section-title">Global</div>
+                <div className="section-subtitle">4 settings for all pages</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+          </div>
         </div>
-        
-        <div className="toggle-grid">
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideSecondary}
-              onChange={(e) => updateConfig('youtubeDistraction.hideSecondary', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">Related Videos</div>
-              <div className="toggle-description">Hide recommended videos sidebar</div>
-            </div>
-          </label>
+      );
+    }
 
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideMasthead}
-              onChange={(e) => updateConfig('youtubeDistraction.hideMasthead', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">Header Bar</div>
-              <div className="toggle-description">Hide YouTube header navigation</div>
-            </div>
-          </label>
+    // Video Page Settings
+    if (contentFocusSection === 'video') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setContentFocusSection('main')}>←</button>
+            <h3>Video Page</h3>
+          </div>
+          
+          <div className="toggle-grid">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideSecondary}
+                onChange={(e) => updateConfig('youtubeDistraction.hideSecondary', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">Related Videos</div>
+                <div className="toggle-description">Hide recommended videos sidebar</div>
+              </div>
+            </label>
 
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideOwner}
-              onChange={(e) => updateConfig('youtubeDistraction.hideOwner', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">Channel Info</div>
-              <div className="toggle-description">Hide channel name and subscribe button</div>
-            </div>
-          </label>
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideOwner}
+                onChange={(e) => updateConfig('youtubeDistraction.hideOwner', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">Channel Info</div>
+                <div className="toggle-description">Hide channel name and subscribe button</div>
+              </div>
+            </label>
 
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideButtonShape}
-              onChange={(e) => updateConfig('youtubeDistraction.hideButtonShape', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">Action Buttons</div>
-              <div className="toggle-description">Hide download, thanks, and clip buttons</div>
-            </div>
-          </label>
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideButtonShape}
+                onChange={(e) => updateConfig('youtubeDistraction.hideButtonShape', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">Action Buttons</div>
+                <div className="toggle-description">Hide download, thanks, and clip buttons</div>
+              </div>
+            </label>
 
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideAuthorThumbnail}
-              onChange={(e) => updateConfig('youtubeDistraction.hideAuthorThumbnail', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">Author Thumbnail</div>
-              <div className="toggle-description">Hide channel profile picture</div>
-            </div>
-          </label>
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideAuthorThumbnail}
+                onChange={(e) => updateConfig('youtubeDistraction.hideAuthorThumbnail', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">Author Thumbnail</div>
+                <div className="toggle-description">Hide channel profile picture</div>
+              </div>
+            </label>
 
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideSegmentedButtons}
-              onChange={(e) => updateConfig('youtubeDistraction.hideSegmentedButtons', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">Like/Dislike</div>
-              <div className="toggle-description">Hide like and dislike buttons</div>
-            </div>
-          </label>
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideSegmentedButtons}
+                onChange={(e) => updateConfig('youtubeDistraction.hideSegmentedButtons', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">Like/Dislike</div>
+                <div className="toggle-description">Hide like and dislike buttons</div>
+              </div>
+            </label>
 
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideGridShelf}
-              onChange={(e) => updateConfig('youtubeDistraction.hideGridShelf', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">Search Results</div>
-              <div className="toggle-description">Hide video grids on search pages</div>
-            </div>
-          </label>
-
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideMiniGuide}
-              onChange={(e) => updateConfig('youtubeDistraction.hideMiniGuide', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">Mini Guide</div>
-              <div className="toggle-description">Hide navigation sidebar</div>
-            </div>
-          </label>
-
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideSections}
-              onChange={(e) => updateConfig('youtubeDistraction.hideSections', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">Video Sections</div>
-              <div className="toggle-description">Hide video description sections</div>
-            </div>
-          </label>
-
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideStart}
-              onChange={(e) => updateConfig('youtubeDistraction.hideStart', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">Start Elements</div>
-              <div className="toggle-description">Hide start-related UI elements</div>
-            </div>
-          </label>
-
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={config?.youtubeDistraction?.hideButtons}
-              onChange={(e) => updateConfig('youtubeDistraction.hideButtons', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-            <div className="toggle-content">
-              <div className="toggle-title">General Buttons</div>
-              <div className="toggle-description">Hide miscellaneous button elements</div>
-            </div>
-          </label>
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideSections}
+                onChange={(e) => updateConfig('youtubeDistraction.hideSections', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">Comment Section</div>
+                <div className="toggle-description">Hide video description sections</div>
+              </div>
+            </label>
+          </div>
         </div>
-      </div>
-    </div>
-  );
+      );
+    }
+
+    // Search Page Settings
+    if (contentFocusSection === 'search') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setContentFocusSection('main')}>←</button>
+            <h3>Search Page</h3>
+          </div>
+          
+          <div className="toggle-grid">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideGridShelf}
+                onChange={(e) => updateConfig('youtubeDistraction.hideGridShelf', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">Video Grids</div>
+                <div className="toggle-description">Hide video grids on search pages</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      );
+    }
+
+    // Global Settings
+    if (contentFocusSection === 'global') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setContentFocusSection('main')}>←</button>
+            <h3>Global</h3>
+          </div>
+          
+          <div className="toggle-grid">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideMasthead}
+                onChange={(e) => updateConfig('youtubeDistraction.hideMasthead', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">Header Bar</div>
+                <div className="toggle-description">Hide YouTube header navigation</div>
+              </div>
+            </label>
+
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideMiniGuide}
+                onChange={(e) => updateConfig('youtubeDistraction.hideMiniGuide', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">Mini Guide</div>
+                <div className="toggle-description">Hide navigation sidebar</div>
+              </div>
+            </label>
+
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideStart}
+                onChange={(e) => updateConfig('youtubeDistraction.hideStart', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">Start Elements</div>
+                <div className="toggle-description">Hide start-related UI elements</div>
+              </div>
+            </label>
+
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.youtubeDistraction?.hideButtons}
+                onChange={(e) => updateConfig('youtubeDistraction.hideButtons', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <div className="toggle-content">
+                <div className="toggle-title">General Buttons</div>
+                <div className="toggle-description">Hide miscellaneous button elements</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="popup-container">

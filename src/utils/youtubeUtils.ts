@@ -115,7 +115,7 @@ export class YouTubeDistractionBlocker {
         const element = document.getElementById(id);
         if (element && !this.hiddenElements.has(element)) {
           console.log(`YouTube Distraction Blocker: Hiding element with id "${id}"`);
-          this.hideElement(element);
+          this.hideElement(element, config as keyof YouTubeDistractionConfig);
         } else if (!element) {
           console.log(`YouTube Distraction Blocker: Element with id "${id}" not found`);
         }
@@ -127,7 +127,7 @@ export class YouTubeDistractionBlocker {
       const segmentedButtons = document.querySelectorAll('segmented-like-dislike-button-view-model');
       segmentedButtons.forEach(button => {
         if (!this.hiddenElements.has(button as HTMLElement)) {
-          this.hideElement(button as HTMLElement);
+          this.hideElement(button as HTMLElement, 'hideSegmentedButtons');
         }
       });
     }
@@ -139,7 +139,7 @@ export class YouTubeDistractionBlocker {
         const buttonText = button.textContent?.toLowerCase();
         if (buttonText && (buttonText.includes('download') || buttonText.includes('thanks') || buttonText.includes('clip'))) {
           if (!this.hiddenElements.has(button as HTMLElement)) {
-            this.hideElement(button as HTMLElement);
+            this.hideElement(button as HTMLElement, 'hideButtonShape');
           }
         }
       });
@@ -172,7 +172,7 @@ export class YouTubeDistractionBlocker {
         elements.forEach(element => {
           if (!this.hiddenElements.has(element as HTMLElement)) {
             console.log(`YouTube Distraction Blocker: Hiding element with selector "${selector}"`);
-            this.hideElement(element as HTMLElement);
+            this.hideElement(element as HTMLElement, 'hideSecondary');
           }
         });
       });
@@ -185,7 +185,7 @@ export class YouTubeDistractionBlocker {
       const gridShelves = document.querySelectorAll('grid-shelf-view-model');
       gridShelves.forEach(shelf => {
         if (!this.hiddenElements.has(shelf as HTMLElement)) {
-          this.hideElement(shelf as HTMLElement);
+          this.hideElement(shelf as HTMLElement, 'hideGridShelf');
         }
       });
     }
@@ -195,7 +195,7 @@ export class YouTubeDistractionBlocker {
       const miniGuides = document.querySelectorAll('ytd-mini-guide-renderer');
       miniGuides.forEach(guide => {
         if (!this.hiddenElements.has(guide as HTMLElement)) {
-          this.hideElement(guide as HTMLElement);
+          this.hideElement(guide as HTMLElement, 'hideMiniGuide');
         }
       });
     }
@@ -212,13 +212,13 @@ export class YouTubeDistractionBlocker {
       if (this.config[config as keyof YouTubeDistractionConfig]) {
         const element = document.getElementById(id);
         if (element && !this.hiddenElements.has(element)) {
-          this.hideElement(element);
+          this.hideElement(element, config as keyof YouTubeDistractionConfig);
         }
       }
     });
   }
 
-  private hideElement(element: HTMLElement) {
+  private hideElement(element: HTMLElement, setting?: keyof YouTubeDistractionConfig) {
     // Store original display style
     const originalDisplay = element.style.display;
     const originalVisibility = element.style.visibility;
@@ -234,31 +234,62 @@ export class YouTubeDistractionBlocker {
     element.setAttribute('data-unwavering-focus-hidden', 'true');
     element.setAttribute('data-original-display', originalDisplay);
     element.setAttribute('data-original-visibility', originalVisibility);
+    
+    // Track which setting caused this element to be hidden
+    if (setting) {
+      element.setAttribute('data-hidden-by', setting);
+    }
   }
 
   private restoreHiddenElements() {
     this.hiddenElements.forEach(element => {
       if (element.hasAttribute('data-unwavering-focus-hidden')) {
-        const originalDisplay = element.getAttribute('data-original-display') || '';
-        const originalVisibility = element.getAttribute('data-original-visibility') || '';
-        
-        element.style.display = originalDisplay;
-        element.style.visibility = originalVisibility;
-        
-        element.removeAttribute('data-unwavering-focus-hidden');
-        element.removeAttribute('data-original-display');
-        element.removeAttribute('data-original-visibility');
+        this.restoreElement(element);
       }
     });
-    
-    this.hiddenElements.clear();
   }
 
   public updateConfig(newConfig: Partial<YouTubeDistractionConfig>) {
+    const oldConfig = { ...this.config };
     this.config = { ...this.config, ...newConfig };
+    
+    // Check which settings changed
+    const changedSettings = Object.keys(newConfig) as (keyof YouTubeDistractionConfig)[];
+    
+    // Restore elements for settings that were turned off
+    changedSettings.forEach(setting => {
+      if (oldConfig[setting] && !this.config[setting]) {
+        this.restoreElementsForSetting(setting);
+      }
+    });
     
     // Re-apply hiding with new config
     this.hideDistractingElements();
+  }
+
+  private restoreElementsForSetting(setting: keyof YouTubeDistractionConfig) {
+    // Find elements that were hidden by this specific setting and restore them
+    this.hiddenElements.forEach(element => {
+      const hiddenBy = element.getAttribute('data-hidden-by');
+      if (hiddenBy === setting) {
+        this.restoreElement(element);
+      }
+    });
+  }
+
+  private restoreElement(element: HTMLElement) {
+    const originalDisplay = element.getAttribute('data-original-display') || '';
+    const originalVisibility = element.getAttribute('data-original-visibility') || '';
+    
+    element.style.display = originalDisplay;
+    element.style.visibility = originalVisibility;
+    
+    element.removeAttribute('data-unwavering-focus-hidden');
+    element.removeAttribute('data-original-display');
+    element.removeAttribute('data-original-visibility');
+    element.removeAttribute('data-hidden-by');
+    
+    this.hiddenElements.delete(element);
   }
 }
 
