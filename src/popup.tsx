@@ -33,8 +33,12 @@ const Popup: React.FC = () => {
   const [searchingQuery, setSearchingQuery] = useState<string>('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
   const [copiedItem, setCopiedItem] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'main' | 'smartSearch' | 'tabLimiter' | 'habits' | 'pillars' | 'blocker' | 'care' | 'videoFocus' | 'contentFocus'>('main');
+  const [activeTab, setActiveTab] = useState<'main' | 'settings'>('main');
+  const [settingsSection, setSettingsSection] = useState<'main' | 'smartSearch' | 'tabLimiter' | 'habits' | 'pillars' | 'blocker' | 'care' | 'videoFocus' | 'contentFocus'>('main');
   const [contentFocusSection, setContentFocusSection] = useState<'main' | 'video' | 'search' | 'global'>('main');
+  const [habitsSection, setHabitsSection] = useState<'main' | 'list' | 'add'>('main');
+  const [pillarsSection, setPillarsSection] = useState<'main' | 'list' | 'add'>('main');
+  const [blockerSection, setBlockerSection] = useState<'main' | 'domains' | 'add'>('main');
   
   // Settings form states
   const [newDomain, setNewDomain] = useState('');
@@ -510,13 +514,12 @@ const Popup: React.FC = () => {
         </div>
       )}
 
-      {/* Apple Watch Style Header - Focused, Essential Metrics */}
+      {/* Simplified Header - Only Essential Info */}
       <div className="watch-header">
         <div className="metric-group">
           <div 
             className={`metric-item clickable ${getFeatureStatus('eyeCare') === 'disabled' ? 'disabled' : ''}`}
-            title={getFeatureStatus('eyeCare') === 'disabled' ? 'Eye Care (Disabled) - Click to enable' : 'Eye Care Settings'}
-            onClick={() => setActiveTab('care')}
+            title={getFeatureStatus('eyeCare') === 'disabled' ? 'Eye Care (Disabled)' : 'Eye Care Timer'}
           >
             <div className="metric-icon">👁</div>
             <div className="metric-value">{countdown}</div>
@@ -524,51 +527,29 @@ const Popup: React.FC = () => {
           </div>
           <div 
             className={`metric-item clickable ${getFeatureStatus('tabLimiter') === 'disabled' ? 'disabled' : ''}`}
-            title={getFeatureStatus('tabLimiter') === 'disabled' ? 'Tab Limiter (Disabled) - Click to enable' : 'Tab Limiter Settings'}
-            onClick={() => setActiveTab('tabLimiter')}
+            title={getFeatureStatus('tabLimiter') === 'disabled' ? 'Tab Limiter (Disabled)' : 'Tab Count'}
           >
             <div className="metric-icon">📑</div>
             <div className="metric-value">{tabCount}/{config?.tabLimiter?.maxTabs || 3}</div>
             {getFeatureStatus('tabLimiter') === 'disabled' && <div className="disabled-indicator">OFF</div>}
           </div>
           <div 
-            className={`metric-item clickable ${getFeatureStatus('smartSearch') === 'disabled' ? 'disabled' : ''}`}
-            title={getFeatureStatus('smartSearch') === 'disabled' ? 'Smart Search (Disabled) - Click to enable' : 'Smart Search Settings'}
-            onClick={() => setActiveTab('smartSearch')}
+            className="metric-item clickable"
+            title="Saved Items"
+            onClick={() => setActiveTab('settings')}
           >
             <div className="metric-icon">💭</div>
             <div className="metric-value">{savedSearches.length}</div>
-            {getFeatureStatus('smartSearch') === 'disabled' && <div className="disabled-indicator">OFF</div>}
           </div>
           <div 
-            className={`metric-item clickable ${getFeatureStatus('distractionBlocker') === 'disabled' ? 'disabled' : ''}`}
-            title={getFeatureStatus('distractionBlocker') === 'disabled' ? 'Distraction Blocker (Disabled) - Click to enable' : 'Distraction Blocker Settings'}
-            onClick={() => setActiveTab('blocker')}
+            className="metric-item clickable"
+            title="Settings"
+            onClick={() => setActiveTab('settings')}
           >
-            <div className="metric-icon">🚫</div>
-            <div className="metric-value">{config?.distractionBlocker?.domains?.length || 0}</div>
-            {getFeatureStatus('distractionBlocker') === 'disabled' && <div className="disabled-indicator">OFF</div>}
-          </div>
-          <div 
-            className={`metric-item clickable ${getFeatureStatus('videoFocus') === 'disabled' ? 'disabled' : ''}`}
-            title={getFeatureStatus('videoFocus') === 'disabled' ? 'Video Focus (Disabled) - Click to enable' : 'Video Focus Settings'}
-            onClick={() => setActiveTab('videoFocus')}
-          >
-            <div className="metric-icon">🎬</div>
-            <div className="metric-value">ON</div>
-            {getFeatureStatus('videoFocus') === 'disabled' && <div className="disabled-indicator">OFF</div>}
-          </div>
-          <div 
-            className={`metric-item clickable ${getFeatureStatus('contentFocus') === 'disabled' ? 'disabled' : ''}`}
-            title={getFeatureStatus('contentFocus') === 'disabled' ? 'Content Focus (Disabled) - Click to enable' : 'Content Focus Settings'}
-            onClick={() => setActiveTab('contentFocus')}
-          >
-            <div className="metric-icon">🎯</div>
-            <div className="metric-value">ON</div>
-            {getFeatureStatus('contentFocus') === 'disabled' && <div className="disabled-indicator">OFF</div>}
+            <div className="metric-icon">⚙️</div>
+            <div className="metric-value">All</div>
           </div>
         </div>
-        
       </div>
 
       {/* Smart Search List - Compact, Scrollable */}
@@ -652,406 +633,134 @@ const Popup: React.FC = () => {
     </>
   );
 
-  const renderSmartSearchTab = () => (
-    <div className="settings-content">
-      <div className="settings-header">
-        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
-        <h3>Smart Search Settings</h3>
-      </div>
-      
-      <div className="settings-section">
-        <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={config?.smartSearch?.enabled}
-            onChange={(e) => updateConfig('smartSearch.enabled', e.target.checked)}
-          />
-          <span className="toggle-slider"></span>
-          Save Thoughts
-        </label>
-      </div>
-
-      <div className="settings-section">
-        <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={config?.smartSearch?.searchAllEnabled}
-            onChange={(e) => updateConfig('smartSearch.searchAllEnabled', e.target.checked)}
-          />
-          <span className="toggle-slider"></span>
-          Search All Feature
-        </label>
-      </div>
-    </div>
-  );
-
-  const renderTabLimiterTab = () => (
-    <div className="settings-content">
-      <div className="settings-header">
-        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
-        <h3>Tab Limiter Settings</h3>
-      </div>
-      
-      <div className="settings-section">
-        <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={config?.tabLimiter?.enabled}
-            onChange={(e) => updateConfig('tabLimiter.enabled', e.target.checked)}
-          />
-          <span className="toggle-slider"></span>
-          Enable Tab Limiter
-        </label>
-      </div>
-
-      <div className="settings-section">
-        <div className="section-header">
-          <h4>Maximum Tabs</h4>
-          <span className="section-subtitle">Limit the number of open tabs</span>
-        </div>
-        <div className="limit-control">
-          <input
-            type="range"
-            min="1"
-            max="10"
-            value={config?.tabLimiter?.maxTabs || 3}
-            onChange={(e) => updateConfig('tabLimiter.maxTabs', parseInt(e.target.value))}
-            className="limit-slider"
-          />
-          <span className="limit-value">{config?.tabLimiter?.maxTabs || 3}</span>
-        </div>
-      </div>
-
-
-    </div>
-  );
-
-  const renderHabitsTab = () => (
-    <div className="settings-content">
-      <div className="settings-header">
-        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
-        <h3>Habits Settings</h3>
-      </div>
-      
-      <div className="settings-section">
-        <div className="section-header">
-          <h4>Habits ({config?.focusPage?.habits?.length || 0}/5)</h4>
-          <span className="section-subtitle">Track your daily routines</span>
-        </div>
-        
-        {config?.focusPage?.habits?.length > 0 ? (
-          <div className="scrollable-list">
-            {config.focusPage.habits.map((habit, index) => (
-              <div key={index} className="list-item">
-                <div className="item-content">
-                  <input
-                    type="text"
-                    value={habit.name}
-                    onChange={(e) => updateHabit(index, { name: e.target.value })}
-                    placeholder="Habit name"
-                    maxLength={20}
-                    className="item-input"
-                  />
-                  <input
-                    type="color"
-                    value={habit.color}
-                    onChange={(e) => updateHabit(index, { color: e.target.value })}
-                    className="color-input"
-                  />
-                </div>
-                <div className="item-actions">
-                  <button
-                    className="remove-btn"
-                    onClick={() => removeHabit(index)}
-                    title="Remove habit"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-list">
-            <div className="empty-icon">📊</div>
-            <div className="empty-title">No Habits</div>
-            <div className="empty-message">Add habits to track your daily progress</div>
-          </div>
-        )}
-
-        {config?.focusPage?.habits?.length < 5 && (
-          <div className="add-item">
-            <input
-              type="text"
-              placeholder="Add habit"
-              value={newHabitName}
-              onChange={(e) => setNewHabitName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addHabit()}
-              maxLength={20}
-              className="add-input"
-            />
-            <input
-              type="color"
-              value={newHabitColor}
-              onChange={(e) => setNewHabitColor(e.target.value)}
-              className="color-input"
-            />
-            <button className="add-btn" onClick={addHabit} title="Add habit">+</button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderPillarsTab = () => (
-    <div className="settings-content">
-      <div className="settings-header">
-        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
-        <h3>Pillars Settings</h3>
-      </div>
-      
-      <div className="settings-section">
-        <div className="section-header">
-          <h4>Pillars ({config?.focusPage?.pillars?.length || 0}/3)</h4>
-          <span className="section-subtitle">Your core principles</span>
-        </div>
-        
-        {config?.focusPage?.pillars?.length > 0 ? (
-          <div className="scrollable-list">
-            {config.focusPage.pillars.map((pillar, index) => (
-              <div key={index} className="list-item">
-                <div className="item-content">
-                  <input
-                    type="text"
-                    value={pillar.quote}
-                    onChange={(e) => updatePillar(index, { quote: e.target.value })}
-                    placeholder="Pillar quote"
-                    maxLength={50}
-                    className="item-input"
-                  />
-                  <textarea
-                    value={pillar.description}
-                    onChange={(e) => updatePillar(index, { description: e.target.value })}
-                    placeholder="Description"
-                    maxLength={100}
-                    className="item-textarea"
-                  />
-                  <input
-                    type="color"
-                    value={pillar.color}
-                    onChange={(e) => updatePillar(index, { color: e.target.value })}
-                    className="color-input"
-                  />
-                </div>
-                <div className="item-actions">
-                  <button
-                    className="remove-btn"
-                    onClick={() => removePillar(index)}
-                    title="Remove pillar"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-list">
-            <div className="empty-icon">🏛️</div>
-            <div className="empty-title">No Pillars</div>
-            <div className="empty-message">Add pillars to define your core principles</div>
-          </div>
-        )}
-
-        {config?.focusPage?.pillars?.length < 3 && (
-          <div className="add-item">
-            <div className="pillar-form">
-              <input
-                type="text"
-                placeholder="Add pillar quote"
-                value={newPillarQuote}
-                onChange={(e) => setNewPillarQuote(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addPillar()}
-                maxLength={50}
-                className="add-input"
-              />
-              <textarea
-                placeholder="Description"
-                value={newPillarDescription}
-                onChange={(e) => setNewPillarDescription(e.target.value)}
-                maxLength={100}
-                className="add-textarea"
-              />
-            </div>
-            <div className="pillar-form-actions">
-              <input
-                type="color"
-                value={newPillarColor}
-                onChange={(e) => setNewPillarColor(e.target.value)}
-                className="color-input"
-              />
-              <button className="add-btn" onClick={addPillar} title="Add pillar">+</button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderBlockerTab = () => (
-    <div className="settings-content">
-      <div className="settings-header">
-        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
-        <h3>Blocker Settings</h3>
-      </div>
-      
-      <div className="settings-section">
-        <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={config?.distractionBlocker?.enabled}
-            onChange={(e) => updateConfig('distractionBlocker.enabled', e.target.checked)}
-          />
-          <span className="toggle-slider"></span>
-          Distraction Blocker
-        </label>
-      </div>
-
-      {config?.distractionBlocker?.enabled && (
-        <div className="settings-section">
-          <div className="section-header">
-            <h4>Domains ({config?.distractionBlocker?.domains?.length || 0})</h4>
-            <span className="section-subtitle">Limit daily visits to distracting sites</span>
+  const renderSettingsTab = () => {
+    if (settingsSection === 'main') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+            <h3>Settings</h3>
           </div>
           
-          {config?.distractionBlocker?.domains?.length > 0 ? (
-            <div className="scrollable-list">
-              {config.distractionBlocker.domains.map((domain, index) => (
-                <div key={index} className="list-item">
-                  <div className="item-content">
-                    <div className="domain-info">
-                      <div className="domain-name">{domain.domain}</div>
-                      <div className="domain-limit">{domain.dailyLimit}/day</div>
-                    </div>
-                  </div>
-                  <div className="item-actions">
-                    <button
-                      className="remove-btn"
-                      onClick={() => removeDomain(index)}
-                      title="Remove domain"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              ))}
+          <div className="section-list">
+            <div 
+              className="section-item"
+              onClick={() => setSettingsSection('smartSearch')}
+            >
+              <div className="section-icon">🔍</div>
+              <div className="section-content">
+                <div className="section-title">Smart Search</div>
+                <div className="section-subtitle">Save and search thoughts</div>
+              </div>
+              <div className="section-arrow">›</div>
             </div>
-          ) : (
-            <div className="empty-list">
-              <div className="empty-icon">🚫</div>
-              <div className="empty-title">No Domains</div>
-              <div className="empty-message">Add domains to block distractions</div>
-            </div>
-          )}
 
-          <div className="add-item">
-            <input
-              type="text"
-              placeholder="facebook.com"
-              value={newDomain}
-              onChange={(e) => setNewDomain(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addDomain()}
-              maxLength={20}
-              className="add-input"
-            />
-            <input
-              type="number"
-              placeholder="3"
-              value={newDomainLimit}
-              onChange={(e) => setNewDomainLimit(parseInt(e.target.value) || 0)}
-              min="1"
-              max="10"
-              className="limit-input"
-            />
-            <button className="add-btn" onClick={addDomain} title="Add domain">+</button>
+            <div 
+              className="section-item"
+              onClick={() => setSettingsSection('tabLimiter')}
+            >
+              <div className="section-icon">📑</div>
+              <div className="section-content">
+                <div className="section-title">Tab Limiter</div>
+                <div className="section-subtitle">Limit open tabs</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            <div 
+              className="section-item"
+              onClick={() => setSettingsSection('habits')}
+            >
+              <div className="section-icon">📊</div>
+              <div className="section-content">
+                <div className="section-title">Habits</div>
+                <div className="section-subtitle">Track daily routines</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            <div 
+              className="section-item"
+              onClick={() => setSettingsSection('pillars')}
+            >
+              <div className="section-icon">🏛️</div>
+              <div className="section-content">
+                <div className="section-title">Pillars</div>
+                <div className="section-subtitle">Core principles</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            <div 
+              className="section-item"
+              onClick={() => setSettingsSection('blocker')}
+            >
+              <div className="section-icon">🚫</div>
+              <div className="section-content">
+                <div className="section-title">Blocker</div>
+                <div className="section-subtitle">Block distractions</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            <div 
+              className="section-item"
+              onClick={() => setSettingsSection('care')}
+            >
+              <div className="section-icon">👁️</div>
+              <div className="section-content">
+                <div className="section-title">Care</div>
+                <div className="section-subtitle">Eye care reminders</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            <div 
+              className="section-item"
+              onClick={() => setSettingsSection('videoFocus')}
+            >
+              <div className="section-icon">🎬</div>
+              <div className="section-content">
+                <div className="section-title">Video Focus</div>
+                <div className="section-subtitle">Focus on videos</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            <div 
+              className="section-item"
+              onClick={() => setSettingsSection('contentFocus')}
+            >
+              <div className="section-icon">🎯</div>
+              <div className="section-content">
+                <div className="section-title">Content Focus</div>
+                <div className="section-subtitle">YouTube distractions</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
           </div>
         </div>
-      )}
+      );
+    }
 
-
-    </div>
-  );
-
-  const renderCareTab = () => (
-    <div className="settings-content">
-      <div className="settings-header">
-        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
-        <h3>Care Settings</h3>
-      </div>
-      
-      <div className="settings-section">
-        <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={config?.eyeCare?.enabled}
-            onChange={(e) => updateConfig('eyeCare.enabled', e.target.checked)}
-          />
-          <span className="toggle-slider"></span>
-          20-20-20 Reminder
-        </label>
-      </div>
-
-      {config?.eyeCare?.enabled && (
-        <div className="settings-section">
-          <div className="volume-section">
-            <div className="volume-display">
-              {Math.round((config?.eyeCare?.soundVolume || 0.5) * 100)}%
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={config?.eyeCare?.soundVolume || 0.5}
-              onChange={(e) => updateConfig('eyeCare.soundVolume', parseFloat(e.target.value))}
-              className="volume-slider"
-            />
+    // Render individual settings sections
+    if (settingsSection === 'smartSearch') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setSettingsSection('main')}>←</button>
+            <h3>Smart Search</h3>
           </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderVideoFocusTab = () => (
-    <div className="settings-content">
-      <div className="settings-header">
-        <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
-        <h3>Video Focus Settings</h3>
-      </div>
-      
-      <div className="settings-section">
-        <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={config?.videoFocus?.enabled}
-            onChange={(e) => updateConfig('videoFocus.enabled', e.target.checked)}
-          />
-          <span className="toggle-slider"></span>
-          Video Focus Mode
-        </label>
-      </div>
-
-      {config?.videoFocus?.enabled && (
-        <>
+          
           <div className="settings-section">
             <label className="toggle-label">
               <input
                 type="checkbox"
-                checked={config?.videoFocus?.preventTabSwitch}
-                onChange={(e) => updateConfig('videoFocus.preventTabSwitch', e.target.checked)}
+                checked={config?.smartSearch?.enabled}
+                onChange={(e) => updateConfig('smartSearch.enabled', e.target.checked)}
               />
               <span className="toggle-slider"></span>
-              Prevent Tab Switching
+              Save Thoughts
             </label>
           </div>
 
@@ -1059,36 +768,600 @@ const Popup: React.FC = () => {
             <label className="toggle-label">
               <input
                 type="checkbox"
-                checked={config?.videoFocus?.showIndicator}
-                onChange={(e) => updateConfig('videoFocus.showIndicator', e.target.checked)}
+                checked={config?.smartSearch?.searchAllEnabled}
+                onChange={(e) => updateConfig('smartSearch.searchAllEnabled', e.target.checked)}
               />
               <span className="toggle-slider"></span>
-              Show Focus Indicator
+              Search All Feature
             </label>
           </div>
+        </div>
+      );
+    }
 
+    if (settingsSection === 'tabLimiter') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setSettingsSection('main')}>←</button>
+            <h3>Tab Limiter</h3>
+          </div>
+          
           <div className="settings-section">
             <label className="toggle-label">
               <input
                 type="checkbox"
-                checked={config?.videoFocus?.autoDetectVideos}
-                onChange={(e) => updateConfig('videoFocus.autoDetectVideos', e.target.checked)}
+                checked={config?.tabLimiter?.enabled}
+                onChange={(e) => updateConfig('tabLimiter.enabled', e.target.checked)}
               />
               <span className="toggle-slider"></span>
-              Auto-detect Videos
+              Enable Tab Limiter
             </label>
           </div>
 
           <div className="settings-section">
             <div className="section-header">
-              <h4>Supported Platforms</h4>
-              <span className="section-subtitle">YouTube, Netflix, Vimeo, Twitch, Facebook, Instagram, TikTok</span>
+              <h4>Maximum Tabs</h4>
+              <span className="section-subtitle">Limit the number of open tabs</span>
+            </div>
+            <div className="limit-control">
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value={config?.tabLimiter?.maxTabs || 3}
+                onChange={(e) => updateConfig('tabLimiter.maxTabs', parseInt(e.target.value))}
+                className="limit-slider"
+              />
+              <span className="limit-value">{config?.tabLimiter?.maxTabs || 3}</span>
             </div>
           </div>
-        </>
-      )}
-    </div>
-  );
+        </div>
+      );
+    }
+
+    if (settingsSection === 'care') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setSettingsSection('main')}>←</button>
+            <h3>Care</h3>
+          </div>
+          
+          <div className="settings-section">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.eyeCare?.enabled}
+                onChange={(e) => updateConfig('eyeCare.enabled', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              20-20-20 Reminder
+            </label>
+          </div>
+
+          {config?.eyeCare?.enabled && (
+            <div className="settings-section">
+              <div className="volume-section">
+                <div className="volume-display">
+                  {Math.round((config?.eyeCare?.soundVolume || 0.5) * 100)}%
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={config?.eyeCare?.soundVolume || 0.5}
+                  onChange={(e) => updateConfig('eyeCare.soundVolume', parseFloat(e.target.value))}
+                  className="volume-slider"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (settingsSection === 'videoFocus') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setSettingsSection('main')}>←</button>
+            <h3>Video Focus</h3>
+          </div>
+          
+          <div className="settings-section">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.videoFocus?.enabled}
+                onChange={(e) => updateConfig('videoFocus.enabled', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              Video Focus Mode
+            </label>
+          </div>
+
+          {config?.videoFocus?.enabled && (
+            <>
+              <div className="settings-section">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={config?.videoFocus?.preventTabSwitch}
+                    onChange={(e) => updateConfig('videoFocus.preventTabSwitch', e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  Prevent Tab Switching
+                </label>
+              </div>
+
+              <div className="settings-section">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={config?.videoFocus?.showIndicator}
+                    onChange={(e) => updateConfig('videoFocus.showIndicator', e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  Show Focus Indicator
+                </label>
+              </div>
+
+              <div className="settings-section">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={config?.videoFocus?.autoDetectVideos}
+                    onChange={(e) => updateConfig('videoFocus.autoDetectVideos', e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  Auto-detect Videos
+                </label>
+              </div>
+
+              <div className="settings-section">
+                <div className="section-header">
+                  <h4>Supported Platforms</h4>
+                  <span className="section-subtitle">YouTube, Netflix, Vimeo, Twitch, Facebook, Instagram, TikTok</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // For complex sections, use the existing render functions
+    if (settingsSection === 'habits') {
+      return renderHabitsTab();
+    }
+
+    if (settingsSection === 'pillars') {
+      return renderPillarsTab();
+    }
+
+    if (settingsSection === 'blocker') {
+      return renderBlockerTab();
+    }
+
+    if (settingsSection === 'contentFocus') {
+      return renderContentFocusTab();
+    }
+
+    return null;
+  };
+
+
+
+  const renderHabitsTab = () => {
+    if (habitsSection === 'main') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+            <h3>Habits</h3>
+          </div>
+          
+          <div className="section-list">
+            <div 
+              className="section-item"
+              onClick={() => setHabitsSection('list')}
+            >
+              <div className="section-icon">📊</div>
+              <div className="section-content">
+                <div className="section-title">My Habits</div>
+                <div className="section-subtitle">{config?.focusPage?.habits?.length || 0}/5 habits</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            {config?.focusPage?.habits?.length < 5 && (
+              <div 
+                className="section-item"
+                onClick={() => setHabitsSection('add')}
+              >
+                <div className="section-icon">➕</div>
+                <div className="section-content">
+                  <div className="section-title">Add Habit</div>
+                  <div className="section-subtitle">Create a new daily habit</div>
+                </div>
+                <div className="section-arrow">›</div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (habitsSection === 'list') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setHabitsSection('main')}>←</button>
+            <h3>My Habits</h3>
+          </div>
+          
+          <div className="settings-section">
+            {config?.focusPage?.habits?.length > 0 ? (
+              <div className="scrollable-list">
+                {config.focusPage.habits.map((habit, index) => (
+                  <div key={index} className="list-item">
+                    <div className="item-content">
+                      <input
+                        type="text"
+                        value={habit.name}
+                        onChange={(e) => updateHabit(index, { name: e.target.value })}
+                        placeholder="Habit name"
+                        maxLength={20}
+                        className="item-input"
+                      />
+                      <input
+                        type="color"
+                        value={habit.color}
+                        onChange={(e) => updateHabit(index, { color: e.target.value })}
+                        className="color-input"
+                      />
+                    </div>
+                    <div className="item-actions">
+                      <button
+                        className="remove-btn"
+                        onClick={() => removeHabit(index)}
+                        title="Remove habit"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-list">
+                <div className="empty-icon">📊</div>
+                <div className="empty-title">No Habits</div>
+                <div className="empty-message">Add habits to track your daily progress</div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (habitsSection === 'add') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setHabitsSection('main')}>←</button>
+            <h3>Add Habit</h3>
+          </div>
+          
+          <div className="settings-section">
+            <div className="add-item">
+              <input
+                type="text"
+                placeholder="Add habit"
+                value={newHabitName}
+                onChange={(e) => setNewHabitName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addHabit()}
+                maxLength={20}
+                className="add-input"
+              />
+              <input
+                type="color"
+                value={newHabitColor}
+                onChange={(e) => setNewHabitColor(e.target.value)}
+                className="color-input"
+              />
+              <button className="add-btn" onClick={addHabit} title="Add habit">+</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const renderPillarsTab = () => {
+    if (pillarsSection === 'main') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+            <h3>Pillars</h3>
+          </div>
+          
+          <div className="section-list">
+            <div 
+              className="section-item"
+              onClick={() => setPillarsSection('list')}
+            >
+              <div className="section-icon">🏛️</div>
+              <div className="section-content">
+                <div className="section-title">My Pillars</div>
+                <div className="section-subtitle">{config?.focusPage?.pillars?.length || 0}/3 pillars</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            {config?.focusPage?.pillars?.length < 3 && (
+              <div 
+                className="section-item"
+                onClick={() => setPillarsSection('add')}
+              >
+                <div className="section-icon">➕</div>
+                <div className="section-content">
+                  <div className="section-title">Add Pillar</div>
+                  <div className="section-subtitle">Create a new core principle</div>
+                </div>
+                <div className="section-arrow">›</div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (pillarsSection === 'list') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setPillarsSection('main')}>←</button>
+            <h3>My Pillars</h3>
+          </div>
+          
+          <div className="settings-section">
+            {config?.focusPage?.pillars?.length > 0 ? (
+              <div className="scrollable-list">
+                {config.focusPage.pillars.map((pillar, index) => (
+                  <div key={index} className="list-item">
+                    <div className="item-content">
+                      <input
+                        type="text"
+                        value={pillar.quote}
+                        onChange={(e) => updatePillar(index, { quote: e.target.value })}
+                        placeholder="Pillar quote"
+                        maxLength={50}
+                        className="item-input"
+                      />
+                      <textarea
+                        value={pillar.description}
+                        onChange={(e) => updatePillar(index, { description: e.target.value })}
+                        placeholder="Description"
+                        maxLength={100}
+                        className="item-textarea"
+                      />
+                      <input
+                        type="color"
+                        value={pillar.color}
+                        onChange={(e) => updatePillar(index, { color: e.target.value })}
+                        className="color-input"
+                      />
+                    </div>
+                    <div className="item-actions">
+                      <button
+                        className="remove-btn"
+                        onClick={() => removePillar(index)}
+                        title="Remove pillar"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-list">
+                <div className="empty-icon">🏛️</div>
+                <div className="empty-title">No Pillars</div>
+                <div className="empty-message">Add pillars to define your core principles</div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (pillarsSection === 'add') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setPillarsSection('main')}>←</button>
+            <h3>Add Pillar</h3>
+          </div>
+          
+          <div className="settings-section">
+            <div className="add-item">
+              <div className="pillar-form">
+                <input
+                  type="text"
+                  placeholder="Add pillar quote"
+                  value={newPillarQuote}
+                  onChange={(e) => setNewPillarQuote(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addPillar()}
+                  maxLength={50}
+                  className="add-input"
+                />
+                <textarea
+                  placeholder="Description"
+                  value={newPillarDescription}
+                  onChange={(e) => setNewPillarDescription(e.target.value)}
+                  maxLength={100}
+                  className="add-textarea"
+                />
+              </div>
+              <div className="pillar-form-actions">
+                <input
+                  type="color"
+                  value={newPillarColor}
+                  onChange={(e) => setNewPillarColor(e.target.value)}
+                  className="color-input"
+                />
+                <button className="add-btn" onClick={addPillar} title="Add pillar">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const renderBlockerTab = () => {
+    if (blockerSection === 'main') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+            <h3>Blocker</h3>
+          </div>
+          
+          <div className="section-list">
+            <div 
+              className="section-item"
+              onClick={() => setBlockerSection('domains')}
+            >
+              <div className="section-icon">🚫</div>
+              <div className="section-content">
+                <div className="section-title">Blocked Domains</div>
+                <div className="section-subtitle">{config?.distractionBlocker?.domains?.length || 0} domains</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+
+            <div 
+              className="section-item"
+              onClick={() => setBlockerSection('add')}
+            >
+              <div className="section-icon">➕</div>
+              <div className="section-content">
+                <div className="section-title">Add Domain</div>
+                <div className="section-subtitle">Block a distracting website</div>
+              </div>
+              <div className="section-arrow">›</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (blockerSection === 'domains') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setBlockerSection('main')}>←</button>
+            <h3>Blocked Domains</h3>
+          </div>
+          
+          <div className="settings-section">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={config?.distractionBlocker?.enabled}
+                onChange={(e) => updateConfig('distractionBlocker.enabled', e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              Distraction Blocker
+            </label>
+          </div>
+
+          {config?.distractionBlocker?.enabled && (
+            <div className="settings-section">
+              {config?.distractionBlocker?.domains?.length > 0 ? (
+                <div className="scrollable-list">
+                  {config.distractionBlocker.domains.map((domain, index) => (
+                    <div key={index} className="list-item">
+                      <div className="item-content">
+                        <div className="domain-info">
+                          <div className="domain-name">{domain.domain}</div>
+                          <div className="domain-limit">{domain.dailyLimit}/day</div>
+                        </div>
+                      </div>
+                      <div className="item-actions">
+                        <button
+                          className="remove-btn"
+                          onClick={() => removeDomain(index)}
+                          title="Remove domain"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-list">
+                  <div className="empty-icon">🚫</div>
+                  <div className="empty-title">No Domains</div>
+                  <div className="empty-message">Add domains to block distractions</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (blockerSection === 'add') {
+      return (
+        <div className="settings-content">
+          <div className="settings-header">
+            <button className="back-btn" onClick={() => setBlockerSection('main')}>←</button>
+            <h3>Add Domain</h3>
+          </div>
+          
+          <div className="settings-section">
+            <div className="add-item">
+              <input
+                type="text"
+                placeholder="facebook.com"
+                value={newDomain}
+                onChange={(e) => setNewDomain(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addDomain()}
+                maxLength={20}
+                className="add-input"
+              />
+              <input
+                type="number"
+                placeholder="3"
+                value={newDomainLimit}
+                onChange={(e) => setNewDomainLimit(parseInt(e.target.value) || 0)}
+                min="1"
+                max="10"
+                className="limit-input"
+              />
+              <button className="add-btn" onClick={addDomain} title="Add domain">+</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+
 
   const renderContentFocusTab = () => {
     // Main Content Focus Menu
@@ -1333,14 +1606,7 @@ const Popup: React.FC = () => {
     <div className="popup-container">
       {/* Content based on active tab */}
       {activeTab === 'main' && renderMainTab()}
-      {activeTab === 'smartSearch' && renderSmartSearchTab()}
-      {activeTab === 'tabLimiter' && renderTabLimiterTab()}
-      {activeTab === 'habits' && renderHabitsTab()}
-      {activeTab === 'pillars' && renderPillarsTab()}
-      {activeTab === 'blocker' && renderBlockerTab()}
-      {activeTab === 'care' && renderCareTab()}
-      {activeTab === 'videoFocus' && renderVideoFocusTab()}
-      {activeTab === 'contentFocus' && renderContentFocusTab()}
+      {activeTab === 'settings' && renderSettingsTab()}
     </div>
   );
 };
