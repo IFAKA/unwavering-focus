@@ -478,6 +478,69 @@ const Popup: React.FC = () => {
     }
   };
 
+  // Navigation helper functions
+  const navigateTo = (tab: string, section?: string, subsection?: string) => {
+    // Navigate to new state
+    setActiveTab(tab as 'main' | 'settings');
+    if (section) setSettingsSection(section as any);
+    if (subsection) {
+      if (section === 'contentFocus') setContentFocusSection(subsection as any);
+      else if (section === 'habits') setHabitsSection(subsection as any);
+      else if (section === 'pillars') setPillarsSection(subsection as any);
+      else if (section === 'blocker') setBlockerSection(subsection as any);
+    }
+  };
+
+  const getCurrentSubsection = () => {
+    if (settingsSection === 'contentFocus') return contentFocusSection;
+    if (settingsSection === 'habits') return habitsSection;
+    if (settingsSection === 'pillars') return pillarsSection;
+    if (settingsSection === 'blocker') return blockerSection;
+    return 'main';
+  };
+
+  const goBack = () => {
+    // Determine the current navigation level and go to the immediate previous level
+    if (activeTab === 'settings') {
+      if (settingsSection === 'main') {
+        // We're in unified settings, go back to main
+        setActiveTab('main');
+        setSettingsSection('main');
+        setContentFocusSection('main');
+        setHabitsSection('main');
+        setPillarsSection('main');
+        setBlockerSection('main');
+      } else {
+        // Check if we're in a subsection and go back to the section
+        if (settingsSection === 'contentFocus' && contentFocusSection !== 'main') {
+          // We're in a content focus subsection, go back to content focus section
+          setContentFocusSection('main');
+        } else if (settingsSection === 'habits' && habitsSection !== 'main') {
+          // We're in a habits subsection, go back to habits section
+          setHabitsSection('main');
+        } else if (settingsSection === 'pillars' && pillarsSection !== 'main') {
+          // We're in a pillars subsection, go back to pillars section
+          setPillarsSection('main');
+        } else if (settingsSection === 'blocker' && blockerSection !== 'main') {
+          // We're in a blocker subsection, go back to blocker section
+          setBlockerSection('main');
+        } else {
+          // We're in a section (not a subsection), go back to unified settings
+          setSettingsSection('main');
+          setContentFocusSection('main');
+          setHabitsSection('main');
+          setPillarsSection('main');
+          setBlockerSection('main');
+        }
+      }
+    } else if (activeTab === 'main') {
+      // We're in main, stay in main (no going back from main)
+      return;
+    }
+  };
+
+
+
   const renderMainTab = () => (
     <>
       {/* Copy Status Feedback */}
@@ -536,7 +599,7 @@ const Popup: React.FC = () => {
           <div 
             className="metric-item clickable"
             title="Saved Items"
-            onClick={() => setActiveTab('settings')}
+            onClick={() => navigateTo('settings')}
           >
             <div className="metric-icon">💭</div>
             <div className="metric-value">{savedSearches.length}</div>
@@ -544,7 +607,7 @@ const Popup: React.FC = () => {
           <div 
             className="metric-item clickable"
             title="Settings"
-            onClick={() => setActiveTab('settings')}
+            onClick={() => navigateTo('settings')}
           >
             <div className="metric-icon">⚙️</div>
             <div className="metric-value">All</div>
@@ -638,14 +701,14 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Settings</h3>
           </div>
           
           <div className="section-list">
             <div 
               className="section-item"
-              onClick={() => setSettingsSection('smartSearch')}
+              onClick={() => navigateTo('settings', 'smartSearch')}
             >
               <div className="section-icon">🔍</div>
               <div className="section-content">
@@ -657,7 +720,7 @@ const Popup: React.FC = () => {
 
             <div 
               className="section-item"
-              onClick={() => setSettingsSection('tabLimiter')}
+              onClick={() => navigateTo('settings', 'tabLimiter')}
             >
               <div className="section-icon">📑</div>
               <div className="section-content">
@@ -669,7 +732,7 @@ const Popup: React.FC = () => {
 
             <div 
               className="section-item"
-              onClick={() => setSettingsSection('habits')}
+              onClick={() => navigateTo('settings', 'habits')}
             >
               <div className="section-icon">📊</div>
               <div className="section-content">
@@ -681,7 +744,7 @@ const Popup: React.FC = () => {
 
             <div 
               className="section-item"
-              onClick={() => setSettingsSection('pillars')}
+              onClick={() => navigateTo('settings', 'pillars')}
             >
               <div className="section-icon">🏛️</div>
               <div className="section-content">
@@ -693,7 +756,7 @@ const Popup: React.FC = () => {
 
             <div 
               className="section-item"
-              onClick={() => setSettingsSection('blocker')}
+              onClick={() => navigateTo('settings', 'blocker')}
             >
               <div className="section-icon">🚫</div>
               <div className="section-content">
@@ -705,7 +768,7 @@ const Popup: React.FC = () => {
 
             <div 
               className="section-item"
-              onClick={() => setSettingsSection('care')}
+              onClick={() => navigateTo('settings', 'care')}
             >
               <div className="section-icon">👁️</div>
               <div className="section-content">
@@ -717,7 +780,7 @@ const Popup: React.FC = () => {
 
             <div 
               className="section-item"
-              onClick={() => setSettingsSection('videoFocus')}
+              onClick={() => navigateTo('settings', 'videoFocus')}
             >
               <div className="section-icon">🎬</div>
               <div className="section-content">
@@ -729,7 +792,7 @@ const Popup: React.FC = () => {
 
             <div 
               className="section-item"
-              onClick={() => setSettingsSection('contentFocus')}
+              onClick={() => navigateTo('settings', 'contentFocus')}
             >
               <div className="section-icon">🎯</div>
               <div className="section-content">
@@ -748,7 +811,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setSettingsSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Smart Search</h3>
           </div>
           
@@ -783,7 +846,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setSettingsSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Tab Limiter</h3>
           </div>
           
@@ -824,7 +887,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setSettingsSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Care</h3>
           </div>
           
@@ -866,7 +929,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setSettingsSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Video Focus</h3>
           </div>
           
@@ -932,7 +995,7 @@ const Popup: React.FC = () => {
       );
     }
 
-    // For complex sections, use the existing render functions
+    // For complex sections, use the existing render functions but with proper navigation
     if (settingsSection === 'habits') {
       return renderHabitsTab();
     }
@@ -959,14 +1022,14 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Habits</h3>
           </div>
           
           <div className="section-list">
             <div 
               className="section-item"
-              onClick={() => setHabitsSection('list')}
+              onClick={() => navigateTo('settings', 'habits', 'list')}
             >
               <div className="section-icon">📊</div>
               <div className="section-content">
@@ -979,7 +1042,7 @@ const Popup: React.FC = () => {
             {config?.focusPage?.habits?.length < 5 && (
               <div 
                 className="section-item"
-                onClick={() => setHabitsSection('add')}
+                onClick={() => navigateTo('settings', 'habits', 'add')}
               >
                 <div className="section-icon">➕</div>
                 <div className="section-content">
@@ -998,7 +1061,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setHabitsSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>My Habits</h3>
           </div>
           
@@ -1051,7 +1114,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setHabitsSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Add Habit</h3>
           </div>
           
@@ -1087,14 +1150,14 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Pillars</h3>
           </div>
           
           <div className="section-list">
             <div 
               className="section-item"
-              onClick={() => setPillarsSection('list')}
+              onClick={() => navigateTo('settings', 'pillars', 'list')}
             >
               <div className="section-icon">🏛️</div>
               <div className="section-content">
@@ -1107,7 +1170,7 @@ const Popup: React.FC = () => {
             {config?.focusPage?.pillars?.length < 3 && (
               <div 
                 className="section-item"
-                onClick={() => setPillarsSection('add')}
+                onClick={() => navigateTo('settings', 'pillars', 'add')}
               >
                 <div className="section-icon">➕</div>
                 <div className="section-content">
@@ -1126,7 +1189,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setPillarsSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>My Pillars</h3>
           </div>
           
@@ -1186,7 +1249,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setPillarsSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Add Pillar</h3>
           </div>
           
@@ -1233,14 +1296,14 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Blocker</h3>
           </div>
           
           <div className="section-list">
             <div 
               className="section-item"
-              onClick={() => setBlockerSection('domains')}
+              onClick={() => navigateTo('settings', 'blocker', 'domains')}
             >
               <div className="section-icon">🚫</div>
               <div className="section-content">
@@ -1252,7 +1315,7 @@ const Popup: React.FC = () => {
 
             <div 
               className="section-item"
-              onClick={() => setBlockerSection('add')}
+              onClick={() => navigateTo('settings', 'blocker', 'add')}
             >
               <div className="section-icon">➕</div>
               <div className="section-content">
@@ -1270,7 +1333,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setBlockerSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Blocked Domains</h3>
           </div>
           
@@ -1327,7 +1390,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setBlockerSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Add Domain</h3>
           </div>
           
@@ -1369,14 +1432,14 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setActiveTab('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Content Focus</h3>
           </div>
           
           <div className="section-list">
             <div 
               className="section-item"
-              onClick={() => setContentFocusSection('video')}
+              onClick={() => navigateTo('settings', 'contentFocus', 'video')}
             >
               <div className="section-icon">🎬</div>
               <div className="section-content">
@@ -1388,7 +1451,7 @@ const Popup: React.FC = () => {
 
             <div 
               className="section-item"
-              onClick={() => setContentFocusSection('search')}
+              onClick={() => navigateTo('settings', 'contentFocus', 'search')}
             >
               <div className="section-icon">🔍</div>
               <div className="section-content">
@@ -1400,7 +1463,7 @@ const Popup: React.FC = () => {
 
             <div 
               className="section-item"
-              onClick={() => setContentFocusSection('global')}
+              onClick={() => navigateTo('settings', 'contentFocus', 'global')}
             >
               <div className="section-icon">🌐</div>
               <div className="section-content">
@@ -1419,7 +1482,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setContentFocusSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Video Page</h3>
           </div>
           
@@ -1511,7 +1574,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setContentFocusSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Search Page</h3>
           </div>
           
@@ -1538,7 +1601,7 @@ const Popup: React.FC = () => {
       return (
         <div className="settings-content">
           <div className="settings-header">
-            <button className="back-btn" onClick={() => setContentFocusSection('main')}>←</button>
+            <button className="back-btn" onClick={goBack}>←</button>
             <h3>Global</h3>
           </div>
           
