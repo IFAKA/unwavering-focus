@@ -52,6 +52,7 @@ export interface ExtensionConfig {
     motivationalMessage: string;
     habits: Habit[];
     pillars: Pillar[];
+    dopamineTriggers: string[];
     reinforcementMessages: { 
       high: string; 
       medium: string; 
@@ -126,6 +127,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     motivationalMessage: "Enfócate. Tu tiempo es oro.",
     habits: [],
     pillars: [],
+    dopamineTriggers: [],
     reinforcementMessages: {
       high: "Your discipline forges your excellence.",
       medium: "Stay consistent. Progress builds momentum.",

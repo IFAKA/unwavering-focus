@@ -27,10 +27,13 @@ const FocusPage: React.FC<FocusPageProps> = () => {
   const [sessionTimer, setSessionTimer] = useState<ReturnType<typeof setInterval> | null>(null);
   const [mindfulQuote, setMindfulQuote] = useState<string>('');
   
+  // Form visibility states
+  const [showTriggerForm, setShowTriggerForm] = useState(false);
+  const [showReminderForm, setShowReminderForm] = useState(false);
+  
   // Editing states for pillars
   const [newPillarQuote, setNewPillarQuote] = useState('');
   const [newPillarDescription, setNewPillarDescription] = useState('');
-  const [newPillarColor, setNewPillarColor] = useState('#007aff');
 
   useEffect(() => {
     loadData();
@@ -52,6 +55,8 @@ const FocusPage: React.FC<FocusPageProps> = () => {
       
       if (response && typeof response === 'object') {
         setConfig(response.config || defaultConfig);
+        // Load dopamine triggers from config
+        setDopamineTriggers(response.config?.focusPage?.dopamineTriggers || []);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -172,7 +177,7 @@ const FocusPage: React.FC<FocusPageProps> = () => {
       id: Date.now().toString(),
       quote: pillarQuote,
       description: newPillarDescription.trim() || "",
-      color: newPillarColor
+      color: '#007aff' // Default color
     };
     
     const updatedConfig = {
@@ -187,7 +192,7 @@ const FocusPage: React.FC<FocusPageProps> = () => {
     await saveConfig(updatedConfig);
     setNewPillarQuote('');
     setNewPillarDescription('');
-    setNewPillarColor('#007aff');
+    setShowReminderForm(false);
   };
 
   const updatePillar = async (index: number, updates: Partial<Pillar>) => {
@@ -224,15 +229,45 @@ const FocusPage: React.FC<FocusPageProps> = () => {
     await saveConfig(updatedConfig);
   };
 
-  const addDopamineTrigger = () => {
-    if (currentTrigger.trim()) {
-      setDopamineTriggers(prev => [...prev, currentTrigger.trim()]);
-      setCurrentTrigger('');
-    }
+  const addDopamineTrigger = async () => {
+    if (!config || !currentTrigger.trim()) return;
+    
+    const trigger = currentTrigger.trim();
+    if (dopamineTriggers.includes(trigger)) return;
+    
+    const newTriggers = [...dopamineTriggers, trigger];
+    setDopamineTriggers(newTriggers);
+    
+    const updatedConfig = {
+      ...config,
+      focusPage: {
+        ...config.focusPage,
+        dopamineTriggers: newTriggers
+      }
+    };
+    
+    setConfig(updatedConfig);
+    await saveConfig(updatedConfig);
+    setCurrentTrigger('');
+    setShowTriggerForm(false);
   };
 
-  const removeDopamineTrigger = (index: number) => {
-    setDopamineTriggers(prev => prev.filter((_, i) => i !== index));
+  const removeDopamineTrigger = async (index: number) => {
+    if (!config) return;
+    
+    const newTriggers = dopamineTriggers.filter((_, i) => i !== index);
+    setDopamineTriggers(newTriggers);
+    
+    const updatedConfig = {
+      ...config,
+      focusPage: {
+        ...config.focusPage,
+        dopamineTriggers: newTriggers
+      }
+    };
+    
+    setConfig(updatedConfig);
+    await saveConfig(updatedConfig);
   };
 
   const getProgressPercentage = () => {
@@ -290,28 +325,25 @@ const FocusPage: React.FC<FocusPageProps> = () => {
               <div className="metric-value">{pillars.length}</div>
               <div className="metric-label">Reminders</div>
             </div>
+            <div className="metric-card">
+              <div className="metric-icon">🎯</div>
+              <div className="metric-value">{dopamineTriggers.length}</div>
+              <div className="metric-label">Triggers</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Mindfulness Focus */}
+      {/* Main Content - 4 Column Layout */}
       <div className="main-content">
-        {/* Left Column - Breathing & Mindfulness */}
+        {/* Column 1 - Box Breathing */}
         <div className="content-column">
           <div className="section-header">
-            <span className="section-title">Mindful Breathing</span>
-            <span className="section-subtitle">Center yourself</span>
+            <span className="section-title">Box Breathing</span>
+            <span className="section-subtitle">4-4-4-4 rhythm</span>
           </div>
           
           <div className="breathing-exercise">
-            <div className="breathing-instructions">
-              <h3>Box Breathing</h3>
-              <p>4 seconds each phase</p>
-              {mindfulQuote && (
-                <div className="mindful-quote">&ldquo;{mindfulQuote}&rdquo;</div>
-              )}
-            </div>
-            
             <div className="breathing-progress">
               <div className="breathing-phase" style={{ color: getProgressColor() }}>{breathingPhase.toUpperCase()}</div>
               <div className="progress-bar">
@@ -329,7 +361,7 @@ const FocusPage: React.FC<FocusPageProps> = () => {
                   className="action-btn primary"
                   onClick={startMindfulMoment}
                 >
-                  🧘 Start Mindful Session
+                  🧘 Start Breathing
                 </button>
               ) : (
                 <div className="mindful-session">
@@ -338,36 +370,60 @@ const FocusPage: React.FC<FocusPageProps> = () => {
                     className="action-btn secondary"
                     onClick={endMindfulSession}
                   >
-                    End Session
+                    Stop
                   </button>
                 </div>
               )}
             </div>
           </div>
+        </div>
 
+        {/* Column 2 - Dopamine Triggers */}
+        <div className="content-column">
           <div className="section-header">
             <span className="section-title">Dopamine Triggers</span>
             <span className="section-subtitle">Recognize your patterns</span>
           </div>
           
           <div className="triggers-section">
-            <div className="add-trigger">
-              <input
-                type="text"
-                placeholder="What triggers your dopamine seeking?"
-                value={currentTrigger}
-                onChange={(e) => setCurrentTrigger(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addDopamineTrigger()}
-                className="trigger-input"
-              />
+            {!showTriggerForm ? (
               <button 
-                className="add-btn"
-                onClick={addDopamineTrigger}
-                title="Add trigger"
+                className="add-trigger-btn"
+                onClick={() => setShowTriggerForm(true)}
               >
-                +
+                + Add Trigger
               </button>
-            </div>
+            ) : (
+              <div className="add-trigger">
+                <input
+                  type="text"
+                  placeholder="What triggers your dopamine seeking?"
+                  value={currentTrigger}
+                  onChange={(e) => setCurrentTrigger(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addDopamineTrigger()}
+                  className="trigger-input"
+                  autoFocus
+                />
+                <div className="form-actions">
+                  <button 
+                    className="cancel-btn"
+                    onClick={() => {
+                      setShowTriggerForm(false);
+                      setCurrentTrigger('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    className="add-btn"
+                    onClick={addDopamineTrigger}
+                    title="Add trigger"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            )}
             
             {dopamineTriggers.length > 0 ? (
               <div className="triggers-list">
@@ -394,7 +450,7 @@ const FocusPage: React.FC<FocusPageProps> = () => {
           </div>
         </div>
 
-        {/* Right Column - Mindful Reminders */}
+        {/* Column 3 - Mindful Reminders */}
         <div className="content-column">
           <div className="section-header">
             <span className="section-title">Mindful Reminders</span>
@@ -402,34 +458,48 @@ const FocusPage: React.FC<FocusPageProps> = () => {
           </div>
           
           <div className="reminders-section">
-            <div className="add-reminder">
-              <input
-                type="text"
-                placeholder="Add mindful reminder"
-                value={newPillarQuote}
-                onChange={(e) => setNewPillarQuote(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addPillar()}
-                maxLength={50}
-                className="reminder-input"
-              />
-              <input
-                type="text"
-                placeholder="Why this matters"
-                value={newPillarDescription}
-                onChange={(e) => setNewPillarDescription(e.target.value)}
-                maxLength={100}
-                className="reminder-input"
-              />
-              <div className="form-actions">
+            {!showReminderForm ? (
+              <button 
+                className="add-reminder-btn"
+                onClick={() => setShowReminderForm(true)}
+              >
+                + Add Reminder
+              </button>
+            ) : (
+              <div className="add-reminder">
                 <input
-                  type="color"
-                  value={newPillarColor}
-                  onChange={(e) => setNewPillarColor(e.target.value)}
-                  className="color-input"
+                  type="text"
+                  placeholder="Add mindful reminder"
+                  value={newPillarQuote}
+                  onChange={(e) => setNewPillarQuote(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addPillar()}
+                  maxLength={50}
+                  className="reminder-input"
+                  autoFocus
                 />
-                <button className="add-btn" onClick={addPillar}>+</button>
+                <input
+                  type="text"
+                  placeholder="Why this matters"
+                  value={newPillarDescription}
+                  onChange={(e) => setNewPillarDescription(e.target.value)}
+                  maxLength={100}
+                  className="reminder-input"
+                />
+                <div className="form-actions">
+                  <button 
+                    className="cancel-btn"
+                    onClick={() => {
+                      setShowReminderForm(false);
+                      setNewPillarQuote('');
+                      setNewPillarDescription('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button className="add-btn" onClick={addPillar}>+</button>
+                </div>
               </div>
-            </div>
+            )}
             
             {pillars.length > 0 ? (
               <div className="reminders-list">
@@ -442,12 +512,6 @@ const FocusPage: React.FC<FocusPageProps> = () => {
                       )}
                     </div>
                     <div className="reminder-actions">
-                      <input
-                        type="color"
-                        value={pillar.color}
-                        onChange={(e) => updatePillar(index, { color: e.target.value })}
-                        className="color-input"
-                      />
                       <button
                         className="remove-btn"
                         onClick={() => removePillar(index)}
@@ -468,38 +532,43 @@ const FocusPage: React.FC<FocusPageProps> = () => {
             )}
           </div>
         </div>
-      </div>
 
-      {/* Quick Actions */}
-      <div className="actions-section">
-        <div className="action-row">
-          <button 
-            className="action-btn secondary"
-            onClick={() => window.history.back()}
-            title="Go back"
-          >
-            ← Back
-          </button>
-          <button 
-            className="action-btn primary"
-            onClick={() => chrome.tabs.create({ url: 'https://www.google.com' })}
-            title="Return to work"
-          >
-            🚀 Return to Work
-          </button>
-        </div>
-      </div>
-
-      {/* Status Indicators */}
-      <div className="status-indicators">
-        <div className={`status-dot ${mindfulMoment ? 'active' : 'inactive'}`} title="Mindful Session Active">
-          🧘
-        </div>
-        <div className={`status-dot ${dopamineTriggers.length > 0 ? 'active' : 'inactive'}`} title="Triggers Recognized">
-          🎯
-        </div>
-        <div className={`status-dot ${pillars.length > 0 ? 'active' : 'inactive'}`} title="Reminders Set">
-          ⚡
+        {/* Column 4 - Quick Actions */}
+        <div className="content-column">
+          <div className="section-header">
+            <span className="section-title">Quick Actions</span>
+            <span className="section-subtitle">Stay focused</span>
+          </div>
+          
+          <div className="quick-actions-section">
+            <button 
+              className="quick-action-btn primary"
+              onClick={() => chrome.tabs.create({ url: 'https://www.google.com' })}
+              title="Return to work"
+            >
+              🚀 Return to Work
+            </button>
+            
+            <button 
+              className="quick-action-btn secondary"
+              onClick={() => window.history.back()}
+              title="Go back"
+            >
+              ← Back
+            </button>
+            
+            <div className="status-indicators-inline">
+              <div className={`status-dot ${mindfulMoment ? 'active' : 'inactive'}`} title="Mindful Session Active">
+                🧘
+              </div>
+              <div className={`status-dot ${dopamineTriggers.length > 0 ? 'active' : 'inactive'}`} title="Triggers Recognized">
+                🎯
+              </div>
+              <div className={`status-dot ${pillars.length > 0 ? 'active' : 'inactive'}`} title="Reminders Set">
+                ⚡
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
