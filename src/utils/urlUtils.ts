@@ -82,3 +82,23 @@ export function getSearchUrl(query: string, searchEngine: string = 'google'): st
   
   return searchEngines[searchEngine as keyof typeof searchEngines] || searchEngines.google;
 } 
+
+// URL detection and formatting utilities
+export function isUrl(text: string): boolean {
+  // Check if the entire text is a URL (not just contains a URL)
+  const urlPattern = /^https?:\/\/[^\s]+$/;
+  return urlPattern.test(text.trim());
+}
+
+export function formatUrlForDisplay(url: string): string {
+  // Remove protocol
+  let formatted = url.replace(/^https?:\/\//, '');
+  
+  // Remove www subdomain
+  formatted = formatted.replace(/^www\./, '');
+  
+  // Remove trailing slash
+  formatted = formatted.replace(/\/$/, '');
+  
+  return formatted;
+} 

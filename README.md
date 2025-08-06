@@ -208,6 +208,15 @@ The YouTube distraction blocking uses a multi-layered approach:
 - Pre-populates with selected text if any
 - Saves searches to persistent storage
 - Displays saved searches in popup
+- **Smart URL handling**: If saved item is a URL, clicking search navigates directly to the URL
+- **Clean URL display**: URLs show without protocol (https://), www subdomain, and trailing slashes
+- **Regular search**: Non-URL items perform Google search as before
+- **Hover interactions**: Search actions appear on hover with smooth animations
+- **Modal animations**: Smooth fade in/out animations with immediate response to Enter key
+- **Synchronized feedback**: "Saved for later" confirmation appears immediately when modal closes
+- **Scrollable list**: Saved items list scrolls when there are many items
+- **Golden ratio design**: Popup uses golden ratio proportions (300px × 485px) for optimal aesthetics
+- **Reverse chronological order**: Newest items appear at the top of the list
 - Click to perform searches or delete them
 
 ✅ **Distraction Blocker**:

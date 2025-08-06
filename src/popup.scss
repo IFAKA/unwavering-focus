@@ -70,14 +70,15 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   width: 300px;
-  min-height: 350px;
-  overflow: hidden;
+  height: 485px; /* Golden ratio: 300px × 1.618 ≈ 485px */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .popup-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 485px; /* Golden ratio height */
   background: var(--bg-primary);
 }
 
@@ -284,9 +285,10 @@ body {
 .search-list {
   flex: 1;
   padding: 0 var(--spacing-lg);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  height: 350px; /* Fixed height instead of max-height */
+  overflow: hidden; /* Ensure consistent height */
 }
 
 .list-header {
@@ -313,22 +315,21 @@ body {
 }
 
 .list-content {
-  flex: 1;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
 }
 
 .search-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  position: relative;
   padding: var(--spacing-sm);
   background: var(--bg-secondary);
   border-radius: var(--border-radius);
   border: 1px solid var(--bg-tertiary);
   transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.search-item:not(:first-child) {
+  margin-top: var(--spacing-sm);
 }
 
 .search-item:hover {
@@ -337,20 +338,26 @@ body {
 }
 
 .search-text {
-  flex: 1;
   font-size: 13px;
   color: var(--text-primary);
-  margin-right: var(--spacing-md);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .search-actions {
+  position: absolute;
+  top: 50%;
+  right: var(--spacing-sm);
+  transform: translateY(-50%);
   display: flex;
   gap: var(--spacing-xs);
   opacity: 0;
   transition: opacity 0.2s ease;
+  background: var(--bg-secondary);
+  padding: var(--spacing-xs);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px var(--shadow);
 }
 
 .search-item:hover .search-actions {
@@ -948,6 +955,8 @@ body {
   padding: var(--spacing-xl);
   text-align: center;
   color: var(--text-secondary);
+  height: 350px; /* Fixed height to match search list */
+  overflow: hidden; /* Ensure consistent height */
 }
 
 .empty-icon {

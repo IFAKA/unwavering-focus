@@ -78,6 +78,7 @@ class SmartSearchModal {
   private modal: HTMLDivElement | null = null;
   private input: HTMLInputElement | null = null;
   private confirmation: HTMLDivElement | null = null;
+  private isClosing: boolean = false; // Prevent multiple modals
 
   constructor() {
     // Remove keyboard listener since it's now handled by command
@@ -95,12 +96,22 @@ class SmartSearchModal {
   }
 
   public show() {
-    if (this.modal) {
-      return;
+    if (this.modal || this.isClosing) {
+      return; // Prevent multiple modals
     }
+
+    // Clean up any existing modals (in case of state corruption)
+    this.cleanup();
 
     this.modal = this.createModal();
     document.body.appendChild(this.modal);
+
+    // Animate in
+    setTimeout(() => {
+      if (this.modal) {
+        this.modal.style.opacity = '1';
+      }
+    }, 10);
 
     // Focus the input
     setTimeout(() => {
@@ -112,12 +123,14 @@ class SmartSearchModal {
         this.input!.value = selectedText;
         this.input!.select();
       }
-    }, 10);
+    }, 50);
   }
 
   private createModal(): HTMLDivElement {
     const modal = document.createElement('div');
     modal.className = styles['smart-search-modal'];
+    modal.style.opacity = '0';
+    modal.style.transition = 'opacity 0.2s ease';
     modal.innerHTML = `
       <div class="${styles['modal-overlay']}">
         <div class="${styles['modal-content']}">
@@ -158,11 +171,33 @@ class SmartSearchModal {
   }
 
   private hide() {
-    if (this.modal) {
-      document.body.removeChild(this.modal);
-      this.modal = null;
-      this.input = null;
+    if (this.modal && !this.isClosing) {
+      this.isClosing = true; // Prevent multiple close attempts
+      
+      // Add fade out animation
+      this.modal.style.transition = 'opacity 0.2s ease';
+      this.modal.style.opacity = '0';
+      
+      // Remove after animation completes
+      setTimeout(() => {
+        if (this.modal && this.modal.parentNode) {
+          this.modal.parentNode.removeChild(this.modal);
+          this.modal = null;
+          this.input = null;
+        }
+        this.isClosing = false; // Reset flag
+      }, 200);
     }
+  }
+
+  private cleanup() {
+    // Force cleanup in case of state corruption
+    if (this.modal && this.modal.parentNode) {
+      this.modal.parentNode.removeChild(this.modal);
+    }
+    this.modal = null;
+    this.input = null;
+    this.isClosing = false;
   }
 
   private showConfirmation(query: string) {
@@ -207,22 +242,20 @@ class SmartSearchModal {
 
   private async saveThought() {
     const thought = this.input?.value.trim();
-    if (!thought) return;
+    if (!thought || this.isClosing) return; // Prevent multiple saves
 
     try {
+      // Start the close animation immediately
+      this.hide();
+      
       await chrome.runtime.sendMessage({ 
         type: 'SAVE_SEARCH', 
         query: thought 
       });
       console.log('Thought saved:', thought);
       
-      // Show confirmation before hiding modal
+      // Show confirmation immediately when modal starts closing
       this.showConfirmation(thought);
-      
-      // Hide modal after a short delay
-      setTimeout(() => {
-        this.hide();
-      }, 500);
     } catch (error) {
       console.error('Error saving thought:', error);
       // Still hide modal even if there's an error

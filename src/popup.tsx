@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
+import { ExtensionConfig, DistractingDomain, Habit, Pillar } from './types';
+import { isUrl, formatUrlForDisplay } from './utils/urlUtils';
 import './popup.scss';
-import { DistractingDomain, ExtensionConfig, Habit, Pillar } from './types';
 
 interface StorageData {
   savedSearches: SearchQuery[];
@@ -331,9 +332,15 @@ const Popup: React.FC = () => {
         setData({ ...data, savedSearches: updatedSearches });
       }
       
-      // Perform the search
-      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query.query)}`;
-      await chrome.tabs.create({ url: searchUrl });
+      // Check if the query is a URL
+      if (isUrl(query.query)) {
+        // Navigate directly to the URL
+        await chrome.tabs.create({ url: query.query });
+      } else {
+        // Perform a Google search
+        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query.query)}`;
+        await chrome.tabs.create({ url: searchUrl });
+      }
       
       setSearchStatus('completed');
       setTimeout(() => {
@@ -359,8 +366,14 @@ const Popup: React.FC = () => {
       setSearchingQuery('All items');
 
       for (const query of data?.savedSearches || []) {
-        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query.query)}`;
-        await chrome.tabs.create({ url: searchUrl });
+        if (isUrl(query.query)) {
+          // Navigate directly to the URL
+          await chrome.tabs.create({ url: query.query });
+        } else {
+          // Perform a Google search
+          const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query.query)}`;
+          await chrome.tabs.create({ url: searchUrl });
+        }
       }
       
       // Remove all search items after performing all searches
@@ -538,36 +551,44 @@ const Popup: React.FC = () => {
             <span className="list-count">{savedSearches.length}</span>
           </div>
           <div className="list-content">
-            {savedSearches.map((query) => (
-              <div key={query.id} className="search-item">
-                <div className="search-text" title={query.query}>
-                  {query.query.length > 25 ? query.query.substring(0, 25) + '...' : query.query}
+            {savedSearches
+              .sort((a, b) => b.timestamp - a.timestamp) // Sort by newest first
+              .map((query) => {
+              const displayText = isUrl(query.query) 
+                ? formatUrlForDisplay(query.query)
+                : query.query;
+              
+              return (
+                <div key={query.id} className="search-item">
+                  <div className="search-text" title={query.query}>
+                    {displayText}
+                  </div>
+                  <div className="search-actions">
+                    <button 
+                      className="search-btn"
+                      onClick={() => performSearch(query)}
+                      title={isUrl(query.query) ? "Go to this URL" : "Search this item"}
+                    >
+                      🔍
+                    </button>
+                    <button 
+                      className="copy-btn"
+                      onClick={() => copySearchQuery(query.query)}
+                      title="Copy this item"
+                    >
+                      📋
+                    </button>
+                    <button 
+                      className="delete-btn"
+                      onClick={() => deleteSearch(query.id)}
+                      title="Delete this item"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
-                <div className="search-actions">
-                  <button 
-                    className="search-btn"
-                    onClick={() => performSearch(query)}
-                    title="Search this item"
-                  >
-                    🔍
-                  </button>
-                  <button 
-                    className="copy-btn"
-                    onClick={() => copySearchQuery(query.query)}
-                    title="Copy this item"
-                  >
-                    📋
-                  </button>
-                  <button 
-                    className="delete-btn"
-                    onClick={() => deleteSearch(query.id)}
-                    title="Delete this item"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ) : (
