@@ -114,10 +114,15 @@ async function playEyeCareStartSound() {
           });
           if (response && response.success) {
             soundPlayed = true;
+            console.log('Eye care start sound played successfully via content script');
+            break;
+          } else if (response && response.method) {
+            soundPlayed = true;
+            console.log(`Eye care start sound played via fallback: ${response.method}`);
             break;
           }
         } catch (error) {
-          // Continue to next tab
+          console.log('Content script not available for tab:', tab.url);
           continue;
         }
       }
@@ -131,26 +136,113 @@ async function playEyeCareStartSound() {
           await chrome.scripting.executeScript({
             target: { tabId: tab.id! },
             func: (volume) => {
-              try {
-                const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-start.mp3'));
-                audio.volume = volume;
-                audio.play().catch(error => {
-                  console.error('Failed to play start sound:', error);
-                  // Try vibration as fallback
-                  if (typeof navigator.vibrate === 'function') {
-                    navigator.vibrate([100, 50, 100]);
+              // Improved audio injection with better error handling
+              const playAudioWithFallbacks = async () => {
+                try {
+                  // Check if we're on a restricted page
+                  if (window.location.protocol === 'chrome:' || window.location.protocol === 'chrome-extension:') {
+                    console.log('Audio playback not allowed on chrome:// URLs');
+                    return;
                   }
-                });
-              } catch (error) {
-                console.error('Failed to create audio:', error);
-                // Try vibration as fallback
-                if (typeof navigator.vibrate === 'function') {
-                  navigator.vibrate([100, 50, 100]);
+
+                  // Try to create and play audio
+                  const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-start.mp3'));
+                  audio.volume = volume;
+                  
+                  try {
+                    await audio.play();
+                    console.log('Audio played successfully');
+                  } catch (playError) {
+                    console.error('Failed to play audio:', playError);
+                    
+                    // Try Web Audio API as fallback
+                    try {
+                      if (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined') {
+                        const audioContext = new (AudioContext || (window as any).webkitAudioContext)();
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.3);
+                        
+                        console.log('Web Audio API fallback used');
+                        return;
+                      }
+                    } catch (webAudioError) {
+                      console.error('Web Audio API failed:', webAudioError);
+                    }
+                    
+                    // Try vibration as final fallback
+                    try {
+                      if (typeof navigator.vibrate === 'function' && document.hasFocus()) {
+                        navigator.vibrate([100, 50, 100]);
+                        console.log('Vibration fallback used');
+                        return;
+                      }
+                    } catch (vibrationError) {
+                      console.error('Vibration failed:', vibrationError);
+                    }
+                    
+                    // Show visual notification as last resort
+                    try {
+                      const notification = document.createElement('div');
+                      notification.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: rgba(0, 0, 0, 0.9);
+                        color: white;
+                        padding: 12px 16px;
+                        border-radius: 8px;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        font-size: 14px;
+                        z-index: 999999;
+                        backdrop-filter: blur(10px);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        animation: fadeInOut 2s ease-in-out;
+                      `;
+                      
+                      const style = document.createElement('style');
+                      style.textContent = `
+                        @keyframes fadeInOut {
+                          0% { opacity: 0; transform: translateY(-10px); }
+                          20% { opacity: 1; transform: translateY(0); }
+                          80% { opacity: 1; transform: translateY(0); }
+                          100% { opacity: 0; transform: translateY(-10px); }
+                        }
+                      `;
+                      
+                      notification.textContent = '👁️ Eye Care Reminder';
+                      document.head.appendChild(style);
+                      document.body.appendChild(notification);
+                      
+                      setTimeout(() => {
+                        notification.remove();
+                        style.remove();
+                      }, 2000);
+                      
+                      console.log('Visual notification fallback used');
+                    } catch (visualError) {
+                      console.error('Visual notification failed:', visualError);
+                    }
+                  }
+                } catch (error) {
+                  console.error('Failed to create audio:', error);
                 }
-              }
+              };
+              
+              playAudioWithFallbacks();
             },
             args: [volume]
           });
+          console.log('Audio injection script executed');
         } catch (error) {
           console.error('Failed to inject start sound script:', error);
         }
@@ -180,10 +272,15 @@ async function playEyeCareEndSound() {
           });
           if (response && response.success) {
             soundPlayed = true;
+            console.log('Eye care end sound played successfully via content script');
+            break;
+          } else if (response && response.method) {
+            soundPlayed = true;
+            console.log(`Eye care end sound played via fallback: ${response.method}`);
             break;
           }
         } catch (error) {
-          // Continue to next tab
+          console.log('Content script not available for tab:', tab.url);
           continue;
         }
       }
@@ -197,26 +294,113 @@ async function playEyeCareEndSound() {
           await chrome.scripting.executeScript({
             target: { tabId: tab.id! },
             func: (volume) => {
-              try {
-                const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-beep.mp3'));
-                audio.volume = volume;
-                audio.play().catch(error => {
-                  console.error('Failed to play end sound:', error);
-                  // Try vibration as fallback
-                  if (typeof navigator.vibrate === 'function') {
-                    navigator.vibrate(200);
+              // Improved audio injection with better error handling
+              const playAudioWithFallbacks = async () => {
+                try {
+                  // Check if we're on a restricted page
+                  if (window.location.protocol === 'chrome:' || window.location.protocol === 'chrome-extension:') {
+                    console.log('Audio playback not allowed on chrome:// URLs');
+                    return;
                   }
-                });
-              } catch (error) {
-                console.error('Failed to create audio:', error);
-                // Try vibration as fallback
-                if (typeof navigator.vibrate === 'function') {
-                  navigator.vibrate(200);
+
+                  // Try to create and play audio
+                  const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-beep.mp3'));
+                  audio.volume = volume;
+                  
+                  try {
+                    await audio.play();
+                    console.log('Audio played successfully');
+                  } catch (playError) {
+                    console.error('Failed to play audio:', playError);
+                    
+                    // Try Web Audio API as fallback
+                    try {
+                      if (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined') {
+                        const audioContext = new (AudioContext || (window as any).webkitAudioContext)();
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.5);
+                        
+                        console.log('Web Audio API fallback used');
+                        return;
+                      }
+                    } catch (webAudioError) {
+                      console.error('Web Audio API failed:', webAudioError);
+                    }
+                    
+                    // Try vibration as final fallback
+                    try {
+                      if (typeof navigator.vibrate === 'function' && document.hasFocus()) {
+                        navigator.vibrate(200);
+                        console.log('Vibration fallback used');
+                        return;
+                      }
+                    } catch (vibrationError) {
+                      console.error('Vibration failed:', vibrationError);
+                    }
+                    
+                    // Show visual notification as last resort
+                    try {
+                      const notification = document.createElement('div');
+                      notification.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: rgba(0, 0, 0, 0.9);
+                        color: white;
+                        padding: 12px 16px;
+                        border-radius: 8px;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        font-size: 14px;
+                        z-index: 999999;
+                        backdrop-filter: blur(10px);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        animation: fadeInOut 2s ease-in-out;
+                      `;
+                      
+                      const style = document.createElement('style');
+                      style.textContent = `
+                        @keyframes fadeInOut {
+                          0% { opacity: 0; transform: translateY(-10px); }
+                          20% { opacity: 1; transform: translateY(0); }
+                          80% { opacity: 1; transform: translateY(0); }
+                          100% { opacity: 0; transform: translateY(-10px); }
+                        }
+                      `;
+                      
+                      notification.textContent = '👁️ Eye Care Break';
+                      document.head.appendChild(style);
+                      document.body.appendChild(notification);
+                      
+                      setTimeout(() => {
+                        notification.remove();
+                        style.remove();
+                      }, 2000);
+                      
+                      console.log('Visual notification fallback used');
+                    } catch (visualError) {
+                      console.error('Visual notification failed:', visualError);
+                    }
+                  }
+                } catch (error) {
+                  console.error('Failed to create audio:', error);
                 }
-              }
+              };
+              
+              playAudioWithFallbacks();
             },
             args: [volume]
           });
+          console.log('Audio injection script executed');
         } catch (error) {
           console.error('Failed to inject end sound script:', error);
         }
@@ -514,7 +698,6 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           });
         });
         return true; // Keep message channel open for async response
-        break;
       
       case 'GET_TAB_COUNT':
         updateTabCount().then(() => {
@@ -523,7 +706,6 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           });
         });
         return true; // Keep message channel open for async response
-        break;
       
       case 'SAVE_SEARCH':
         storage.get('savedSearches').then((searches: SearchQuery[] | undefined) => {
@@ -678,9 +860,8 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           sendResponse({ shouldBlock: false, shouldShowOverlay: false });
         });
         return true; // Keep message channel open for async response
-        break;
       
-      case 'SHOULD_SHOW_MODAL':
+      case 'SHOULD_SHOW_MODAL': {
         console.log('Handling SHOULD_SHOW_MODAL request:', message);
         const tabId = sender.tab?.id;
         if (!tabId) {
@@ -706,9 +887,9 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
         
         sendResponse(shouldShow);
         return true; // Keep message channel open for async response
-        break;
+      }
       
-      case 'CLEAR_MODAL_STATE':
+      case 'CLEAR_MODAL_STATE': {
         console.log('Handling CLEAR_MODAL_STATE request:', message);
         const clearTabId = sender.tab?.id;
         if (clearTabId && tabModalStates.has(clearTabId)) {
@@ -723,9 +904,9 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
         }
         sendResponse({ success: true });
         return true; // Keep message channel open for async response
-        break;
+      }
       
-      case 'GET_DOMAIN_TIME_INFO':
+      case 'GET_DOMAIN_TIME_INFO': {
         console.log('Handling GET_DOMAIN_TIME_INFO request:', message.domain);
         storage.get('config').then(config => {
           if (!config?.distractionBlocker?.enabled) {
@@ -761,9 +942,9 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           sendResponse({ remainingMinutes: 0 });
         });
         return true; // Keep message channel open for async response
-        break;
+      }
       
-      case 'INCREMENT_DISTRACTING_DOMAIN':
+      case 'INCREMENT_DISTRACTING_DOMAIN': {
         console.log('Handling INCREMENT_DISTRACTING_DOMAIN request:', message.domain);
         storage.get('config').then(config => {
           if (!config?.distractionBlocker?.enabled) {
@@ -801,7 +982,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           }
         });
         return true; // Keep message channel open for async response
-        break;
+      }
       
       case 'UPDATE_YOUTUBE_DISTRACTION_CONFIG':
         console.log('Handling UPDATE_YOUTUBE_DISTRACTION_CONFIG request:', message.config);
