@@ -1,4 +1,3 @@
-import styles from './content.css';
 import { YouTubeDistractionBlocker, isYouTubePage } from './utils/youtubeUtils';
 import { VideoFocusManager, supportsVideoFocus } from './utils/videoFocusUtils';
 

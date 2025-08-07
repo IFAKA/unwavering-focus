@@ -5,7 +5,6 @@ interface MetricsRowProps {
   eyeCareCountdown: string;
   tabCount: number;
   maxTabs: number;
-  savedSearchesCount: number;
   eyeCareStatus: 'enabled' | 'disabled';
   tabLimiterStatus: 'enabled' | 'disabled';
   onEyeCareClick?: () => void;
@@ -18,7 +17,6 @@ const MetricsRow: React.FC<MetricsRowProps> = ({
   eyeCareCountdown,
   tabCount,
   maxTabs,
-  savedSearchesCount,
   eyeCareStatus,
   tabLimiterStatus,
   onEyeCareClick,

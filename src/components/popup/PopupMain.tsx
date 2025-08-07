@@ -20,9 +20,7 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
     copyStatus, 
     performSearch, 
     copySearchQuery, 
-    deleteSearch,
-    setSearchStatus,
-    setSearchingQuery
+    deleteSearch
   } = useSearch();
   
   const [savedSearches, setSavedSearches] = useState<SearchQuery[]>([]);
@@ -122,15 +120,10 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
   }, []);
 
   const handleSearch = async (query: SearchQuery) => {
-    setSearchingQuery(query.query);
-    setSearchStatus('searching');
-    
     try {
       await performSearch(query);
-      setSearchStatus('completed');
     } catch (error) {
       console.error('Search error:', error);
-      setSearchStatus('error');
     }
   };
 
@@ -179,7 +172,6 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
         eyeCareCountdown={countdown}
         tabCount={tabCount}
         maxTabs={config?.tabLimiter?.maxTabs || 3}
-        savedSearchesCount={savedSearches.length}
         eyeCareStatus={eyeCareStatus}
         tabLimiterStatus={tabLimiterStatus}
         onEyeCareClick={handleFeatureClick}

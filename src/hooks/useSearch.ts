@@ -51,8 +51,6 @@ export const useSearch = () => {
     copyStatus,
     performSearch,
     copySearchQuery,
-    deleteSearch,
-    setSearchStatus,
-    setSearchingQuery
+    deleteSearch
   };
 }; 
