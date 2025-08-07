@@ -3,7 +3,6 @@ import { SearchQuery } from '../../types';
 import { useSearch } from '../../hooks/useSearch';
 import { useConfig } from '../../hooks/useConfig';
 import AppleWatchStatusBar from '../ui/AppleWatchStatusBar';
-import AppleWatchButton from '../ui/AppleWatchButton';
 import AppleWatchIcon from '../ui/AppleWatchIcon';
 import MetricsRow from '../metrics/MetricsRow';
 import SearchList from '../search/SearchList';
@@ -14,7 +13,7 @@ interface PopupMainProps {
 }
 
 const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
-  const { config, loading, getFeatureStatus } = useConfig();
+  const { config, getFeatureStatus } = useConfig();
   const { 
     searchStatus, 
     searchingQuery, 
@@ -31,6 +30,7 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
   const [countdown, setCountdown] = useState<string>('--:--');
   const [eyeCareStatus, setEyeCareStatus] = useState<'enabled' | 'disabled'>('disabled');
   const [tabLimiterStatus, setTabLimiterStatus] = useState<'enabled' | 'disabled'>('disabled');
+  const [featureStatuses, setFeatureStatuses] = useState<Record<string, 'enabled' | 'disabled'>>({});
 
   // Load saved searches
   useEffect(() => {
@@ -59,8 +59,25 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
     const loadFeatureStatuses = async () => {
       const eyeCare = await getFeatureStatus('eyeCare');
       const tabLimiter = await getFeatureStatus('tabLimiter');
+      const smartSearch = await getFeatureStatus('smartSearch');
+      const habits = await getFeatureStatus('habits');
+      const pillars = await getFeatureStatus('pillars');
+      const blocker = await getFeatureStatus('blocker');
+      const videoFocus = await getFeatureStatus('videoFocus');
+      const contentFocus = await getFeatureStatus('contentFocus');
+      
       setEyeCareStatus(eyeCare);
       setTabLimiterStatus(tabLimiter);
+      setFeatureStatuses({
+        eyeCare,
+        tabLimiter,
+        smartSearch,
+        habits,
+        pillars,
+        blocker,
+        videoFocus,
+        contentFocus
+      });
     };
     loadFeatureStatuses();
   }, [getFeatureStatus]);
@@ -104,73 +121,47 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleNewSearch = async () => {
-    // Check if Search All is enabled in settings
-    if (!config?.smartSearch?.searchAllEnabled) {
-      console.log('Search All is disabled in settings');
-      return;
-    }
-
-    if (savedSearches.length === 0) {
-      return;
-    }
-
+  const handleSearch = async (query: SearchQuery) => {
+    setSearchingQuery(query.query);
+    setSearchStatus('searching');
+    
     try {
-      setSearchStatus('searching');
-      setSearchingQuery('All items');
+      await performSearch(query);
+      setSearchStatus('completed');
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchStatus('error');
+    }
+  };
 
-      // Perform all searches using Google Scholar
-      for (const query of savedSearches) {
-        await searchService.performSearch(query.query);
-      }
-      
-      // Clear all searches after performing them
-      await searchService.clearAllSearches();
-      
-      // Reload searches (should be empty now)
+  const handleCopy = async (text: string) => {
+    try {
+      await copySearchQuery(text);
+    } catch (error) {
+      console.error('Copy error:', error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteSearch(id);
+      // Reload searches after deletion
       const searches = await searchService.getSavedSearches();
       setSavedSearches(searches);
-      
-      setSearchStatus('completed');
-      setTimeout(() => {
-        setSearchStatus('idle');
-        setSearchingQuery('');
-      }, 2000);
     } catch (error) {
-      console.error('Error performing all searches:', error);
-      setSearchStatus('error');
-      setTimeout(() => {
-        setSearchStatus('idle');
-        setSearchingQuery('');
-      }, 3000);
+      console.error('Delete error:', error);
     }
   };
 
   const handleFocusMode = () => {
+    // Navigate to focus page
     chrome.tabs.create({ url: chrome.runtime.getURL('focus-page.html') });
   };
 
-  const handleSearch = async (query: SearchQuery) => {
-    await performSearch(query);
-    // Reload searches after performing search (item will be deleted)
-    const searches = await searchService.getSavedSearches();
-    setSavedSearches(searches);
+  const handleFeatureClick = () => {
+    // Navigate to settings for the specific feature
+    onNavigateToSettings();
   };
-
-  const handleCopy = async (text: string) => {
-    await copySearchQuery(text);
-  };
-
-  const handleDelete = async (id: string) => {
-    await deleteSearch(id);
-    // Reload searches after deletion
-    const searches = await searchService.getSavedSearches();
-    setSavedSearches(searches);
-  };
-
-  if (loading) {
-    return <div className="flex items-center justify-center h-full">Loading...</div>;
-  }
 
   return (
     <>
@@ -191,7 +182,9 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
         savedSearchesCount={savedSearches.length}
         eyeCareStatus={eyeCareStatus}
         tabLimiterStatus={tabLimiterStatus}
-        onSavedItemsClick={onNavigateToSettings}
+        onEyeCareClick={handleFeatureClick}
+        onTabLimiterClick={handleFeatureClick}
+        onFocusModeClick={handleFocusMode}
         onSettingsClick={onNavigateToSettings}
       />
 
@@ -204,39 +197,72 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
         copyStatus={copyStatus}
       />
 
-      {/* Quick Actions */}
-      <div className="p-lg flex flex-col gap-md">
-        <div className="flex gap-sm">
-          <AppleWatchButton
-            variant="primary"
-            size="medium"
-            icon={<AppleWatchIcon name="search" size="sm" />}
-            onClick={handleNewSearch}
-            className="flex-1"
-          >
-            Search All on Scholar
-          </AppleWatchButton>
+      {/* Footer with Feature Status Icons */}
+      <div className="p-md border-t border-bg-tertiary">
+        <div className="flex justify-center gap-lg">
+          {/* Eye Care */}
+          <div className="p-sm rounded-full bg-bg-secondary" title={`Eye Care: ${eyeCareStatus}`}>
+            <AppleWatchIcon 
+              name="eye" 
+              size="sm" 
+              color={eyeCareStatus === 'enabled' ? '#34c759' : '#8e8e93'} 
+            />
+          </div>
           
-          <AppleWatchButton
-            variant="secondary"
-            size="medium"
-            icon={<AppleWatchIcon name="settings" size="sm" />}
-            onClick={onNavigateToSettings}
-            className="flex-1"
-          >
-            Settings
-          </AppleWatchButton>
+          {/* Tab Limiter */}
+          <div className="p-sm rounded-full bg-bg-secondary" title={`Tab Limiter: ${tabLimiterStatus}`}>
+            <AppleWatchIcon 
+              name="tabs" 
+              size="sm" 
+              color={tabLimiterStatus === 'enabled' ? '#34c759' : '#8e8e93'} 
+            />
+          </div>
+          
+          {/* Smart Search */}
+          <div className="p-sm rounded-full bg-bg-secondary" title={`Smart Search: ${featureStatuses.smartSearch || 'disabled'}`}>
+            <AppleWatchIcon 
+              name="search" 
+              size="sm" 
+              color={featureStatuses.smartSearch === 'enabled' ? '#34c759' : '#8e8e93'} 
+            />
+          </div>
+          
+          {/* Distraction Blocker */}
+          <div className="p-sm rounded-full bg-bg-secondary" title={`Distraction Blocker: ${featureStatuses.blocker || 'disabled'}`}>
+            <AppleWatchIcon 
+              name="ban" 
+              size="sm" 
+              color={featureStatuses.blocker === 'enabled' ? '#34c759' : '#8e8e93'} 
+            />
+          </div>
+          
+          {/* Video Focus */}
+          <div className="p-sm rounded-full bg-bg-secondary" title={`Video Focus: ${featureStatuses.videoFocus || 'disabled'}`}>
+            <AppleWatchIcon 
+              name="video" 
+              size="sm" 
+              color={featureStatuses.videoFocus === 'enabled' ? '#34c759' : '#8e8e93'} 
+            />
+          </div>
+          
+          {/* Habits */}
+          <div className="p-sm rounded-full bg-bg-secondary" title={`Habits: ${featureStatuses.habits || 'disabled'}`}>
+            <AppleWatchIcon 
+              name="check" 
+              size="sm" 
+              color={featureStatuses.habits === 'enabled' ? '#34c759' : '#8e8e93'} 
+            />
+          </div>
+          
+          {/* Pillars */}
+          <div className="p-sm rounded-full bg-bg-secondary" title={`Pillars: ${featureStatuses.pillars || 'disabled'}`}>
+            <AppleWatchIcon 
+              name="star" 
+              size="sm" 
+              color={featureStatuses.pillars === 'enabled' ? '#34c759' : '#8e8e93'} 
+            />
+          </div>
         </div>
-        
-        <AppleWatchButton
-          variant="success"
-          size="medium"
-          icon={<AppleWatchIcon name="focus" size="sm" />}
-          onClick={handleFocusMode}
-          className="w-full"
-        >
-          Focus Mode
-        </AppleWatchButton>
       </div>
     </>
   );
