@@ -17,7 +17,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, disabled
         disabled={disabled}
       />
       <div className={`
-        w-11 h-6 bg-bg-tertiary rounded-full transition-all duration-200 relative
+        w-11 h-6 rounded-full transition-all duration-200 relative
         ${checked ? 'bg-accent-primary' : 'bg-bg-tertiary'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}>
