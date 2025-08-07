@@ -162,7 +162,7 @@
 }
 
 .modal-content {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-sm);
   color: var(--text-primary);
 }
 
