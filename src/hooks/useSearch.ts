@@ -12,6 +12,10 @@ export const useSearch = () => {
       setSearchStatus('searching');
       setSearchingQuery(query.query);
       
+      // Delete the search item first
+      await searchService.deleteSearch(query.id);
+      
+      // Then perform the search
       await searchService.performSearch(query.query);
       
       setSearchStatus('completed');
@@ -47,6 +51,8 @@ export const useSearch = () => {
     copyStatus,
     performSearch,
     copySearchQuery,
-    deleteSearch
+    deleteSearch,
+    setSearchStatus,
+    setSearchingQuery
   };
 }; 

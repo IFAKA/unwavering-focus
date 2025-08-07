@@ -38,7 +38,7 @@ const SearchItem: React.FC<SearchItemProps> = ({
         <button 
           className="border-none bg-none text-text-secondary cursor-pointer p-xs rounded text-sm transition-all duration-200 hover:bg-accent-primary hover:text-white"
           onClick={() => onSearch(query)}
-          title={isUrl(query.query) ? "Go to this URL" : "Search this item"}
+          title={isUrl(query.query) ? "Go to this URL" : "Search on Google Scholar"}
         >
           <AppleWatchIcon name="search" size="sm" />
         </button>

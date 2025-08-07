@@ -4,6 +4,7 @@ export interface ISearchService {
   performSearch(query: string): Promise<void>;
   saveSearch(query: string): Promise<void>;
   deleteSearch(id: string): Promise<void>;
+  clearAllSearches(): Promise<void>;
   getSavedSearches(): Promise<SearchQuery[]>;
   copyToClipboard(text: string): Promise<void>;
 }
@@ -11,13 +12,27 @@ export interface ISearchService {
 export class SearchService implements ISearchService {
   async performSearch(query: string): Promise<void> {
     try {
-      await chrome.runtime.sendMessage({
-        type: 'PERFORM_SEARCH',
-        query: query
-      });
+      // Check if the query is a URL
+      if (this.isUrl(query)) {
+        // Navigate directly to the URL
+        await chrome.tabs.create({ url: query });
+      } else {
+        // Perform a Google Scholar search for academic content
+        const searchUrl = `https://scholar.google.com/scholar?q=${encodeURIComponent(query)}`;
+        await chrome.tabs.create({ url: searchUrl });
+      }
     } catch (error) {
       console.error('Error performing search:', error);
       throw new Error('Failed to perform search');
+    }
+  }
+
+  private isUrl(text: string): boolean {
+    try {
+      new URL(text);
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -42,6 +57,17 @@ export class SearchService implements ISearchService {
     } catch (error) {
       console.error('Error deleting search:', error);
       throw new Error('Failed to delete search');
+    }
+  }
+
+  async clearAllSearches(): Promise<void> {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'CLEAR_ALL_SEARCHES'
+      });
+    } catch (error) {
+      console.error('Error clearing all searches:', error);
+      throw new Error('Failed to clear all searches');
     }
   }
 

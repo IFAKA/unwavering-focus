@@ -15,7 +15,16 @@ interface PopupMainProps {
 
 const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
   const { config, loading, getFeatureStatus } = useConfig();
-  const { searchStatus, searchingQuery, copyStatus, performSearch, copySearchQuery, deleteSearch } = useSearch();
+  const { 
+    searchStatus, 
+    searchingQuery, 
+    copyStatus, 
+    performSearch, 
+    copySearchQuery, 
+    deleteSearch,
+    setSearchStatus,
+    setSearchingQuery
+  } = useSearch();
   
   const [savedSearches, setSavedSearches] = useState<SearchQuery[]>([]);
   const [tabCount, setTabCount] = useState(0);
@@ -95,8 +104,46 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleNewSearch = () => {
-    chrome.tabs.create({ url: 'https://www.google.com/search?q=' + encodeURIComponent('') });
+  const handleNewSearch = async () => {
+    // Check if Search All is enabled in settings
+    if (!config?.smartSearch?.searchAllEnabled) {
+      console.log('Search All is disabled in settings');
+      return;
+    }
+
+    if (savedSearches.length === 0) {
+      return;
+    }
+
+    try {
+      setSearchStatus('searching');
+      setSearchingQuery('All items');
+
+      // Perform all searches using Google Scholar
+      for (const query of savedSearches) {
+        await searchService.performSearch(query.query);
+      }
+      
+      // Clear all searches after performing them
+      await searchService.clearAllSearches();
+      
+      // Reload searches (should be empty now)
+      const searches = await searchService.getSavedSearches();
+      setSavedSearches(searches);
+      
+      setSearchStatus('completed');
+      setTimeout(() => {
+        setSearchStatus('idle');
+        setSearchingQuery('');
+      }, 2000);
+    } catch (error) {
+      console.error('Error performing all searches:', error);
+      setSearchStatus('error');
+      setTimeout(() => {
+        setSearchStatus('idle');
+        setSearchingQuery('');
+      }, 3000);
+    }
   };
 
   const handleFocusMode = () => {
@@ -105,7 +152,7 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
 
   const handleSearch = async (query: SearchQuery) => {
     await performSearch(query);
-    // Reload searches after performing search
+    // Reload searches after performing search (item will be deleted)
     const searches = await searchService.getSavedSearches();
     setSavedSearches(searches);
   };
@@ -167,7 +214,7 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
             onClick={handleNewSearch}
             className="flex-1"
           >
-            Search All
+            Search All on Scholar
           </AppleWatchButton>
           
           <AppleWatchButton
