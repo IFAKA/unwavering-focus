@@ -16,7 +16,7 @@ const Popup: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[485px] bg-bg-primary w-[300px] overflow-y-auto overflow-x-hidden text-text-primary font-apple">
+    <div className="ds-container flex flex-col h-[485px] w-[300px] overflow-y-auto overflow-x-hidden">
       {activeTab === 'main' && (
         <PopupMain onNavigateToSettings={handleNavigateToSettings} />
       )}

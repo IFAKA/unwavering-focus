@@ -1,12 +1,11 @@
 import React from 'react';
 
 interface AppleWatchCardProps {
-  variant?: 'default' | 'elevated' | 'outlined' | 'glass';
+  variant?: 'default' | 'interactive';
   padding?: 'none' | 'small' | 'medium' | 'large';
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
-  interactive?: boolean;
 }
 
 const AppleWatchCard: React.FC<AppleWatchCardProps> = ({
@@ -14,16 +13,13 @@ const AppleWatchCard: React.FC<AppleWatchCardProps> = ({
   padding = 'medium',
   children,
   className = '',
-  onClick,
-  interactive = false
+  onClick
 }) => {
-  const baseClasses = 'rounded-apple transition-all duration-200';
+  const baseClasses = 'rounded-md transition-all duration-normal';
   
   const variantClasses = {
-    default: 'bg-bg-secondary border border-bg-tertiary',
-    elevated: 'bg-bg-secondary border border-bg-tertiary shadow-[0_2px_8px_rgba(0,0,0,0.3)]',
-    outlined: 'bg-transparent border border-bg-tertiary',
-    glass: 'bg-glass-bg border border-glass-border backdrop-blur-sm'
+    default: 'ds-card',
+    interactive: 'ds-card-interactive'
   };
 
   const paddingClasses = {
@@ -33,11 +29,9 @@ const AppleWatchCard: React.FC<AppleWatchCardProps> = ({
     large: 'p-lg'
   };
 
-  const interactiveClasses = interactive ? 'cursor-pointer hover:bg-bg-tertiary hover:-translate-y-[1px] hover:shadow-[0_2px_8px_rgba(0,0,0,0.3)] active:translate-y-0' : '';
-
   return (
     <div
-      className={`${baseClasses} ${variantClasses[variant]} ${paddingClasses[padding]} ${interactiveClasses} ${className}`}
+      className={`${baseClasses} ${variantClasses[variant]} ${paddingClasses[padding]} ${className}`}
       onClick={onClick}
     >
       {children}

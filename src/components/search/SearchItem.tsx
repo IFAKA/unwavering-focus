@@ -25,18 +25,17 @@ const SearchItem: React.FC<SearchItemProps> = ({
 
   return (
     <AppleWatchCard
-      variant="default"
+      variant="interactive"
       padding="medium"
-      interactive
       className="group relative overflow-hidden not-first:mt-sm"
     >
-      <div className="text-sm text-text-primary overflow-hidden text-ellipsis whitespace-nowrap" title={query.query}>
+      <div className="text-sm ds-text-primary overflow-hidden text-ellipsis whitespace-nowrap" title={query.query}>
         {displayText}
       </div>
       
-      <div className="absolute top-1/2 right-sm -translate-y-1/2 flex gap-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-bg-secondary p-xs rounded shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
+      <div className="absolute top-1/2 right-sm -translate-y-1/2 flex gap-xs opacity-0 group-hover:opacity-100 transition-opacity duration-normal bg-bg-secondary p-xs rounded shadow-sm">
         <button 
-          className="border-none bg-none text-text-secondary cursor-pointer p-xs rounded text-sm transition-all duration-200 hover:bg-accent-primary hover:text-white"
+          className="ds-button ds-button-small"
           onClick={() => onSearch(query)}
           title={isUrl(query.query) ? "Go to this URL" : "Search on Google Scholar"}
         >
@@ -44,8 +43,8 @@ const SearchItem: React.FC<SearchItemProps> = ({
         </button>
         
         <button 
-          className={`border-none bg-none cursor-pointer p-xs rounded text-sm transition-all duration-200 ${
-            copyStatus === 'copied' ? 'bg-success-color text-white' : 'text-text-secondary hover:bg-accent-secondary hover:text-white'
+          className={`ds-button ds-button-small ${
+            copyStatus === 'copied' ? 'ds-button-success' : 'ds-button-secondary'
           }`}
           onClick={() => onCopy(query.query)}
           title="Copy to clipboard"
@@ -54,7 +53,7 @@ const SearchItem: React.FC<SearchItemProps> = ({
         </button>
         
         <button 
-          className="border-none bg-none text-text-secondary cursor-pointer p-xs rounded text-sm transition-all duration-200 hover:bg-danger-color hover:text-white"
+          className="ds-button ds-button-small ds-button-danger"
           onClick={() => onDelete(query.id)}
           title="Delete"
         >

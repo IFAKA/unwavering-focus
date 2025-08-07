@@ -2,10 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles for Apple Watch design system */
+/* Apple Watch Design System Base Styles */
 @layer base {
   * {
     box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.3;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
@@ -18,44 +25,244 @@
     font-size: 12px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Typography Scale - Apple Watch optimized */
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  h1 { font-size: 18px; }
+  h2 { font-size: 16px; }
+  h3 { font-size: 14px; }
+  h4 { font-size: 12px; }
+  h5 { font-size: 12px; }
+  h6 { font-size: 12px; }
+
+  p {
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  /* Focus styles for accessibility */
+  *:focus {
+    outline: 2px solid #007aff;
+    outline-offset: 2px;
+  }
+
+  /* Remove focus outline for mouse users */
+  *:focus:not(:focus-visible) {
+    outline: none;
   }
 }
 
 @layer components {
-  /* Custom component styles */
-  .apple-watch-container {
+  /* Apple Watch Component Classes */
+  
+  /* Container Classes */
+  .ds-container {
     @apply bg-bg-primary text-text-primary font-apple;
   }
   
-  .apple-watch-card {
-    @apply bg-bg-secondary border border-bg-tertiary rounded-apple p-md;
+  .ds-container-secondary {
+    @apply bg-bg-secondary text-text-primary font-apple;
   }
   
-  .apple-watch-button {
-    @apply bg-accent-primary text-white px-lg py-md rounded-apple font-medium transition-all duration-200 hover:bg-accent-secondary hover:scale-105 active:scale-95;
+  /* Card Classes - Simple and clean */
+  .ds-card {
+    @apply bg-bg-secondary border border-bg-tertiary rounded-md p-md transition-all duration-normal;
   }
   
-  .apple-watch-button-secondary {
-    @apply bg-bg-tertiary text-text-primary px-lg py-md rounded-apple font-medium transition-all duration-200 hover:bg-bg-secondary hover:scale-105 active:scale-95;
+  .ds-card-interactive {
+    @apply bg-bg-secondary border border-bg-tertiary rounded-md p-md cursor-pointer transition-all duration-normal hover:bg-bg-tertiary;
+  }
+  
+  /* Button Classes - Apple Watch style */
+  .ds-button {
+    @apply border-none rounded-md font-medium cursor-pointer transition-all duration-normal flex items-center justify-center gap-sm no-underline;
+  }
+  
+  .ds-button-primary {
+    @apply bg-accent-primary text-white px-md py-sm hover:bg-[#0056cc];
+  }
+  
+  .ds-button-secondary {
+    @apply bg-bg-tertiary text-text-primary px-md py-sm hover:bg-bg-secondary;
+  }
+  
+  .ds-button-success {
+    @apply bg-accent-success text-white px-md py-sm;
+  }
+  
+  .ds-button-danger {
+    @apply bg-accent-error text-white px-md py-sm;
+  }
+  
+  .ds-button-small {
+    @apply px-sm py-xs text-xs;
+  }
+  
+  .ds-button-medium {
+    @apply px-md py-sm text-sm;
+  }
+  
+  .ds-button-large {
+    @apply px-lg py-md text-md;
+  }
+  
+  .ds-button-disabled {
+    @apply opacity-50 cursor-not-allowed hover:transform-none;
+  }
+  
+  .ds-button-loading {
+    @apply opacity-75 cursor-wait;
+  }
+  
+  /* Input Classes - Simple and functional */
+  .ds-input {
+    @apply bg-bg-tertiary border border-border-primary text-text-primary rounded-sm px-sm py-xs text-sm transition-all duration-normal;
+  }
+  
+  .ds-input:focus {
+    @apply border-accent-primary outline-none;
+  }
+  
+  /* Toggle Switch Classes - Apple Watch style */
+  .ds-toggle {
+    @apply relative inline-flex items-center cursor-pointer;
+  }
+  
+  .ds-toggle-track {
+    @apply w-11 h-6 rounded-full transition-all duration-normal relative;
+  }
+  
+  .ds-toggle-track-enabled {
+    @apply bg-accent-primary;
+  }
+  
+  .ds-toggle-track-disabled {
+    @apply bg-bg-tertiary;
+  }
+  
+  .ds-toggle-thumb {
+    @apply absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all duration-normal;
+  }
+  
+  .ds-toggle-thumb-enabled {
+    @apply translate-x-5;
+  }
+  
+  .ds-toggle-thumb-disabled {
+    @apply translate-x-0;
+  }
+  
+  /* Range Slider Classes - Simple */
+  .ds-range {
+    @apply w-full h-2 bg-bg-tertiary rounded-sm appearance-none cursor-pointer;
+  }
+  
+  .ds-range::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 rounded-full bg-accent-primary cursor-pointer;
+  }
+  
+  .ds-range::-moz-range-thumb {
+    @apply w-4 h-4 rounded-full bg-accent-primary border-none cursor-pointer;
+  }
+  
+  /* Text Classes - Apple Watch optimized */
+  .ds-text-primary {
+    @apply text-text-primary;
+  }
+  
+  .ds-text-secondary {
+    @apply text-text-secondary;
+  }
+  
+  .ds-text-tertiary {
+    @apply text-text-tertiary;
+  }
+  
+  /* Spacing Classes */
+  .ds-spacing-xs { @apply p-xs; }
+  .ds-spacing-sm { @apply p-sm; }
+  .ds-spacing-md { @apply p-md; }
+  .ds-spacing-lg { @apply p-lg; }
+  .ds-spacing-xl { @apply p-xl; }
+  
+  /* Border Classes */
+  .ds-border {
+    @apply border border-bg-tertiary;
+  }
+  
+  .ds-border-top {
+    @apply border-t border-bg-tertiary;
+  }
+  
+  .ds-border-bottom {
+    @apply border-b border-bg-tertiary;
+  }
+  
+  /* Animation Classes - Minimal */
+  .ds-animate-fade-in {
+    @apply animate-fadeIn;
+  }
+  
+  .ds-animate-fade-out {
+    @apply animate-fadeOut;
+  }
+  
+  /* Layout Classes */
+  .ds-flex-center {
+    @apply flex items-center justify-center;
+  }
+  
+  .ds-flex-between {
+    @apply flex items-center justify-between;
+  }
+  
+  .ds-flex-start {
+    @apply flex items-center justify-start;
+  }
+  
+  .ds-flex-end {
+    @apply flex items-center justify-end;
   }
 }
 
-/* Light theme support */
-@media (prefers-color-scheme: light) {
-  body {
-    background: #ffffff;
-    color: #000000;
-  }
-}
-
-/* Custom animations */
-@keyframes slideDown {
+/* Minimal Animations - Apple Watch style */
+@keyframes fadeIn {
   from {
-    transform: translateY(-100%);
     opacity: 0;
   }
   to {
-    transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion support - Apple Watch standard */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .ds-animate-fade-in,
+  .ds-animate-fade-out {
+    animation: none !important;
   }
 } 

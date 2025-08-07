@@ -8,46 +8,76 @@ module.exports = {
     extend: {
       colors: {
         // Apple Watch Design System Colors
+        // Background Colors
         'bg-primary': '#000000',
         'bg-secondary': '#1c1c1e',
         'bg-tertiary': '#2c2c2e',
+        
+        // Text Colors
         'text-primary': '#ffffff',
         'text-secondary': '#8e8e93',
-        'text-muted': '#48484a',
-        'border-color': '#38383a',
+        'text-tertiary': '#48484a',
+        
+        // Accent Colors - Apple Watch standard
         'accent-primary': '#007aff',
-        'accent-secondary': '#5856d6',
-        'success-color': '#34c759',
-        'danger-color': '#ff3b30',
-        'warning-color': '#ff9500',
-        'info-color': '#5ac8fa',
-        'shadow': 'rgba(0, 0, 0, 0.3)',
-        'glass-bg': 'rgba(28, 28, 30, 0.8)',
-        'glass-border': 'rgba(255, 255, 255, 0.1)',
+        'accent-success': '#34c759',
+        'accent-warning': '#ff9500',
+        'accent-error': '#ff3b30',
+        
+        // Border Colors
+        'border-primary': '#38383a',
+        'border-secondary': 'rgba(255, 255, 255, 0.1)',
       },
       fontFamily: {
         'apple': ['SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       spacing: {
-        'xs': '3px',
+        'xs': '4px',
+        'sm': '8px',
+        'md': '12px',
+        'lg': '16px',
+        'xl': '20px',
+      },
+      fontSize: {
+        'xs': '10px',
+        'sm': '12px',
+        'md': '14px',
+        'lg': '16px',
+        'xl': '18px',
+      },
+      fontWeight: {
+        'normal': 400,
+        'medium': 500,
+        'semibold': 600,
+      },
+      lineHeight: {
+        'tight': 1.2,
+        'normal': 1.3,
+      },
+      borderRadius: {
+        'none': '0px',
         'sm': '6px',
         'md': '8px',
         'lg': '12px',
-        'xl': '16px',
       },
-      fontSize: {
-        'xs': '9px',
-        'sm': '11px',
-        'md': '12px',
-        'lg': '14px',
-        'xl': '16px',
-        'xxl': '18px',
-      },
-      borderRadius: {
-        'apple': '8px',
+      boxShadow: {
+        'none': 'none',
+        'sm': '0 1px 3px rgba(0, 0, 0, 0.2)',
       },
       animation: {
-        'slideDown': 'slideDown 0.3s ease-out',
+        'fadeIn': 'fadeIn 0.2s ease-out',
+        'fadeOut': 'fadeOut 0.2s ease-out',
+      },
+      transitionDuration: {
+        'quick': '150ms',
+        'normal': '200ms',
+      },
+      transitionTimingFunction: {
+        'ease-out': 'ease-out',
+      },
+      zIndex: {
+        'base': 1,
+        'modal': 1000,
       },
     },
   },

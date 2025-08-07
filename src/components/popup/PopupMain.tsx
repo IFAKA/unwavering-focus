@@ -260,15 +260,15 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
       />
 
       {/* Footer with Feature Toggle Buttons */}
-      <div className="p-md border-t border-bg-tertiary">
-        <div className="flex justify-center gap-lg">
+      <div className="p-md ds-border-top">
+        <div className="ds-flex-center gap-lg">
           {/* Eye Care */}
           <button
             onClick={() => handleFeatureToggle('eyeCare')}
-            className={`p-sm rounded-full transition-all duration-200 hover:scale-110 ${
+            className={`ds-button ds-button-small rounded-full ${
               eyeCareStatus === 'enabled' 
-                ? 'bg-success-color text-white' 
-                : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
+                ? 'ds-button-success' 
+                : 'ds-button-secondary'
             }`}
             title={`Eye Care: ${eyeCareStatus} (Click to toggle)`}
           >
@@ -282,10 +282,10 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
           {/* Tab Limiter */}
           <button
             onClick={() => handleFeatureToggle('tabLimiter')}
-            className={`p-sm rounded-full transition-all duration-200 hover:scale-110 ${
+            className={`ds-button ds-button-small rounded-full ${
               tabLimiterStatus === 'enabled' 
-                ? 'bg-success-color text-white' 
-                : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
+                ? 'ds-button-success' 
+                : 'ds-button-secondary'
             }`}
             title={`Tab Limiter: ${tabLimiterStatus} (Click to toggle)`}
           >
@@ -299,10 +299,10 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
           {/* Smart Search */}
           <button
             onClick={() => handleFeatureToggle('smartSearch')}
-            className={`p-sm rounded-full transition-all duration-200 hover:scale-110 ${
+            className={`ds-button ds-button-small rounded-full ${
               featureStatuses.smartSearch === 'enabled' 
-                ? 'bg-success-color text-white' 
-                : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
+                ? 'ds-button-success' 
+                : 'ds-button-secondary'
             }`}
             title={`Smart Search: ${featureStatuses.smartSearch || 'disabled'} (Click to toggle)`}
           >
@@ -316,10 +316,10 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
           {/* Distraction Blocker */}
           <button
             onClick={() => handleFeatureToggle('blocker')}
-            className={`p-sm rounded-full transition-all duration-200 hover:scale-110 ${
+            className={`ds-button ds-button-small rounded-full ${
               featureStatuses.blocker === 'enabled' 
-                ? 'bg-success-color text-white' 
-                : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
+                ? 'ds-button-success' 
+                : 'ds-button-secondary'
             }`}
             title={`Distraction Blocker: ${featureStatuses.blocker || 'disabled'} (Click to toggle)`}
           >
@@ -333,10 +333,10 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
           {/* Video Focus */}
           <button
             onClick={() => handleFeatureToggle('videoFocus')}
-            className={`p-sm rounded-full transition-all duration-200 hover:scale-110 ${
+            className={`ds-button ds-button-small rounded-full ${
               featureStatuses.videoFocus === 'enabled' 
-                ? 'bg-success-color text-white' 
-                : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
+                ? 'ds-button-success' 
+                : 'ds-button-secondary'
             }`}
             title={`Video Focus: ${featureStatuses.videoFocus || 'disabled'} (Click to toggle)`}
           >
@@ -347,39 +347,7 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
             />
           </button>
           
-          {/* Habits */}
-          <button
-            onClick={() => handleFeatureToggle('habits')}
-            className={`p-sm rounded-full transition-all duration-200 hover:scale-110 ${
-              featureStatuses.habits === 'enabled' 
-                ? 'bg-success-color text-white' 
-                : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
-            }`}
-            title={`Habits: ${featureStatuses.habits || 'disabled'} (Click to toggle)`}
-          >
-            <AppleWatchIcon 
-              name="check" 
-              size="sm" 
-              color={featureStatuses.habits === 'enabled' ? '#ffffff' : '#8e8e93'} 
-            />
-          </button>
-          
-          {/* Pillars */}
-          <button
-            onClick={() => handleFeatureToggle('pillars')}
-            className={`p-sm rounded-full transition-all duration-200 hover:scale-110 ${
-              featureStatuses.pillars === 'enabled' 
-                ? 'bg-success-color text-white' 
-                : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
-            }`}
-            title={`Pillars: ${featureStatuses.pillars || 'disabled'} (Click to toggle)`}
-          >
-            <AppleWatchIcon 
-              name="star" 
-              size="sm" 
-              color={featureStatuses.pillars === 'enabled' ? '#ffffff' : '#8e8e93'} 
-            />
-          </button>
+
         </div>
       </div>
     </>

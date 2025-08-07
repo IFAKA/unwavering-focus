@@ -131,57 +131,57 @@ const FocusPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-bg-primary text-text-primary">
-        <div className="animate-spin mb-md">
+      <div className="ds-flex-center flex-col h-screen ds-container">
+        <div className="mb-md">
           <AppleWatchIcon name="loading" size="xl" />
         </div>
-        <div className="text-md text-text-secondary">Loading focus tools...</div>
+        <div className="text-md ds-text-secondary">Loading focus tools...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-bg-primary text-text-primary font-apple">
+    <div className="ds-container flex flex-col h-screen">
       {/* Header */}
-      <div className="p-lg bg-bg-secondary border-b border-bg-tertiary">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-text-primary">Focus Center</h1>
+      <div className="ds-container-secondary ds-border-bottom p-lg">
+        <div className="ds-flex-between">
+          <h1 className="text-xl font-semibold ds-text-primary">Focus Center</h1>
           <div className="flex gap-sm">
             <button
-              className={`px-md py-sm rounded-apple text-sm font-medium transition-all duration-200 ${
+              className={`ds-button ds-button-small ${
                 activeTab === 'focus' 
-                  ? 'bg-accent-primary text-white' 
-                  : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
+                  ? 'ds-button-primary' 
+                  : 'ds-button-secondary'
               }`}
               onClick={() => setActiveTab('focus')}
             >
               Focus
             </button>
             <button
-              className={`px-md py-sm rounded-apple text-sm font-medium transition-all duration-200 ${
+              className={`ds-button ds-button-small ${
                 activeTab === 'habits' 
-                  ? 'bg-accent-primary text-white' 
-                  : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
+                  ? 'ds-button-primary' 
+                  : 'ds-button-secondary'
               }`}
               onClick={() => setActiveTab('habits')}
             >
               Habits
             </button>
             <button
-              className={`px-md py-sm rounded-apple text-sm font-medium transition-all duration-200 ${
+              className={`ds-button ds-button-small ${
                 activeTab === 'pillars' 
-                  ? 'bg-accent-primary text-white' 
-                  : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
+                  ? 'ds-button-primary' 
+                  : 'ds-button-secondary'
               }`}
               onClick={() => setActiveTab('pillars')}
             >
               Pillars
             </button>
             <button
-              className={`px-md py-sm rounded-apple text-sm font-medium transition-all duration-200 ${
+              className={`ds-button ds-button-small ${
                 activeTab === 'metrics' 
-                  ? 'bg-accent-primary text-white' 
-                  : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
+                  ? 'ds-button-primary' 
+                  : 'ds-button-secondary'
               }`}
               onClick={() => setActiveTab('metrics')}
             >
@@ -196,17 +196,17 @@ const FocusPage: React.FC = () => {
         {activeTab === 'focus' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
             {/* Focus Session */}
-            <div className="bg-bg-secondary rounded-apple p-lg border border-bg-tertiary">
-              <div className="flex items-center justify-between mb-md">
-                <h2 className="text-lg font-semibold text-text-primary">Focus Session</h2>
+            <div className="ds-card p-lg">
+              <div className="ds-flex-between mb-md">
+                <h2 className="text-lg font-semibold ds-text-primary">Focus Session</h2>
                 <AppleWatchIcon name="focus" size="md" />
               </div>
               
               <div className="text-center mb-lg">
-                <div className="text-4xl font-bold text-text-primary mb-sm">
+                <div className="text-4xl font-bold ds-text-primary mb-sm">
                   {formatTime(sessionDuration)}
                 </div>
-                <div className="text-sm text-text-secondary">
+                <div className="text-sm ds-text-secondary">
                   {isSessionActive ? 'Session in progress' : 'Ready to focus'}
                 </div>
               </div>
@@ -214,14 +214,14 @@ const FocusPage: React.FC = () => {
               <div className="flex gap-sm">
                 {!isSessionActive ? (
                   <button
-                    className="flex-1 py-md rounded-apple bg-accent-primary text-white font-medium transition-all duration-200 hover:bg-accent-secondary hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
+                    className="ds-button ds-button-primary flex-1 py-md"
                     onClick={startFocusSession}
                   >
                     Start Session
                   </button>
                 ) : (
                   <button
-                    className="flex-1 py-md rounded-apple bg-danger-color text-white font-medium transition-all duration-200 hover:bg-[#dc2626] hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
+                    className="ds-button ds-button-danger flex-1 py-md"
                     onClick={stopFocusSession}
                   >
                     End Session
@@ -231,10 +231,10 @@ const FocusPage: React.FC = () => {
             </div>
 
             {/* Breathing Exercise */}
-            <div className="bg-bg-secondary rounded-apple p-lg border border-bg-tertiary">
-              <div className="flex items-center justify-between mb-md">
-                <h2 className="text-lg font-semibold text-text-primary">Box Breathing</h2>
-                <div className="text-sm text-text-secondary bg-bg-tertiary px-sm py-xs rounded-apple">
+            <div className="ds-card p-lg">
+              <div className="ds-flex-between mb-md">
+                <h2 className="text-lg font-semibold ds-text-primary">Box Breathing</h2>
+                <div className="text-sm ds-text-secondary bg-bg-tertiary px-sm py-xs rounded-apple">
                   4-4-4-4
                 </div>
               </div>
@@ -246,10 +246,10 @@ const FocusPage: React.FC = () => {
                 <div className={`text-2xl font-bold mb-sm ${getBreathingPhaseColor()}`}>
                   {breathingPhase.toUpperCase()}
                 </div>
-                <div className="text-sm text-text-secondary">
+                <div className="text-sm ds-text-secondary">
                   {phaseCountdown}s remaining
                 </div>
-                <div className="text-md text-text-primary mt-sm">
+                <div className="text-md ds-text-primary mt-sm">
                   Breaths: {Math.floor(breathingCount / 4)}
                 </div>
               </div>
@@ -257,14 +257,14 @@ const FocusPage: React.FC = () => {
               <div className="flex gap-sm">
                 {!isBreathingActive ? (
                   <button
-                    className="flex-1 py-md rounded-apple bg-accent-primary text-white font-medium transition-all duration-200 hover:bg-accent-secondary hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
+                    className="ds-button ds-button-primary flex-1 py-md"
                     onClick={startBreathingExercise}
                   >
                     Start Breathing
                   </button>
                 ) : (
                   <button
-                    className="flex-1 py-md rounded-apple bg-danger-color text-white font-medium transition-all duration-200 hover:bg-[#dc2626] hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
+                    className="ds-button ds-button-danger flex-1 py-md"
                     onClick={stopBreathingExercise}
                   >
                     Stop Breathing
@@ -277,9 +277,9 @@ const FocusPage: React.FC = () => {
 
         {activeTab === 'habits' && (
           <div className="space-y-lg">
-            <div className="bg-bg-secondary rounded-apple p-lg border border-bg-tertiary">
-              <div className="flex items-center justify-between mb-md">
-                <h2 className="text-lg font-semibold text-text-primary">Daily Habits</h2>
+            <div className="ds-card p-lg">
+              <div className="ds-flex-between mb-md">
+                <h2 className="text-lg font-semibold ds-text-primary">Daily Habits</h2>
                 <AppleWatchIcon name="chart" size="md" />
               </div>
               
@@ -288,7 +288,7 @@ const FocusPage: React.FC = () => {
                                      {config.focusPage.habits.map((habit: Habit) => (
                     <div
                       key={habit.id}
-                      className="flex items-center gap-md p-md bg-bg-tertiary rounded-apple border border-bg-secondary"
+                      className="ds-flex-start gap-md p-md bg-bg-tertiary rounded-apple ds-border"
                       style={{ borderLeftColor: habit.color, borderLeftWidth: '4px' }}
                     >
                       <div
@@ -296,7 +296,7 @@ const FocusPage: React.FC = () => {
                         style={{ backgroundColor: habit.color }}
                       />
                       <div className="flex-1">
-                        <div className="text-md font-medium text-text-primary">{habit.name}</div>
+                        <div className="text-md font-medium ds-text-primary">{habit.name}</div>
                       </div>
                       <div className="flex gap-xs">
                         <button className="w-8 h-8 rounded-full bg-success-color text-white text-sm font-bold flex items-center justify-center hover:bg-[#059669] transition-colors">

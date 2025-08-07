@@ -1,14 +1,258 @@
+import { 
+  MODAL_CONSTANTS, 
+  ANIMATION_CONSTANTS, 
+  FEATURE_CONSTANTS,
+  UI_CONSTANTS 
+} from './constants';
 import { YouTubeDistractionBlocker, isYouTubePage } from './utils/youtubeUtils';
 import { VideoFocusManager, supportsVideoFocus } from './utils/videoFocusUtils';
 
-// YouTube Distraction Blocker instance
-let youtubeBlocker: YouTubeDistractionBlocker | null = null;
-
-// Video Focus Manager instance
-let videoFocusManager: VideoFocusManager | null = null;
+// Smart Search Modal - Simple Implementation
+let modal: HTMLElement | null = null;
+let input: HTMLInputElement | null = null;
+let isAnimating = false;
 
 // Clean up any existing overlays on page load/refresh
-// REMOVE: DistractionBlocker class and all modal logic
+document.addEventListener('DOMContentLoaded', () => {
+  const existingOverlays = document.querySelectorAll('[data-extension="unwavering-focus"]');
+  existingOverlays.forEach(overlay => overlay.remove());
+});
+
+// Listen for keyboard shortcut
+document.addEventListener('keydown', (e) => {
+  if (e.altKey && e.shiftKey && e.key === 'S') {
+    e.preventDefault();
+    toggleModal();
+  }
+});
+
+function toggleModal() {
+  if (isAnimating) return;
+  
+  if (modal && modal.style.display === 'flex') {
+    closeModal();
+  } else {
+    openModal();
+  }
+}
+
+function openModal() {
+  if (isAnimating) return;
+  isAnimating = true;
+  
+  // Create modal if it doesn't exist
+  if (!modal) {
+    createModal();
+  } else {
+    // Reset content to ensure we have a fresh input
+    resetModalContent();
+  }
+  
+  // Set quick animation for opening
+  modal!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
+  const content = modal!.querySelector('#modal-content') as HTMLElement;
+  content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
+  
+  // Show modal
+  modal!.style.display = 'flex';
+  modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
+  
+  // Animate in
+  requestAnimationFrame(() => {
+    modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
+    content.style.transform = `${MODAL_CONSTANTS.TRANSFORM.FINAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.FINAL_SCALE}`;
+  });
+  
+  // Focus input
+  setTimeout(() => {
+    if (input) {
+      input.focus();
+      input.select();
+    }
+    isAnimating = false;
+  }, ANIMATION_CONSTANTS.TIMING.QUICK_FOCUS_DELAY);
+}
+
+function closeModal() {
+  if (isAnimating) return;
+  isAnimating = true;
+  
+  // Set quick animation for closing
+  modal!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
+  const content = modal!.querySelector('#modal-content') as HTMLElement;
+  content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
+  
+  // Animate out
+  modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
+  content.style.transform = `${MODAL_CONSTANTS.TRANSFORM.INITIAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.INITIAL_SCALE}`;
+  
+  // Hide after animation and reset content
+  setTimeout(() => {
+    modal!.style.display = 'none';
+    resetModalContent();
+    isAnimating = false;
+  }, ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE_DELAY);
+}
+
+function resetModalContent() {
+  if (!modal) return;
+  
+  const content = modal.querySelector('#modal-content') as HTMLElement;
+  if (!content) return;
+  
+  // Clear content and recreate input
+  content.innerHTML = '';
+  
+  // Recreate input
+  input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Enter your thought...';
+  input.style.cssText = `
+    width: 100%;
+    padding: ${MODAL_CONSTANTS.INPUT.PADDING};
+    border: ${MODAL_CONSTANTS.INPUT.BORDER_WIDTH} solid ${MODAL_CONSTANTS.CONTENT.BORDER_COLOR};
+    border-radius: ${MODAL_CONSTANTS.INPUT.BORDER_RADIUS};
+    font-size: ${MODAL_CONSTANTS.INPUT.FONT_SIZE};
+    outline: none;
+    background: ${UI_CONSTANTS.COLORS.BACKGROUND_PRIMARY};
+    color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  `;
+  
+  // Add event listeners
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      saveThought();
+    } else if (e.key === 'Escape') {
+      closeModal();
+    }
+  });
+  
+  // Add to content
+  content.appendChild(input);
+}
+
+function createModal() {
+  // Create container
+  modal = document.createElement('div');
+  modal.setAttribute('data-extension', 'unwavering-focus');
+  modal.style.cssText = `
+    position: fixed;
+    top: ${MODAL_CONSTANTS.POSITION.TOP};
+    left: ${MODAL_CONSTANTS.POSITION.LEFT};
+    width: ${MODAL_CONSTANTS.POSITION.WIDTH};
+    height: ${MODAL_CONSTANTS.POSITION.HEIGHT};
+    background: rgba(0, 0, 0, ${MODAL_CONSTANTS.STYLING.BACKGROUND_OPACITY});
+    backdrop-filter: blur(${MODAL_CONSTANTS.STYLING.BACKDROP_BLUR});
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: ${MODAL_CONSTANTS.Z_INDEX.MODAL};
+    opacity: ${ANIMATION_CONSTANTS.OPACITY.HIDDEN};
+    transition: opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT};
+  `;
+  
+  // Create content
+  const content = document.createElement('div');
+  content.id = 'modal-content';
+  content.style.cssText = `
+    background: ${MODAL_CONSTANTS.CONTENT.BACKGROUND_COLOR};
+    border-radius: ${MODAL_CONSTANTS.STYLING.BORDER_RADIUS};
+    padding: ${MODAL_CONSTANTS.STYLING.PADDING};
+    width: ${MODAL_CONSTANTS.STYLING.WIDTH_PERCENTAGE};
+    max-width: ${MODAL_CONSTANTS.STYLING.MAX_WIDTH};
+    transform: ${MODAL_CONSTANTS.TRANSFORM.INITIAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.INITIAL_SCALE};
+    transition: transform ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT};
+    box-shadow: ${MODAL_CONSTANTS.CONTENT.BOX_SHADOW};
+  `;
+  
+  // Create input
+  input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Enter your thought...';
+  input.style.cssText = `
+    width: 100%;
+    padding: ${MODAL_CONSTANTS.INPUT.PADDING};
+    border: ${MODAL_CONSTANTS.INPUT.BORDER_WIDTH} solid ${MODAL_CONSTANTS.CONTENT.BORDER_COLOR};
+    border-radius: ${MODAL_CONSTANTS.INPUT.BORDER_RADIUS};
+    font-size: ${MODAL_CONSTANTS.INPUT.FONT_SIZE};
+    outline: none;
+    background: ${UI_CONSTANTS.COLORS.BACKGROUND_PRIMARY};
+    color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  `;
+  
+  // Add event listeners
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      saveThought();
+    } else if (e.key === 'Escape') {
+      closeModal();
+    }
+  });
+  
+  // Click outside to close
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+  
+  // Assemble
+  content.appendChild(input);
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+}
+
+function saveThought() {
+  const text = input!.value.trim();
+  if (!text) return;
+  
+  // Save to storage
+  chrome.runtime.sendMessage({
+    type: FEATURE_CONSTANTS.MESSAGE_TYPES.SAVE_SEARCH,
+    query: text
+  }).then(() => {
+    showConfirmation();
+  }).catch(console.error);
+}
+
+function showConfirmation() {
+  const content = modal!.querySelector('#modal-content') as HTMLElement;
+  
+  // Fade out input
+  input!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
+  input!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_OUT}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
+  
+  setTimeout(() => {
+    // Replace with confirmation
+    content.innerHTML = `
+      <div style="text-align: center; padding: 20px;">
+        <div style="margin-bottom: 16px;">
+          <svg width="48" height="48" fill="none" stroke="${UI_CONSTANTS.COLORS.SUCCESS}" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div style="font-size: 18px; font-weight: 600; color: white;">Saved for later</div>
+      </div>
+    `;
+    
+    // Fade in confirmation
+    content.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
+    content.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_IN}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
+    
+    requestAnimationFrame(() => {
+      content.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
+    });
+    
+    // Auto close
+    setTimeout(() => {
+      closeModal();
+    }, ANIMATION_CONSTANTS.TIMING.CONFIRMATION_AUTO_CLOSE);
+  }, ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_OUT);
+}
 
 // Create countdown timer in top right corner
 let countdownTimer: HTMLElement | null = null;
@@ -29,7 +273,7 @@ function createCountdownTimer() {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 14px;
     font-weight: 600;
-    z-index: 999998;
+    z-index: ${MODAL_CONSTANTS.Z_INDEX.COUNTDOWN_TIMER};
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -65,7 +309,7 @@ function startTimeTracking(domain: string) {
   }
   // Get initial time in seconds
   chrome.runtime.sendMessage({
-    type: 'GET_DOMAIN_TIME_INFO',
+    type: FEATURE_CONSTANTS.MESSAGE_TYPES.GET_DOMAIN_TIME_INFO,
     domain: domain
   }).then(response => {
     if (response && response.remainingMinutes !== undefined) {
@@ -103,7 +347,7 @@ function getRootDomain(url: string) {
 
 // On page load, check for distracting domain and start timer if needed
 chrome.runtime.sendMessage({ 
-  type: 'CHECK_DISTRACTING_DOMAIN', 
+  type: FEATURE_CONSTANTS.MESSAGE_TYPES.CHECK_DISTRACTING_DOMAIN, 
   url: window.location.href 
 }).then(response => {
   const rootDomain = getRootDomain(window.location.href);
@@ -117,6 +361,7 @@ chrome.runtime.sendMessage({
 });
 
 // Initialize YouTube distraction blocking if on YouTube
+let youtubeBlocker: YouTubeDistractionBlocker | null = null;
 if (isYouTubePage()) {
   console.log('YouTube page detected, initializing distraction blocker');
   // Get configuration from storage
@@ -135,6 +380,7 @@ if (isYouTubePage()) {
 }
 
 // Initialize video focus manager if supported
+let videoFocusManager: VideoFocusManager | null = null;
 if (supportsVideoFocus()) {
   console.log('Video platform detected, initializing video focus manager');
   chrome.runtime.sendMessage({ type: 'GET_STORAGE_DATA' }).then(data => {
@@ -176,7 +422,7 @@ if (performance.getEntriesByType('navigation').length > 0) {
 if (isReload) {
   const rootDomain = getRootDomain(window.location.href);
   chrome.runtime.sendMessage({
-    type: 'CLEAR_MODAL_STATE',
+    type: FEATURE_CONSTANTS.MESSAGE_TYPES.CLEAR_MODAL_STATE,
     domain: rootDomain
   }).catch(error => {
     console.error('Error clearing modal state:', error);
@@ -267,8 +513,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
   
-  if (message.type === 'SHOW_SMART_SEARCH_MODAL') {
-    // REMOVE: smartSearchModal.show();
+  if (message.type === FEATURE_CONSTANTS.MESSAGE_TYPES.SHOW_SMART_SEARCH_MODAL) {
+    toggleModal();
     sendResponse({ success: true });
     return true;
   }
@@ -276,7 +522,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CHECK_DISTRACTING_DOMAIN') {
     // Check if current page is a distracting domain
     chrome.runtime.sendMessage({ 
-      type: 'CHECK_DISTRACTING_DOMAIN', 
+      type: FEATURE_CONSTANTS.MESSAGE_TYPES.CHECK_DISTRACTING_DOMAIN, 
       url: window.location.href 
     }).then(response => {
       if (response && response.shouldBlock) {
@@ -284,7 +530,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         window.location.href = chrome.runtime.getURL('focus-page.html');
       } else if (response && response.shouldShowOverlay) {
         // Show overlay with remaining visits
-        // REMOVE: distractionBlocker.showOverlay(response.domain, response.remainingVisits);
         startTimeTracking(response.domain);
       }
     }).catch(error => {
@@ -332,11 +577,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       max-width: 300px;
     `;
     notification.innerHTML = `
-              <div style="margin-bottom: 10px;">
-          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-        </div>
+      <div style="margin-bottom: 10px;">
+        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      </div>
       <div>${message.message}</div>
       <div style="font-size: 14px; margin-top: 10px; opacity: 0.8;">
         Return to video tab to continue
@@ -351,4 +596,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
-}); 
+});

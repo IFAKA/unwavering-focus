@@ -5,7 +5,6 @@ import SettingsHeader from '../../ui/SettingsHeader';
 import SettingsSection from '../../ui/SettingsSection';
 import AppleWatchButton from '../../ui/AppleWatchButton';
 import AppleWatchIcon from '../../ui/AppleWatchIcon';
-import ColorInput from '../../ui/ColorInput';
 
 interface PillarsSettingsProps {
   onNavigateBack: () => void;
@@ -18,7 +17,6 @@ const PillarsSettings: React.FC<PillarsSettingsProps> = ({ onNavigateBack }) => 
   const [currentSection, setCurrentSection] = useState<PillarsSection>('main');
   const [newPillarQuote, setNewPillarQuote] = useState('');
   const [newPillarDescription, setNewPillarDescription] = useState('');
-  const [newPillarColor, setNewPillarColor] = useState('#007aff');
 
   const addPillar = async () => {
     if (!config) return;
@@ -38,7 +36,7 @@ const PillarsSettings: React.FC<PillarsSettingsProps> = ({ onNavigateBack }) => 
         id: Date.now().toString(),
         quote: pillarQuote,
         description: newPillarDescription || "Your core principle",
-        color: newPillarColor
+        color: '#007aff' // Default color
       };
       
       const updatedConfig = {
@@ -52,7 +50,6 @@ const PillarsSettings: React.FC<PillarsSettingsProps> = ({ onNavigateBack }) => 
       await updateConfig('focusPage.pillars', updatedConfig.focusPage.pillars);
       setNewPillarQuote('');
       setNewPillarDescription('');
-      setNewPillarColor('#007aff');
       setCurrentSection('main');
     }
   };
@@ -84,7 +81,7 @@ const PillarsSettings: React.FC<PillarsSettingsProps> = ({ onNavigateBack }) => 
         <SettingsSection
           id="my-pillars"
           title="My Pillars"
-                      subtitle={`${(config?.focusPage?.pillars?.length || 0)}/3 pillars`}
+          subtitle={`${(config?.focusPage?.pillars?.length || 0)}/3 pillars`}
           icon="building"
           onClick={() => setCurrentSection('list')}
         />
@@ -112,27 +109,23 @@ const PillarsSettings: React.FC<PillarsSettingsProps> = ({ onNavigateBack }) => 
       <div className="flex flex-col gap-sm">
         {(config?.focusPage?.pillars?.length || 0) > 0 ? (
           (config?.focusPage?.pillars || []).map((pillar, index) => (
-            <div key={pillar.id} className="bg-bg-secondary rounded-apple p-md border border-bg-tertiary">
+            <div key={pillar.id} className="ds-card">
               <div className="flex flex-col gap-sm">
-                <div className="flex items-center gap-sm">
+                <div className="ds-flex-between">
                   <input
                     type="text"
                     value={pillar.quote}
                     onChange={(e) => updatePillar(index, { quote: e.target.value })}
                     placeholder="Pillar quote"
                     maxLength={50}
-                    className="flex-1 bg-bg-tertiary text-text-primary px-sm py-xs rounded border-none text-sm"
-                  />
-                  <ColorInput
-                    value={pillar.color}
-                    onChange={(color) => updatePillar(index, { color })}
+                    className="flex-1 ds-input mr-sm"
                   />
                   <button
-                    className="w-6 h-6 bg-danger-color text-white rounded-full flex items-center justify-center text-sm hover:bg-[#dc2626] transition-colors"
+                    className="ds-button ds-button-danger ds-button-small"
                     onClick={() => removePillar(index)}
                     title="Remove pillar"
                   >
-                    ×
+                    <AppleWatchIcon name="delete" size="sm" />
                   </button>
                 </div>
                 <textarea
@@ -140,19 +133,19 @@ const PillarsSettings: React.FC<PillarsSettingsProps> = ({ onNavigateBack }) => 
                   onChange={(e) => updatePillar(index, { description: e.target.value })}
                   placeholder="Description"
                   maxLength={100}
-                  className="w-full bg-bg-tertiary text-text-primary px-sm py-xs rounded border-none text-sm resize-none"
+                  className="w-full ds-input resize-none"
                   rows={2}
                 />
               </div>
             </div>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center py-xl text-center">
+          <div className="ds-flex-center flex-col py-xl text-center">
             <div className="text-4xl mb-sm opacity-50">
               <AppleWatchIcon name="building" size="xl" />
             </div>
-            <div className="text-md font-semibold text-text-primary mb-xs">No Pillars</div>
-            <div className="text-sm text-text-secondary">Add pillars to define your core principles</div>
+            <div className="text-md font-semibold ds-text-primary mb-xs">No Pillars</div>
+            <div className="text-sm ds-text-secondary">Add pillars to define your core principles</div>
           </div>
         )}
       </div>
@@ -167,7 +160,7 @@ const PillarsSettings: React.FC<PillarsSettingsProps> = ({ onNavigateBack }) => 
       />
       
       <div className="flex flex-col gap-md">
-        <div className="bg-bg-secondary rounded-apple p-md border border-bg-tertiary">
+        <div className="ds-card">
           <div className="flex flex-col gap-sm">
             <input
               type="text"
@@ -176,21 +169,17 @@ const PillarsSettings: React.FC<PillarsSettingsProps> = ({ onNavigateBack }) => 
               onChange={(e) => setNewPillarQuote(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addPillar()}
               maxLength={50}
-              className="w-full bg-bg-tertiary text-text-primary px-sm py-xs rounded border-none text-sm"
+              className="w-full ds-input"
             />
             <textarea
               placeholder="Description"
               value={newPillarDescription}
               onChange={(e) => setNewPillarDescription(e.target.value)}
               maxLength={100}
-              className="w-full bg-bg-tertiary text-text-primary px-sm py-xs rounded border-none text-sm resize-none"
+              className="w-full ds-input resize-none"
               rows={2}
             />
-            <div className="flex items-center gap-sm">
-              <ColorInput
-                value={newPillarColor}
-                onChange={setNewPillarColor}
-              />
+            <div className="ds-flex-end">
               <AppleWatchButton
                 variant="primary"
                 size="small"
