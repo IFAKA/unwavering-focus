@@ -1,0 +1,68 @@
+import { SearchQuery } from '../types';
+
+export interface ISearchService {
+  performSearch(query: string): Promise<void>;
+  saveSearch(query: string): Promise<void>;
+  deleteSearch(id: string): Promise<void>;
+  getSavedSearches(): Promise<SearchQuery[]>;
+  copyToClipboard(text: string): Promise<void>;
+}
+
+export class SearchService implements ISearchService {
+  async performSearch(query: string): Promise<void> {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'PERFORM_SEARCH',
+        query: query
+      });
+    } catch (error) {
+      console.error('Error performing search:', error);
+      throw new Error('Failed to perform search');
+    }
+  }
+
+  async saveSearch(query: string): Promise<void> {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'SAVE_SEARCH',
+        query: query
+      });
+    } catch (error) {
+      console.error('Error saving search:', error);
+      throw new Error('Failed to save search');
+    }
+  }
+
+  async deleteSearch(id: string): Promise<void> {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'DELETE_SEARCH',
+        id: id
+      });
+    } catch (error) {
+      console.error('Error deleting search:', error);
+      throw new Error('Failed to delete search');
+    }
+  }
+
+  async getSavedSearches(): Promise<SearchQuery[]> {
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'GET_STORAGE_DATA' });
+      return response.savedSearches || [];
+    } catch (error) {
+      console.error('Error getting saved searches:', error);
+      return [];
+    }
+  }
+
+  async copyToClipboard(text: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      throw new Error('Failed to copy to clipboard');
+    }
+  }
+}
+
+export const searchService = new SearchService(); 

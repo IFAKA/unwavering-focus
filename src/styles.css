@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for Apple Watch design system */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #000000;
+    color: #ffffff;
+    line-height: 1.3;
+    font-size: 12px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Custom component styles */
+  .apple-watch-container {
+    @apply bg-bg-primary text-text-primary font-apple;
+  }
+  
+  .apple-watch-card {
+    @apply bg-bg-secondary border border-bg-tertiary rounded-apple p-md;
+  }
+  
+  .apple-watch-button {
+    @apply bg-accent-primary text-white px-lg py-md rounded-apple font-medium transition-all duration-200 hover:bg-accent-secondary hover:scale-105 active:scale-95;
+  }
+  
+  .apple-watch-button-secondary {
+    @apply bg-bg-tertiary text-text-primary px-lg py-md rounded-apple font-medium transition-all duration-200 hover:bg-bg-secondary hover:scale-105 active:scale-95;
+  }
+}
+
+/* Light theme support */
+@media (prefers-color-scheme: light) {
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+}
+
+/* Custom animations */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+} 
