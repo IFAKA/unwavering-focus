@@ -10,6 +10,9 @@ const defaultConfig = DEFAULT_CONFIG;
 // Video focus state tracking
 let videoFocusStates = new Map<number, VideoState>();
 
+// Modal state tracking per tab
+let tabModalStates = new Map<number, Set<string>>();
+
 // Initialize storage with default values
 async function initializeStorage() {
   try {
@@ -425,6 +428,11 @@ async function resetEyeCareAlarm() {
 // Handle tab events
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
+    // Skip chrome-extension URLs to avoid permission errors
+    if (tab.url.startsWith('chrome-extension://') || tab.url.startsWith('chrome://')) {
+      return;
+    }
+    
     // Check if this is a distracting domain that needs overlay
     try {
       const config = await storage.get('config');
@@ -450,7 +458,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
                 } catch (error) {
                   console.error('Failed to send message after injection:', error);
                 }
-              }, 500);
+              }, 1000); // Increased timeout
             } catch (injectionError) {
               console.error('Failed to inject content script:', injectionError);
             }
@@ -463,7 +471,11 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   }
 });
 chrome.tabs.onCreated.addListener(handleTabCreated);
-chrome.tabs.onRemoved.addListener(updateTabCount);
+chrome.tabs.onRemoved.addListener((tabId) => {
+  // Clean up modal states for the removed tab
+  tabModalStates.delete(tabId);
+  updateTabCount();
+});
 chrome.tabs.onActivated.addListener(handleTabActivated);
 
 // Handle messages from popup/content scripts
@@ -501,6 +513,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
             nextEyeCareAlarm: undefined
           });
         });
+        return true; // Keep message channel open for async response
         break;
       
       case 'GET_TAB_COUNT':
@@ -509,6 +522,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
             sendResponse({ tabCount: tabCount || 0 });
           });
         });
+        return true; // Keep message channel open for async response
         break;
       
       case 'SAVE_SEARCH':
@@ -632,34 +646,121 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
 
           const today = new Date().toISOString().split('T')[0];
           if (distractingDomain.lastResetDate !== today) {
-            distractingDomain.currentCount = 0;
+            distractingDomain.timeUsedToday = 0;
             distractingDomain.lastResetDate = today;
-            console.log('Reset counter for new day');
+            console.log('Reset time counter for new day');
           }
 
-          const remainingVisits = Math.max(0, distractingDomain.dailyLimit - distractingDomain.currentCount);
-          console.log('Remaining visits:', remainingVisits, 'Current count:', distractingDomain.currentCount, 'Daily limit:', distractingDomain.dailyLimit);
+          const remainingMinutes = Math.max(0, distractingDomain.dailyTimeLimit - distractingDomain.timeUsedToday);
+          console.log('Remaining minutes:', remainingMinutes, 'Time used today:', distractingDomain.timeUsedToday, 'Daily limit:', distractingDomain.dailyTimeLimit);
           
-          if (remainingVisits <= 0) {
-            console.log('No visits left, redirecting to focus page');
-            // No visits left - redirect to focus page
+          if (remainingMinutes <= 0) {
+            console.log('No time left, redirecting to focus page');
+            // No time left - redirect to focus page
             sendResponse({ 
               shouldBlock: true, 
               shouldShowOverlay: false,
               domain: domain,
-              remainingVisits: 0 
+              remainingMinutes: 0 
             });
           } else {
-            console.log('Showing overlay with remaining visits');
-            // Show overlay with remaining visits
+            console.log('Showing overlay with remaining time');
+            // Show overlay with remaining time
             sendResponse({ 
               shouldBlock: false, 
               shouldShowOverlay: true,
               domain: domain,
-              remainingVisits: remainingVisits 
+              remainingMinutes: remainingMinutes 
             });
           }
+        }).catch(error => {
+          console.error('Error in CHECK_DISTRACTING_DOMAIN:', error);
+          sendResponse({ shouldBlock: false, shouldShowOverlay: false });
         });
+        return true; // Keep message channel open for async response
+        break;
+      
+      case 'SHOULD_SHOW_MODAL':
+        console.log('Handling SHOULD_SHOW_MODAL request:', message);
+        const tabId = sender.tab?.id;
+        if (!tabId) {
+          console.log('No tab ID found, allowing modal');
+          sendResponse(true);
+          return;
+        }
+        
+        // Get or create the set of domains that have shown modals for this tab
+        if (!tabModalStates.has(tabId)) {
+          tabModalStates.set(tabId, new Set());
+        }
+        const tabDomains = tabModalStates.get(tabId)!;
+        
+        // Check if modal has been shown for this domain in this tab
+        const shouldShow = !tabDomains.has(message.domain);
+        if (shouldShow) {
+          tabDomains.add(message.domain);
+          console.log('Modal will be shown for domain:', message.domain, 'in tab:', tabId);
+        } else {
+          console.log('Modal already shown for domain:', message.domain, 'in tab:', tabId, 'skipping');
+        }
+        
+        sendResponse(shouldShow);
+        return true; // Keep message channel open for async response
+        break;
+      
+      case 'CLEAR_MODAL_STATE':
+        console.log('Handling CLEAR_MODAL_STATE request:', message);
+        const clearTabId = sender.tab?.id;
+        if (clearTabId && tabModalStates.has(clearTabId)) {
+          const domainsToClear = tabModalStates.get(clearTabId)!;
+          if (message.domain) {
+            domainsToClear.delete(message.domain);
+            console.log('Cleared modal state for domain:', message.domain, 'in tab:', clearTabId);
+          } else {
+            domainsToClear.clear();
+            console.log('Cleared all modal states for tab:', clearTabId);
+          }
+        }
+        sendResponse({ success: true });
+        return true; // Keep message channel open for async response
+        break;
+      
+      case 'GET_DOMAIN_TIME_INFO':
+        console.log('Handling GET_DOMAIN_TIME_INFO request:', message.domain);
+        storage.get('config').then(config => {
+          if (!config?.distractionBlocker?.enabled) {
+            sendResponse({ remainingMinutes: 0 });
+            return;
+          }
+
+          const domain = message.domain;
+          const distractingDomain = config.distractionBlocker.domains.find((d: DistractingDomain) => {
+            const configuredDomain = d.domain.toLowerCase();
+            const requestedDomain = domain.toLowerCase();
+            
+            // Exact match
+            if (configuredDomain === requestedDomain) return true;
+            
+            // www subdomain match (www.facebook.com matches facebook.com)
+            if (requestedDomain.startsWith('www.') && requestedDomain.slice(4) === configuredDomain) return true;
+            
+            // Subdomain match (facebook.com matches www.facebook.com)
+            if (configuredDomain.startsWith('www.') && configuredDomain.slice(4) === requestedDomain) return true;
+            
+            return false;
+          });
+          
+          if (distractingDomain) {
+            const remainingMinutes = Math.max(0, distractingDomain.dailyTimeLimit - distractingDomain.timeUsedToday);
+            sendResponse({ remainingMinutes });
+          } else {
+            sendResponse({ remainingMinutes: 0 });
+          }
+        }).catch(error => {
+          console.error('Error getting domain time info:', error);
+          sendResponse({ remainingMinutes: 0 });
+        });
+        return true; // Keep message channel open for async response
         break;
       
       case 'INCREMENT_DISTRACTING_DOMAIN':
@@ -688,8 +789,9 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           });
           
           if (distractingDomain) {
-            distractingDomain.currentCount++;
-            console.log('Incremented counter for domain:', message.domain, 'New count:', distractingDomain.currentCount);
+            // Add 1 minute of time used
+            distractingDomain.timeUsedToday += 1;
+            console.log('Added 1 minute for domain:', message.domain, 'Total time used today:', distractingDomain.timeUsedToday);
             storage.set('config', config).then(() => {
               sendResponse({ success: true });
             });
@@ -698,6 +800,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
             sendResponse({ success: false });
           }
         });
+        return true; // Keep message channel open for async response
         break;
       
       case 'UPDATE_YOUTUBE_DISTRACTION_CONFIG':

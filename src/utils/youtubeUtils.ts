@@ -32,6 +32,7 @@ export class YouTubeDistractionBlocker {
   private config: YouTubeDistractionConfig;
   private observer: MutationObserver | null = null;
   private hiddenElements: Set<HTMLElement> = new Set();
+  private intervalId: ReturnType<typeof setInterval> | null = null;
 
   constructor(config: Partial<YouTubeDistractionConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
@@ -44,8 +45,11 @@ export class YouTubeDistractionBlocker {
     // Set up observer for dynamically added elements
     this.setupObserver();
     
-    // Also check periodically for new elements
-    setInterval(() => {
+    // Also check periodically for new elements (but clear any existing interval first)
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+    this.intervalId = setInterval(() => {
       this.hideDistractingElements();
     }, 2000);
   }
@@ -54,6 +58,11 @@ export class YouTubeDistractionBlocker {
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
+    }
+    
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
     }
     
     // Restore hidden elements

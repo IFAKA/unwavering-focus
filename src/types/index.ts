@@ -6,8 +6,8 @@ export interface SearchQuery {
 
 export interface DistractingDomain {
   domain: string;
-  dailyLimit: number;
-  currentCount: number;
+  dailyTimeLimit: number; // in minutes
+  timeUsedToday: number; // in minutes
   lastResetDate: string;
 }
 

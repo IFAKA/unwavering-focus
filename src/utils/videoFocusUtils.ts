@@ -6,6 +6,7 @@ export class VideoFocusManager {
   private observer: MutationObserver | null = null;
   private videoElements: Set<HTMLVideoElement> = new Set();
   private focusIndicator: HTMLElement | null = null;
+  private intervalId: ReturnType<typeof setInterval> | null = null;
 
   constructor(config: VideoFocusConfig) {
     this.config = config;
@@ -18,8 +19,11 @@ export class VideoFocusManager {
     this.setupObserver();
     this.createFocusIndicator();
     
-    // Check for videos periodically
-    setInterval(() => {
+    // Check for videos periodically (but clear any existing interval first)
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+    this.intervalId = setInterval(() => {
       this.detectVideoElements();
     }, 2000);
   }
@@ -28,6 +32,11 @@ export class VideoFocusManager {
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
+    }
+    
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
     }
     
     this.removeFocusIndicator();

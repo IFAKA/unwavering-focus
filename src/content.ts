@@ -8,284 +8,110 @@ let youtubeBlocker: YouTubeDistractionBlocker | null = null;
 // Video Focus Manager instance
 let videoFocusManager: VideoFocusManager | null = null;
 
-// Distraction Blocker Overlay
-class DistractionBlocker {
-  private overlay: HTMLElement | null = null;
+// Clean up any existing overlays on page load/refresh
+// REMOVE: DistractionBlocker class and all modal logic
 
-  showOverlay(domain: string, remainingVisits: number) {
-    // Remove existing overlay
-    this.hideOverlay();
+// Create countdown timer in top right corner
+let countdownTimer: HTMLElement | null = null;
+let countdownInterval: ReturnType<typeof setInterval> | null = null;
+let lastRemainingSeconds: number | null = null;
 
-    // Create overlay
-    this.overlay = document.createElement('div');
-    this.overlay.className = styles['distraction-blocker-overlay'];
-    this.overlay.innerHTML = `
-      <div class="${styles['distraction-blocker-modal']}">
-        <div class="${styles['modal-content']}">
-          <p>You're about to visit <strong>${domain}</strong></p>
-          <div class="${styles['visits-info']}">
-            <span class="${styles['visits-remaining']}">${remainingVisits} visits remaining today</span>
-          </div>
-          <div class="${styles['modal-actions']}">
-          <button class="${styles['btn-back']}" id="back-btn">Go Back</button>
-          <button class="${styles['btn-continue']}" id="continue-btn">Continue to Site</button>
-          </div>
-        </div>
-      </div>
-    `;
+function createCountdownTimer() {
+  if (countdownTimer) return;
+  countdownTimer = document.createElement('div');
+  countdownTimer.style.cssText = `
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 999998;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    letter-spacing: 1px;
+  `;
+  countdownTimer.textContent = 'Loading...';
+  document.body.appendChild(countdownTimer);
+}
 
-    // Add event listeners
-    const continueBtn = this.overlay.querySelector('#continue-btn');
-    const backBtn = this.overlay.querySelector('#back-btn');
-
-    continueBtn?.addEventListener('click', () => {
-      this.hideOverlay();
-      // Increment the counter and allow access
-      chrome.runtime.sendMessage({ 
-        type: 'INCREMENT_DISTRACTING_DOMAIN', 
-        domain: domain 
-      }).then(response => {
-        console.log('Domain counter incremented:', response);
-      }).catch(error => {
-        console.error('Error incrementing domain counter:', error);
-      });
-    });
-
-    backBtn?.addEventListener('click', () => {
-      this.hideOverlay();
-      // Go back in history or close tab
-      if (window.history.length > 1) {
-        window.history.back();
-      } else {
-        window.close();
-      }
-    });
-
-    // Add to page
-    document.body.appendChild(this.overlay);
+function updateCountdown(remainingSeconds: number) {
+  if (!countdownTimer) {
+    createCountdownTimer();
   }
-
-  hideOverlay() {
-    if (this.overlay) {
-      this.overlay.remove();
-      this.overlay = null;
-    }
+  lastRemainingSeconds = remainingSeconds;
+  if (remainingSeconds <= 0) {
+    countdownTimer!.textContent = `0' 00"`;
+    countdownTimer!.style.background = 'rgba(220, 38, 38, 0.9)';
+    setTimeout(() => {
+      window.location.href = chrome.runtime.getURL('focus-page.html');
+    }, 1000);
+  } else {
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    countdownTimer!.textContent = `${minutes}' ${seconds.toString().padStart(2, '0')}"`;
+    countdownTimer!.style.background = remainingSeconds < 600 ? 'rgba(245, 158, 11, 0.9)' : 'rgba(0, 0, 0, 0.8)';
   }
 }
 
-// Smart Search Management Modal
-class SmartSearchModal {
-  private modal: HTMLDivElement | null = null;
-  private input: HTMLInputElement | null = null;
-  private confirmation: HTMLDivElement | null = null;
-  private isClosing: boolean = false; // Prevent multiple modals
-
-  constructor() {
-    // Remove keyboard listener since it's now handled by command
-    // this.init();
+function startTimeTracking(domain: string) {
+  // Clear existing interval
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
   }
-
-  private init() {
-    // Listen for keyboard shortcut - REMOVED, now handled by command
-    // document.addEventListener('keydown', (e) => {
-    //   if (e.altKey && e.shiftKey && e.key === 'S') {
-    //     e.preventDefault();
-    //     this.show();
-    //   }
-    // });
-  }
-
-  public show() {
-    if (this.modal || this.isClosing) {
-      return; // Prevent multiple modals
-    }
-
-    // Clean up any existing modals (in case of state corruption)
-    this.cleanup();
-
-    this.modal = this.createModal();
-    document.body.appendChild(this.modal);
-
-    // Animate in
-    setTimeout(() => {
-      if (this.modal) {
-        this.modal.style.opacity = '1';
-      }
-    }, 10);
-
-    // Focus the input
-    setTimeout(() => {
-      this.input?.focus();
-      
-      // Pre-populate with selected text if any
-      const selectedText = window.getSelection()?.toString().trim();
-      if (selectedText) {
-        this.input!.value = selectedText;
-        this.input!.select();
-      }
-    }, 50);
-  }
-
-  private createModal(): HTMLDivElement {
-    const modal = document.createElement('div');
-    modal.className = styles['smart-search-modal'];
-    modal.style.opacity = '0';
-    modal.style.transition = 'opacity 0.2s ease';
-    modal.innerHTML = `
-      <div class="${styles['modal-overlay']}">
-        <div class="${styles['modal-content']}">
-            <input 
-              type="text" 
-              placeholder="Enter your thought or idea..." 
-              class="${styles['search-input']}"
-              autocomplete="off"
-              autofocus
-            />
-            <div class="${styles['input-info']}">
-              <span class="${styles['search-count']}">Press Enter to save for later</span>
-            </div>
-        </div>
-      </div>
-    `;
-
-    // Add event listeners
-    const input = modal.querySelector(`.${styles['search-input']}`) as HTMLInputElement;
-    const overlay = modal.querySelector(`.${styles['modal-overlay']}`);
-
-    input?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        this.saveThought();
-      } else if (e.key === 'Escape') {
-        this.hide();
-      }
-    });
-
-    overlay?.addEventListener('click', (e) => {
-      if (e.target === overlay) {
-        this.hide();
-      }
-    });
-
-    this.input = input;
-    return modal;
-  }
-
-  private hide() {
-    if (this.modal && !this.isClosing) {
-      this.isClosing = true; // Prevent multiple close attempts
-      
-      // Add fade out animation
-      this.modal.style.transition = 'opacity 0.2s ease';
-      this.modal.style.opacity = '0';
-      
-      // Remove after animation completes
-      setTimeout(() => {
-        if (this.modal && this.modal.parentNode) {
-          this.modal.parentNode.removeChild(this.modal);
-          this.modal = null;
-          this.input = null;
+  // Get initial time in seconds
+  chrome.runtime.sendMessage({
+    type: 'GET_DOMAIN_TIME_INFO',
+    domain: domain
+  }).then(response => {
+    if (response && response.remainingMinutes !== undefined) {
+      // Convert to seconds
+      let remainingSeconds = Math.max(0, Math.round(response.remainingMinutes * 60));
+      updateCountdown(remainingSeconds);
+      // Start ticking every second
+      countdownInterval = setInterval(() => {
+        if (lastRemainingSeconds !== null) {
+          updateCountdown(lastRemainingSeconds - 1);
         }
-        this.isClosing = false; // Reset flag
-      }, 200);
+      }, 1000);
     }
-  }
-
-  private cleanup() {
-    // Force cleanup in case of state corruption
-    if (this.modal && this.modal.parentNode) {
-      this.modal.parentNode.removeChild(this.modal);
-    }
-    this.modal = null;
-    this.input = null;
-    this.isClosing = false;
-  }
-
-  private showConfirmation(query: string) {
-    // Create confirmation element
-    this.confirmation = document.createElement('div');
-    this.confirmation.className = styles['save-confirmation'];
-    this.confirmation.innerHTML = `
-      <div class="${styles['confirmation-content']}">
-        <div class="${styles['confirmation-header']}">
-          <div class="${styles['confirmation-icon']}">✓</div>
-          <div class="${styles['confirmation-title']}">Saved for later</div>
-        </div>
-        <div class="${styles['confirmation-query']}">"${query}"</div>
-      </div>
-    `;
-
-    // Add to page
-    document.body.appendChild(this.confirmation);
-
-    // Animate in
-    setTimeout(() => {
-      this.confirmation?.classList.add(styles['confirmation-visible']);
-    }, 10);
-
-    // Remove after 3 seconds
-    setTimeout(() => {
-      this.hideConfirmation();
-    }, 3000);
-  }
-
-  private hideConfirmation() {
-    if (this.confirmation) {
-      this.confirmation.classList.remove(styles['confirmation-visible']);
-      setTimeout(() => {
-        if (this.confirmation && this.confirmation.parentNode) {
-          this.confirmation.parentNode.removeChild(this.confirmation);
-          this.confirmation = null;
-        }
-      }, 300);
-    }
-  }
-
-  private async saveThought() {
-    const thought = this.input?.value.trim();
-    if (!thought || this.isClosing) return; // Prevent multiple saves
-
-    try {
-      // Start the close animation immediately
-      this.hide();
-      
-      await chrome.runtime.sendMessage({ 
-        type: 'SAVE_SEARCH', 
-        query: thought 
-      });
-      console.log('Thought saved:', thought);
-      
-      // Show confirmation immediately when modal starts closing
-      this.showConfirmation(thought);
-    } catch (error) {
-      console.error('Error saving thought:', error);
-      // Still hide modal even if there's an error
-      this.hide();
-    }
-  }
+  }).catch(error => {
+    console.error('Error getting domain time info:', error);
+  });
 }
-
-// Initialize the modal and distraction blocker
-const smartSearchModal = new SmartSearchModal();
-const distractionBlocker = new DistractionBlocker();
 
 console.log('Content script loaded on:', window.location.href);
 
-// Check for distracting domains on page load
+// Helper to get the root domain for tracking
+function getRootDomain(url: string) {
+  try {
+    const { hostname } = new URL(url);
+    // For domains like www.pinterest.com, return pinterest.com
+    const parts = hostname.split('.');
+    if (parts.length > 2) {
+      return parts.slice(-2).join('.');
+    }
+    return hostname;
+  } catch {
+    return url;
+  }
+}
+
+// On page load, check for distracting domain and start timer if needed
 chrome.runtime.sendMessage({ 
   type: 'CHECK_DISTRACTING_DOMAIN', 
   url: window.location.href 
 }).then(response => {
-  console.log('Distraction blocker response:', response);
+  const rootDomain = getRootDomain(window.location.href);
   if (response && response.shouldBlock) {
-    console.log('Redirecting to focus page');
-    // Redirect to focus page
     window.location.href = chrome.runtime.getURL('focus-page.html');
   } else if (response && response.shouldShowOverlay) {
-    console.log('Showing overlay for domain:', response.domain, 'with visits:', response.remainingVisits);
-    // Show overlay with remaining visits
-    distractionBlocker.showOverlay(response.domain, response.remainingVisits);
-  } else {
-    console.log('No distraction blocker action needed');
+    startTimeTracking(rootDomain);
   }
 }).catch(error => {
   console.error('Error checking distracting domain:', error);
@@ -337,6 +163,44 @@ if (supportsVideoFocus()) {
     videoFocusManager.start();
   });
 }
+
+// Track if this is a reload vs navigation
+let isReload = false;
+
+// Detect if this is a reload (not navigation)
+if (performance.getEntriesByType('navigation').length > 0) {
+  const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+  isReload = navigationEntry.type === 'reload';
+}
+
+// If it's a reload, clear the modal state for this domain
+if (isReload) {
+  const rootDomain = getRootDomain(window.location.href);
+  chrome.runtime.sendMessage({
+    type: 'CLEAR_MODAL_STATE',
+    domain: rootDomain
+  }).catch(error => {
+    console.error('Error clearing modal state:', error);
+  });
+}
+
+// Clean up overlays when page is about to unload
+window.addEventListener('beforeunload', () => {
+  // Also clean up any managers
+  if (youtubeBlocker) {
+    youtubeBlocker.stop();
+  }
+  if (videoFocusManager) {
+    videoFocusManager.stop();
+  }
+  // Clean up countdown timer
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
+  if (countdownTimer) {
+    countdownTimer.remove();
+  }
+});
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -405,7 +269,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   if (message.type === 'SHOW_SMART_SEARCH_MODAL') {
-    smartSearchModal.show();
+    // REMOVE: smartSearchModal.show();
     sendResponse({ success: true });
     return true;
   }
@@ -421,7 +285,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         window.location.href = chrome.runtime.getURL('focus-page.html');
       } else if (response && response.shouldShowOverlay) {
         // Show overlay with remaining visits
-        distractionBlocker.showOverlay(response.domain, response.remainingVisits);
+        // REMOVE: distractionBlocker.showOverlay(response.domain, response.remainingVisits);
+        startTimeTracking(response.domain);
       }
     }).catch(error => {
       console.error('Error checking distracting domain:', error);
