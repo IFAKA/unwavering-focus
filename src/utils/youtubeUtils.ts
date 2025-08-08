@@ -39,6 +39,8 @@ export class YouTubeDistractionBlocker {
   }
 
   public start() {
+    console.log('YouTube Distraction Blocker: Starting with config:', this.config);
+    
     // Hide existing elements
     this.hideDistractingElements();
     
@@ -51,7 +53,7 @@ export class YouTubeDistractionBlocker {
     }
     this.intervalId = setInterval(() => {
       this.hideDistractingElements();
-    }, 2000);
+    }, 1000); // Check more frequently
   }
 
   public stop() {
@@ -93,22 +95,29 @@ export class YouTubeDistractionBlocker {
 
   private hideDistractingElements() {
     const url = window.location.href;
+    console.log('YouTube Distraction Blocker: Hiding distracting elements on URL:', url);
+    console.log('Current config:', this.config);
     
     // Check if we're on a video page
     if (url.includes('youtube.com/watch')) {
+      console.log('YouTube Distraction Blocker: Hiding video page elements');
       this.hideVideoPageElements();
     }
     
     // Check if we're on a search results page
     if (url.includes('youtube.com/results')) {
+      console.log('YouTube Distraction Blocker: Hiding search page elements');
       this.hideSearchPageElements();
     }
     
     // Hide common elements on all YouTube pages
+    console.log('YouTube Distraction Blocker: Hiding common elements');
     this.hideCommonElements();
   }
 
   private hideVideoPageElements() {
+    console.log('YouTube Distraction Blocker: Hiding video page elements with config:', this.config);
+    
     // Hide elements by ID
     const elementsToHide = [
       { id: 'secondary', config: 'hideSecondary' },
@@ -127,7 +136,11 @@ export class YouTubeDistractionBlocker {
           this.hideElement(element, config as keyof YouTubeDistractionConfig);
         } else if (!element) {
           console.log(`YouTube Distraction Blocker: Element with id "${id}" not found`);
+        } else if (this.hiddenElements.has(element)) {
+          console.log(`YouTube Distraction Blocker: Element with id "${id}" already hidden`);
         }
+      } else {
+        console.log(`YouTube Distraction Blocker: Setting "${config}" is disabled, not hiding "${id}"`);
       }
     });
 
@@ -136,8 +149,29 @@ export class YouTubeDistractionBlocker {
       const segmentedButtons = document.querySelectorAll('segmented-like-dislike-button-view-model');
       segmentedButtons.forEach(button => {
         if (!this.hiddenElements.has(button as HTMLElement)) {
+          console.log('YouTube Distraction Blocker: Hiding segmented button');
           this.hideElement(button as HTMLElement, 'hideSegmentedButtons');
         }
+      });
+      
+      // Also try alternative selectors for like/dislike buttons
+      const likeDislikeSelectors = [
+        '[aria-label*="like"]',
+        '[aria-label*="dislike"]',
+        '[aria-label*="Like"]',
+        '[aria-label*="Dislike"]',
+        '[data-tooltip*="like"]',
+        '[data-tooltip*="dislike"]'
+      ];
+      
+      likeDislikeSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+          if (!this.hiddenElements.has(element as HTMLElement)) {
+            console.log(`YouTube Distraction Blocker: Hiding like/dislike element with selector "${selector}"`);
+            this.hideElement(element as HTMLElement, 'hideSegmentedButtons');
+          }
+        });
       });
     }
 
@@ -148,9 +182,30 @@ export class YouTubeDistractionBlocker {
         const buttonText = button.textContent?.toLowerCase();
         if (buttonText && (buttonText.includes('download') || buttonText.includes('thanks') || buttonText.includes('clip'))) {
           if (!this.hiddenElements.has(button as HTMLElement)) {
+            console.log(`YouTube Distraction Blocker: Hiding button with text "${buttonText}"`);
             this.hideElement(button as HTMLElement, 'hideButtonShape');
           }
         }
+      });
+      
+      // Also try alternative selectors for action buttons
+      const actionButtonSelectors = [
+        '[aria-label*="download"]',
+        '[aria-label*="thanks"]',
+        '[aria-label*="clip"]',
+        '[data-tooltip*="download"]',
+        '[data-tooltip*="thanks"]',
+        '[data-tooltip*="clip"]'
+      ];
+      
+      actionButtonSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+          if (!this.hiddenElements.has(element as HTMLElement)) {
+            console.log(`YouTube Distraction Blocker: Hiding action button with selector "${selector}"`);
+            this.hideElement(element as HTMLElement, 'hideButtonShape');
+          }
+        });
       });
     }
 
@@ -162,7 +217,7 @@ export class YouTubeDistractionBlocker {
         if (elementText && (elementText.includes('recommended') || elementText.includes('related') || elementText.includes('next'))) {
           if (!this.hiddenElements.has(element as HTMLElement)) {
             console.log(`YouTube Distraction Blocker: Hiding secondary element by class/id selector`);
-            this.hideElement(element as HTMLElement);
+            this.hideElement(element as HTMLElement, 'hideSecondary');
           }
         }
       });
@@ -173,7 +228,14 @@ export class YouTubeDistractionBlocker {
         'ytd-watch-next-secondary-results-renderer #contents',
         '#secondary #contents',
         '#secondary ytd-watch-next-secondary-results-renderer',
-        'ytd-watch-next-secondary-results-renderer #items'
+        'ytd-watch-next-secondary-results-renderer #items',
+        // More flexible selectors
+        '[data-section-id="chips"]',
+        '[data-section-id="related"]',
+        '[data-section-id="secondary"]',
+        'ytd-watch-next-secondary-results-renderer',
+        'ytd-watch-next-secondary-results-renderer ytd-compact-video-renderer',
+        'ytd-watch-next-secondary-results-renderer ytd-video-renderer'
       ];
       
       additionalSelectors.forEach(selector => {
@@ -232,6 +294,8 @@ export class YouTubeDistractionBlocker {
     const originalDisplay = element.style.display;
     const originalVisibility = element.style.visibility;
     
+    console.log(`YouTube Distraction Blocker: Hiding element, original display: "${originalDisplay}", visibility: "${originalVisibility}", setting: "${setting}"`);
+    
     // Hide the element
     element.style.display = 'none';
     element.style.visibility = 'hidden';
@@ -259,36 +323,49 @@ export class YouTubeDistractionBlocker {
   }
 
   public updateConfig(newConfig: Partial<YouTubeDistractionConfig>) {
+    console.log('YouTube Distraction Blocker: Updating config', newConfig);
     const oldConfig = { ...this.config };
     this.config = { ...this.config, ...newConfig };
     
     // Check which settings changed
     const changedSettings = Object.keys(newConfig) as (keyof YouTubeDistractionConfig)[];
+    console.log('Changed settings:', changedSettings);
     
     // Restore elements for settings that were turned off
     changedSettings.forEach(setting => {
       if (oldConfig[setting] && !this.config[setting]) {
+        console.log(`Restoring elements for setting: ${setting}`);
         this.restoreElementsForSetting(setting);
       }
     });
     
     // Re-apply hiding with new config
+    console.log('Re-applying hiding with new config');
     this.hideDistractingElements();
   }
 
   private restoreElementsForSetting(setting: keyof YouTubeDistractionConfig) {
+    console.log(`YouTube Distraction Blocker: Restoring elements for setting "${setting}"`);
+    let restoredCount = 0;
+    
     // Find elements that were hidden by this specific setting and restore them
     this.hiddenElements.forEach(element => {
       const hiddenBy = element.getAttribute('data-hidden-by');
       if (hiddenBy === setting) {
+        console.log(`YouTube Distraction Blocker: Restoring element hidden by "${setting}"`);
         this.restoreElement(element);
+        restoredCount++;
       }
     });
+    
+    console.log(`YouTube Distraction Blocker: Restored ${restoredCount} elements for setting "${setting}"`);
   }
 
   private restoreElement(element: HTMLElement) {
     const originalDisplay = element.getAttribute('data-original-display') || '';
     const originalVisibility = element.getAttribute('data-original-visibility') || '';
+    
+    console.log(`YouTube Distraction Blocker: Restoring element, setting display to "${originalDisplay}", visibility to "${originalVisibility}"`);
     
     element.style.display = originalDisplay;
     element.style.visibility = originalVisibility;

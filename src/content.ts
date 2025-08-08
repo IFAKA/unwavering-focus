@@ -485,10 +485,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'UPDATE_YOUTUBE_DISTRACTION_CONFIG') {
+    console.log('Content script: Received UPDATE_YOUTUBE_DISTRACTION_CONFIG message:', message);
     if (youtubeBlocker && isYouTubePage()) {
+      console.log('Content script: Updating YouTube blocker config');
       youtubeBlocker.updateConfig(message.config);
       sendResponse({ success: true });
     } else {
+      console.log('Content script: YouTube blocker not available or not on YouTube');
       sendResponse({ error: 'YouTube blocker not available or not on YouTube' });
     }
     return true;

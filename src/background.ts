@@ -767,6 +767,44 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
           console.log('Config saved successfully');
           // Reset eye care alarm if config changed
           await resetEyeCareAlarm();
+          
+          // Check if YouTube distraction config was updated and notify YouTube tabs
+          if (message.config.youtubeDistraction) {
+            console.log('YouTube distraction config updated, notifying YouTube tabs');
+            console.log('YouTube distraction config:', message.config.youtubeDistraction);
+            chrome.tabs.query({ url: '*://*.youtube.com/*' }).then(tabs => {
+              console.log('Found YouTube tabs:', tabs.length);
+              tabs.forEach(tab => {
+                if (tab.id) {
+                  console.log('Sending config update to tab:', tab.id);
+                  chrome.tabs.sendMessage(tab.id, {
+                    type: 'UPDATE_YOUTUBE_DISTRACTION_CONFIG',
+                    config: message.config.youtubeDistraction
+                  }).catch(error => {
+                    console.error('Error sending YouTube config update to tab:', error);
+                  });
+                }
+              });
+            });
+          }
+          
+          // Check if video focus config was updated and notify all tabs
+          if (message.config.videoFocus) {
+            console.log('Video focus config updated, notifying all tabs');
+            chrome.tabs.query({}).then(tabs => {
+              tabs.forEach(tab => {
+                if (tab.id && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+                  chrome.tabs.sendMessage(tab.id, {
+                    type: 'UPDATE_VIDEO_FOCUS_CONFIG',
+                    config: message.config.videoFocus
+                  }).catch(error => {
+                    console.error('Error sending video focus config update to tab:', error);
+                  });
+                }
+              });
+            });
+          }
+          
           sendResponse({ success: true });
         }).catch(error => {
           console.error('Error saving config:', error);
