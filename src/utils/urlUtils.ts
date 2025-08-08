@@ -91,16 +91,170 @@ export function isUrl(text: string): boolean {
 }
 
 export function formatUrlForDisplay(url: string): string {
-  // Remove protocol
-  let formatted = url.replace(/^https?:\/\//, '');
-  
-  // Remove www subdomain
-  formatted = formatted.replace(/^www\./, '');
-  
-  // Remove trailing slash
-  formatted = formatted.replace(/\/$/, '');
-  
-  return formatted;
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+    const pathname = urlObj.pathname;
+    
+    // GitLab URLs
+    if (hostname.includes('gitlab.com')) {
+      if (pathname.includes('/-/merge_requests/')) {
+        const mrId = pathname.match(/\/merge_requests\/(\d+)/)?.[1];
+        const repoPath = pathname.match(/^\/([^\/]+\/[^\/]+)/)?.[1];
+        return repoPath ? `${repoPath} • MR #${mrId}` : `GitLab • MR #${mrId}`;
+      }
+      if (pathname.includes('/-/issues/')) {
+        const issueId = pathname.match(/\/issues\/(\d+)/)?.[1];
+        const repoPath = pathname.match(/^\/([^\/]+\/[^\/]+)/)?.[1];
+        return repoPath ? `${repoPath} • Issue #${issueId}` : `GitLab • Issue #${issueId}`;
+      }
+      if (pathname.includes('/-/commit/')) {
+        const commitHash = pathname.match(/\/commit\/([a-f0-9]{7,40})/)?.[1];
+        const repoPath = pathname.match(/^\/([^\/]+\/[^\/]+)/)?.[1];
+        return repoPath ? `${repoPath} • Commit ${commitHash?.substring(0, 8)}` : `GitLab • Commit ${commitHash?.substring(0, 8)}`;
+      }
+      if (pathname.includes('/-/tree/')) {
+        const branchName = pathname.match(/\/tree\/([^\/]+)/)?.[1];
+        const repoPath = pathname.match(/^\/([^\/]+\/[^\/]+)/)?.[1];
+        return repoPath ? `${repoPath} • Branch ${branchName}` : `GitLab • Branch ${branchName}`;
+      }
+      if (pathname.includes('/-/tags/')) {
+        const tagName = pathname.match(/\/tags\/([^\/]+)/)?.[1];
+        const repoPath = pathname.match(/^\/([^\/]+\/[^\/]+)/)?.[1];
+        return repoPath ? `${repoPath} • Tag ${tagName}` : `GitLab • Tag ${tagName}`;
+      }
+    }
+
+    // GitHub URLs
+    if (hostname.includes('github.com')) {
+      if (pathname.includes('/pull/')) {
+        const prId = pathname.match(/\/pull\/(\d+)/)?.[1];
+        const repoPath = pathname.match(/^\/([^\/]+\/[^\/]+)/)?.[1];
+        return repoPath ? `${repoPath} • PR #${prId}` : `GitHub • PR #${prId}`;
+      }
+      if (pathname.includes('/issues/')) {
+        const issueId = pathname.match(/\/issues\/(\d+)/)?.[1];
+        const repoPath = pathname.match(/^\/([^\/]+\/[^\/]+)/)?.[1];
+        return repoPath ? `${repoPath} • Issue #${issueId}` : `GitHub • Issue #${issueId}`;
+      }
+      if (pathname.includes('/commit/')) {
+        const commitHash = pathname.match(/\/commit\/([a-f0-9]{7,40})/)?.[1];
+        const repoPath = pathname.match(/^\/([^\/]+\/[^\/]+)/)?.[1];
+        return repoPath ? `${repoPath} • Commit ${commitHash?.substring(0, 8)}` : `GitHub • Commit ${commitHash?.substring(0, 8)}`;
+      }
+      if (pathname.includes('/tree/')) {
+        const branchName = pathname.match(/\/tree\/([^\/]+)/)?.[1];
+        const repoPath = pathname.match(/^\/([^\/]+\/[^\/]+)/)?.[1];
+        return repoPath ? `${repoPath} • Branch ${branchName}` : `GitHub • Branch ${branchName}`;
+      }
+      if (pathname.includes('/releases/tag/')) {
+        const tagName = pathname.match(/\/tag\/([^\/]+)/)?.[1];
+        const repoPath = pathname.match(/^\/([^\/]+\/[^\/]+)/)?.[1];
+        return repoPath ? `${repoPath} • Tag ${tagName}` : `GitHub • Tag ${tagName}`;
+      }
+    }
+
+    // Jira URLs
+    if (hostname.includes('atlassian.net') || hostname.includes('jira.com')) {
+      if (pathname.includes('/boards/')) {
+        const boardMatch = pathname.match(/\/boards\/(\d+)/);
+        const projectMatch = pathname.match(/\/projects\/([A-Z]+)/);
+        const project = projectMatch?.[1];
+        const boardId = boardMatch?.[1];
+        return project ? `${project} Board #${boardId}` : `Jira Board #${boardId}`;
+      }
+      if (pathname.includes('/projects/')) {
+        const projectMatch = pathname.match(/\/projects\/([A-Z]+)/);
+        const project = projectMatch?.[1];
+        return project ? `${project} Project` : 'Jira Project';
+      }
+      if (pathname.includes('/browse/')) {
+        const ticketMatch = pathname.match(/\/([A-Z]+-\d+)/);
+        return ticketMatch ? `Jira ${ticketMatch[1]}` : 'Jira Ticket';
+      }
+      if (pathname.includes('/issues/') || pathname.includes('/browse/')) {
+        return 'Jira Issues';
+      }
+      if (pathname.includes('/dashboard/')) {
+        return 'Jira Dashboard';
+      }
+      if (pathname.includes('/reports/')) {
+        return 'Jira Reports';
+      }
+      return 'Jira';
+    }
+
+    // YouTube URLs
+    if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+      if (pathname.includes('/watch')) {
+        const videoId = urlObj.searchParams.get('v');
+        return videoId ? `YouTube Video` : 'YouTube';
+      }
+      if (hostname.includes('youtu.be')) {
+        const videoId = pathname.substring(1);
+        return videoId ? `YouTube Video` : 'YouTube';
+      }
+      return 'YouTube';
+    }
+
+    // Stack Overflow URLs
+    if (hostname.includes('stackoverflow.com')) {
+      if (pathname.includes('/questions/')) {
+        const questionId = pathname.match(/\/questions\/(\d+)/)?.[1];
+        return questionId ? `Stack Overflow Q&A` : 'Stack Overflow';
+      }
+      return 'Stack Overflow';
+    }
+
+    // Medium URLs
+    if (hostname.includes('medium.com')) {
+      const articlePath = pathname.match(/^\/(@[^\/]+\/[^\/]+)/)?.[1];
+      return articlePath ? `Medium Article` : 'Medium';
+    }
+
+    // Dev.to URLs
+    if (hostname.includes('dev.to')) {
+      const articlePath = pathname.match(/^\/([^\/]+)/)?.[1];
+      return articlePath ? `Dev.to Article` : 'Dev.to';
+    }
+
+    // NPM URLs
+    if (hostname.includes('npmjs.com')) {
+      const packageName = pathname.match(/^\/(package\/)?([^\/]+)/)?.[2];
+      return packageName ? `NPM ${packageName}` : 'NPM';
+    }
+
+    // Docker Hub URLs
+    if (hostname.includes('hub.docker.com')) {
+      const imageName = pathname.match(/^\/(r\/)?([^\/]+)/)?.[2];
+      return imageName ? `Docker ${imageName}` : 'Docker Hub';
+    }
+
+    // Documentation URLs
+    if (pathname.includes('/docs/') || pathname.includes('/documentation/')) {
+      const domain = hostname.replace(/^www\./, '');
+      return `${domain} Docs`;
+    }
+
+    // API Documentation URLs
+    if (pathname.includes('/api/') || pathname.includes('/swagger/') || pathname.includes('/openapi/')) {
+      const domain = hostname.replace(/^www\./, '');
+      return `${domain} API`;
+    }
+
+    // Generic fallback
+    let formatted = url.replace(/^https?:\/\//, '');
+    formatted = formatted.replace(/^www\./, '');
+    formatted = formatted.replace(/\/$/, '');
+    
+    return formatted;
+  } catch {
+    // Fallback to original formatting
+    let formatted = url.replace(/^https?:\/\//, '');
+    formatted = formatted.replace(/^www\./, '');
+    formatted = formatted.replace(/\/$/, '');
+    return formatted;
+  }
 }
 
 // Enhanced URL type detection for specialized styling
