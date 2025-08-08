@@ -230,6 +230,16 @@
   .ds-flex-end {
     @apply flex items-center justify-end;
   }
+  
+  /* Scrollbar utilities */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
 }
 
 /* Minimal Animations - Apple Watch style */

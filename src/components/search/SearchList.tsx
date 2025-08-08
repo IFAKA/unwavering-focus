@@ -113,31 +113,44 @@ const SearchList: React.FC<SearchListProps> = ({
         </div>
         
         {/* Filter tabs */}
-        <div className="flex gap-xs">
-          {[
-            { key: 'all', label: 'All', count: stats.total },
-            { key: 'work', label: 'Work', count: stats.work },
-            { key: 'learning', label: 'Learning', count: stats.learning },
-            { key: 'social', label: 'Social', count: stats.social },
-            { key: 'urls', label: 'URLs', count: stats.urls },
-            { key: 'text', label: 'Text', count: stats.text }
-          ].map(filter => (
-            <button
-              key={filter.key}
-              onClick={() => setActiveFilter(filter.key as FilterType)}
-              className={`px-xs py-0.5 text-xs rounded transition-colors ${
-                activeFilter === filter.key
-                  ? 'bg-accent-primary text-white'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-              title={`${filter.label}: ${filter.count}`}
-            >
-              {filter.label}
-              {filter.count > 0 && (
-                <span className="ml-xs text-xs opacity-75">({filter.count})</span>
-              )}
-            </button>
-          ))}
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex gap-xs min-w-max">
+            {[
+              { key: 'all', label: 'All', icon: 'saved', count: stats.total },
+              { key: 'work', label: 'Work', icon: 'building', count: stats.work },
+              { key: 'learning', label: 'Learning', icon: 'book-open', count: stats.learning },
+              { key: 'social', label: 'Social', icon: 'message-circle', count: stats.social },
+              { key: 'urls', label: 'URLs', icon: 'globe', count: stats.urls },
+              { key: 'text', label: 'Text', icon: 'file-text', count: stats.text }
+            ].map(filter => (
+              <button
+                key={filter.key}
+                onClick={() => setActiveFilter(filter.key as FilterType)}
+                className={`flex items-center gap-xs px-sm py-xs rounded-full transition-all duration-normal whitespace-nowrap ${
+                  activeFilter === filter.key
+                    ? 'bg-accent-primary text-white shadow-sm'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+                }`}
+                title={`${filter.label}: ${filter.count}`}
+              >
+                <AppleWatchIcon 
+                  name={filter.icon as any} 
+                  size="xs" 
+                  className={activeFilter === filter.key ? 'text-white' : 'text-text-secondary'}
+                />
+                <span className="text-xs font-medium">{filter.label}</span>
+                {filter.count > 0 && (
+                  <span className={`text-xs px-xs py-0.5 rounded-full ${
+                    activeFilter === filter.key 
+                      ? 'bg-white bg-opacity-20 text-white' 
+                      : 'bg-bg-tertiary text-text-secondary'
+                  }`}>
+                    {filter.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       
