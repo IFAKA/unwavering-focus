@@ -6,6 +6,7 @@ interface AppleWatchCardProps {
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
 const AppleWatchCard: React.FC<AppleWatchCardProps> = ({
@@ -13,7 +14,8 @@ const AppleWatchCard: React.FC<AppleWatchCardProps> = ({
   padding = 'medium',
   children,
   className = '',
-  onClick
+  onClick,
+  style
 }) => {
   const baseClasses = 'rounded-md transition-all duration-normal';
   
@@ -33,6 +35,7 @@ const AppleWatchCard: React.FC<AppleWatchCardProps> = ({
     <div
       className={`${baseClasses} ${variantClasses[variant]} ${paddingClasses[padding]} ${className}`}
       onClick={onClick}
+      style={style}
     >
       {children}
     </div>

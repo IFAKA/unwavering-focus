@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { SearchQuery } from '../../types';
+import { isUrl, detectUrlType } from '../../utils/urlUtils';
 import SearchItem from './SearchItem';
 import AppleWatchIcon from '../ui/AppleWatchIcon';
 
@@ -11,6 +12,8 @@ interface SearchListProps {
   copyStatus: 'idle' | 'copied';
 }
 
+type FilterType = 'all' | 'urls' | 'text' | 'work' | 'learning' | 'social';
+
 const SearchList: React.FC<SearchListProps> = ({
   searches,
   onSearch,
@@ -18,6 +21,70 @@ const SearchList: React.FC<SearchListProps> = ({
   onDelete,
   copyStatus
 }) => {
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+
+  // Group searches by type for better organization
+  const groupedSearches = useMemo(() => {
+    const groups = {
+      work: [] as SearchQuery[],
+      learning: [] as SearchQuery[],
+      social: [] as SearchQuery[],
+      other: [] as SearchQuery[]
+    };
+
+    searches.forEach(search => {
+      if (isUrl(search.query)) {
+        const urlType = detectUrlType(search.query);
+        
+        // Categorize based on URL type
+        if (['merge-request', 'pull-request', 'jira-ticket', 'linear-ticket', 'asana-task', 'trello-card', 'confluence-page', 'notion-page', 'figma-design', 'slack-channel', 'discord-channel', 'github-issue', 'gitlab-issue'].includes(urlType.type)) {
+          groups.work.push(search);
+        } else if (['youtube-video', 'medium-article', 'dev-post', 'stackoverflow', 'documentation', 'api-docs', 'npm-package', 'docker-hub', 'kubernetes-docs', 'aws-docs', 'google-cloud', 'azure-docs', 'jupyter-notebook', 'kaggle', 'leetcode', 'hackerrank', 'codewars', 'udemy', 'coursera', 'edx'].includes(urlType.type)) {
+          groups.learning.push(search);
+        } else if (['twitter-post', 'linkedin-post', 'reddit-post', 'hackernews'].includes(urlType.type)) {
+          groups.social.push(search);
+        } else {
+          groups.other.push(search);
+        }
+      } else {
+        groups.other.push(search);
+      }
+    });
+
+    return groups;
+  }, [searches]);
+
+  // Filter searches based on active filter
+  const filteredSearches = useMemo(() => {
+    switch (activeFilter) {
+      case 'urls':
+        return searches.filter(search => isUrl(search.query));
+      case 'text':
+        return searches.filter(search => !isUrl(search.query));
+      case 'work':
+        return groupedSearches.work;
+      case 'learning':
+        return groupedSearches.learning;
+      case 'social':
+        return groupedSearches.social;
+      default:
+        return searches;
+    }
+  }, [searches, activeFilter, groupedSearches]);
+
+  const getFilterStats = () => {
+    const total = searches.length;
+    const urls = searches.filter(s => isUrl(s.query)).length;
+    const text = total - urls;
+    const work = groupedSearches.work.length;
+    const learning = groupedSearches.learning.length;
+    const social = groupedSearches.social.length;
+
+    return { total, urls, text, work, learning, social };
+  };
+
+  const stats = getFilterStats();
+
   if (searches.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-xl text-center text-text-secondary h-[350px] overflow-hidden">
@@ -34,28 +101,68 @@ const SearchList: React.FC<SearchListProps> = ({
 
   return (
     <div className="flex-1 px-lg flex flex-col h-full overflow-hidden">
-      <div className="flex justify-between items-center py-md border-b border-bg-tertiary mb-md">
-        <span className="text-xs font-semibold text-text-secondary uppercase tracking-[0.5px]">
-          Saved Items
-        </span>
-        <span className="text-sm text-accent-primary font-semibold">
-          {searches.length}
-        </span>
+      {/* Header with stats and filters */}
+      <div className="py-md border-b border-bg-tertiary mb-md">
+        <div className="flex justify-between items-center mb-sm">
+          <span className="text-xs font-semibold text-text-secondary uppercase tracking-[0.5px]">
+            Saved Items
+          </span>
+          <span className="text-sm text-accent-primary font-semibold">
+            {stats.total}
+          </span>
+        </div>
+        
+        {/* Filter tabs */}
+        <div className="flex gap-xs">
+          {[
+            { key: 'all', label: 'All', count: stats.total },
+            { key: 'work', label: 'Work', count: stats.work },
+            { key: 'learning', label: 'Learning', count: stats.learning },
+            { key: 'social', label: 'Social', count: stats.social },
+            { key: 'urls', label: 'URLs', count: stats.urls },
+            { key: 'text', label: 'Text', count: stats.text }
+          ].map(filter => (
+            <button
+              key={filter.key}
+              onClick={() => setActiveFilter(filter.key as FilterType)}
+              className={`px-xs py-0.5 text-xs rounded transition-colors ${
+                activeFilter === filter.key
+                  ? 'bg-accent-primary text-white'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+              title={`${filter.label}: ${filter.count}`}
+            >
+              {filter.label}
+              {filter.count > 0 && (
+                <span className="ml-xs text-xs opacity-75">({filter.count})</span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
       
       <div className="overflow-y-auto flex-1">
-        {searches
-          .sort((a, b) => b.timestamp - a.timestamp)
-          .map((query) => (
-            <SearchItem
-              key={query.id}
-              query={query}
-              onSearch={onSearch}
-              onCopy={onCopy}
-              onDelete={onDelete}
-              copyStatus={copyStatus}
-            />
-          ))}
+        {filteredSearches.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-lg text-center text-text-secondary">
+            <AppleWatchIcon name="search" size="lg" className="opacity-50 mb-sm" />
+            <div className="text-sm text-text-secondary">
+              No items match the current filter.
+            </div>
+          </div>
+        ) : (
+          filteredSearches
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .map((query) => (
+              <SearchItem
+                key={query.id}
+                query={query}
+                onSearch={onSearch}
+                onCopy={onCopy}
+                onDelete={onDelete}
+                copyStatus={copyStatus}
+              />
+            ))
+        )}
       </div>
     </div>
   );
