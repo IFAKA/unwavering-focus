@@ -84,7 +84,7 @@ export const FEATURE_CONSTANTS = {
   
   // Keyboard Shortcuts
   KEYBOARD_SHORTCUTS: {
-    SMART_SEARCH: 'Alt+Shift+S',
+    SMART_SEARCH: 'Alt+Shift+I',
     COMMAND_NAME: 'open-smart-search',
   },
   

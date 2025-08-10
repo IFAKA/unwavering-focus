@@ -48,7 +48,7 @@
   "commands": {
     "open-smart-search": {
       "suggested_key": {
-        "default": "Alt+Shift+S"
+        "default": "Alt+Shift+I"
       },
       "description": "Open Smart Search Management"
     }

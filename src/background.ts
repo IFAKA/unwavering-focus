@@ -159,6 +159,12 @@ async function playEyeCareStartSound() {
                     try {
                       if (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined') {
                         const audioContext = new (AudioContext || (window as any).webkitAudioContext)();
+                        
+                        // Resume audio context if it's suspended (required for autoplay policy)
+                        if (audioContext.state === 'suspended') {
+                          await audioContext.resume();
+                        }
+                        
                         const oscillator = audioContext.createOscillator();
                         const gainNode = audioContext.createGain();
                         
@@ -166,7 +172,7 @@ async function playEyeCareStartSound() {
                         gainNode.connect(audioContext.destination);
                         
                         oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
-                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0.05, audioContext.currentTime); // Lower volume
                         gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
                         
                         oscillator.start(audioContext.currentTime);
@@ -181,8 +187,9 @@ async function playEyeCareStartSound() {
                     
                     // Try vibration as final fallback
                     try {
-                      if (typeof navigator.vibrate === 'function' && document.hasFocus()) {
-                        navigator.vibrate([100, 50, 100]);
+                      if (typeof navigator.vibrate === 'function' && document.hasFocus() && document.visibilityState === 'visible') {
+                        // Use a simple vibration pattern to avoid blocking
+                        navigator.vibrate(100);
                         console.log('Vibration fallback used');
                         return;
                       }
@@ -317,6 +324,12 @@ async function playEyeCareEndSound() {
                     try {
                       if (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined') {
                         const audioContext = new (AudioContext || (window as any).webkitAudioContext)();
+                        
+                        // Resume audio context if it's suspended (required for autoplay policy)
+                        if (audioContext.state === 'suspended') {
+                          await audioContext.resume();
+                        }
+                        
                         const oscillator = audioContext.createOscillator();
                         const gainNode = audioContext.createGain();
                         
@@ -324,11 +337,11 @@ async function playEyeCareEndSound() {
                         gainNode.connect(audioContext.destination);
                         
                         oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                        gainNode.gain.setValueAtTime(0.05, audioContext.currentTime); // Lower volume
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
                         
                         oscillator.start(audioContext.currentTime);
-                        oscillator.stop(audioContext.currentTime + 0.5);
+                        oscillator.stop(audioContext.currentTime + 0.3);
                         
                         console.log('Web Audio API fallback used');
                         return;
@@ -339,8 +352,9 @@ async function playEyeCareEndSound() {
                     
                     // Try vibration as final fallback
                     try {
-                      if (typeof navigator.vibrate === 'function' && document.hasFocus()) {
-                        navigator.vibrate(200);
+                      if (typeof navigator.vibrate === 'function' && document.hasFocus() && document.visibilityState === 'visible') {
+                        // Use a simple vibration pattern to avoid blocking
+                        navigator.vibrate(100);
                         console.log('Vibration fallback used');
                         return;
                       }
@@ -476,55 +490,81 @@ async function handleTabActivated(activeInfo: chrome.tabs.TabActiveInfo) {
       // Try to switch back to the video tab
       try {
         const videoTabId = videoPlayingTab[0];
+        
+        // First check if the video tab still exists
+        try {
+          const videoTab = await chrome.tabs.get(videoTabId);
+          if (!videoTab) {
+            // Tab doesn't exist, remove it from our tracking
+            videoFocusStates.delete(videoTabId);
+            return;
+          }
+        } catch (tabError) {
+          // Tab doesn't exist, remove it from our tracking
+          videoFocusStates.delete(videoTabId);
+          return;
+        }
+        
+        // Now try to switch to the video tab
         await chrome.tabs.update(videoTabId, { active: true });
         
         // Show a notification to the user
-        chrome.tabs.sendMessage(activeInfo.tabId, {
-          type: 'VIDEO_FOCUS_BLOCKED_TAB_SWITCH',
-          message: 'Tab switching blocked while video is playing'
-        }).catch(() => {
-          // If content script not available, inject a temporary notification
-          chrome.scripting.executeScript({
-            target: { tabId: activeInfo.tabId },
-            func: (message) => {
-              const notification = document.createElement('div');
-              notification.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.9);
-                color: white;
-                padding: 20px;
-                border-radius: 10px;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                font-size: 16px;
-                z-index: 999999;
-                text-align: center;
-                max-width: 300px;
-              `;
-              notification.innerHTML = `
-                <div style="margin-bottom: 10px;">
-          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-        </div>
-                <div>${message}</div>
-                <div style="font-size: 14px; margin-top: 10px; opacity: 0.8;">
-                  Return to video tab to continue
-                </div>
-              `;
-              document.body.appendChild(notification);
-              
-              setTimeout(() => {
-                notification.remove();
-              }, 3000);
-            },
-            args: ['Tab switching blocked while video is playing']
+        try {
+          await chrome.tabs.sendMessage(activeInfo.tabId, {
+            type: 'VIDEO_FOCUS_BLOCKED_TAB_SWITCH',
+            message: 'Tab switching blocked while video is playing'
           });
-        });
+        } catch (messageError) {
+          // If content script not available, inject a temporary notification
+          try {
+            await chrome.scripting.executeScript({
+              target: { tabId: activeInfo.tabId },
+              func: (message) => {
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                  position: fixed;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%);
+                  background: rgba(0, 0, 0, 0.9);
+                  color: white;
+                  padding: 20px;
+                  border-radius: 10px;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                  font-size: 16px;
+                  z-index: 999999;
+                  text-align: center;
+                  max-width: 300px;
+                `;
+                notification.innerHTML = `
+                  <div style="margin-bottom: 10px;">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </div>
+                  <div>${message}</div>
+                  <div style="font-size: 14px; margin-top: 10px; opacity: 0.8;">
+                    Return to video tab to continue
+                  </div>
+                `;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                  notification.remove();
+                }, 3000);
+              },
+              args: ['Tab switching blocked while video is playing']
+            });
+          } catch (scriptError) {
+            console.error('Failed to inject notification script:', scriptError);
+          }
+        }
       } catch (error) {
         console.error('Error switching back to video tab:', error);
+        // If we can't switch to the video tab, remove it from tracking
+        if (videoPlayingTab) {
+          videoFocusStates.delete(videoPlayingTab[0]);
+        }
       }
     }
   }
@@ -658,6 +698,13 @@ chrome.tabs.onCreated.addListener(handleTabCreated);
 chrome.tabs.onRemoved.addListener((tabId) => {
   // Clean up modal states for the removed tab
   tabModalStates.delete(tabId);
+  
+  // Clean up video focus states for the removed tab
+  if (videoFocusStates.has(tabId)) {
+    videoFocusStates.delete(tabId);
+    console.log('Cleaned up video focus state for removed tab:', tabId);
+  }
+  
   updateTabCount();
 });
 chrome.tabs.onActivated.addListener(handleTabActivated);

@@ -5,7 +5,7 @@ A Chrome extension designed to maximize productivity, eliminate digital distract
 ## Features
 
 ### ✅ **Smart Search Management**
-- Press `Alt+Shift+S` to save search queries for later
+- Press `Alt+Shift+I` to save search queries for later
 - Access saved searches from the extension popup
 - Perform searches or delete them as needed
 
@@ -91,7 +91,7 @@ A Chrome extension designed to maximize productivity, eliminate digital distract
    - Status overview
 
 2. **Smart Search**: 
-   - Press `Alt+Shift+S` on any webpage
+   - Press `Alt+Shift+I` on any webpage
    - Enter or edit your search query
    - Access saved searches from the popup
 
@@ -192,7 +192,7 @@ The YouTube distraction blocking uses a multi-layered approach:
 - Popup, Options, and Focus pages render without errors
 - Default configuration applied (Distraction Blocker: Enabled, Eye Care: Enabled, Tab Limiter: 3)
 - Message passing between components functional
-- **Alt+Shift+S opens modal on current page** (not popup)
+- **Alt+Shift+I opens modal on current page** (not popup)
 - **Tab counting and limiting working correctly**
 - **Configuration saving working**
 - **Eye Care test button with working sound**
@@ -204,7 +204,7 @@ The YouTube distraction blocking uses a multi-layered approach:
 ## ✅ **Features Implemented**
 
 ✅ **Smart Search Management**:
-- Alt+Shift+S shortcut opens a **clean, centered input modal** (like the image)
+- Alt+Shift+I shortcut opens a **clean, centered input modal** (like the image)
 - Pre-populates with selected text if any
 - Saves searches to persistent storage
 - Displays saved searches in popup

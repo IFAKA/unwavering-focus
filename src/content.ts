@@ -662,6 +662,13 @@ async function playAudioWithFallback(audioPath: string, volume: number, sendResp
       return;
     }
 
+    // Check if user has interacted with the page (required for autoplay)
+    if (!document.hasFocus() || document.visibilityState !== 'visible') {
+      console.log('Page not focused or visible, using fallback methods');
+      await tryFallbackMethods(sendResponse);
+      return;
+    }
+
     // Try to create and play audio
     const audio = new Audio(chrome.runtime.getURL(audioPath));
     audio.volume = volume;
@@ -680,23 +687,24 @@ async function playAudioWithFallback(audioPath: string, volume: number, sendResp
     } catch (playError) {
       console.error('Error playing audio:', playError);
       // Try fallback methods
-      tryFallbackMethods(sendResponse);
+      await tryFallbackMethods(sendResponse);
     }
   } catch (error) {
     console.error('Error creating audio:', error);
     // Try fallback methods
-    tryFallbackMethods(sendResponse);
+    await tryFallbackMethods(sendResponse);
   }
 }
 
 // Fallback methods when audio fails
-function tryFallbackMethods(sendResponse: (response: any) => void) {
+async function tryFallbackMethods(sendResponse: (response: any) => void) {
   // Method 1: Try vibration (if supported and user has interacted)
   try {
     if (typeof navigator.vibrate === 'function') {
-      // Check if user has interacted with the page
-      if (document.hasFocus()) {
-        navigator.vibrate(200);
+      // Check if user has interacted with the page and vibration is allowed
+      if (document.hasFocus() && document.visibilityState === 'visible') {
+        // Use a shorter vibration pattern to avoid blocking
+        navigator.vibrate(100);
         sendResponse({ success: true, method: 'vibration' });
         return;
       }
@@ -709,6 +717,12 @@ function tryFallbackMethods(sendResponse: (response: any) => void) {
   try {
     if (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined') {
       const audioContext = new (AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume audio context if it's suspended (required for autoplay policy)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -716,11 +730,11 @@ function tryFallbackMethods(sendResponse: (response: any) => void) {
       gainNode.connect(audioContext.destination);
       
       oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      gainNode.gain.setValueAtTime(0.05, audioContext.currentTime); // Lower volume
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
       
       oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
+      oscillator.stop(audioContext.currentTime + 0.3);
       
       sendResponse({ success: true, method: 'web-audio' });
       return;
