@@ -14,6 +14,13 @@ export const MODAL_CONSTANTS = {
     HEIGHT: '100%',
   },
   
+  // Golden ratio positioning (φ ≈ 1.618)
+  // Position modal at approximately 38.2% from the top (1/φ)
+  GOLDEN_RATIO: {
+    VERTICAL_OFFSET: '38.2%', // 1/φ ≈ 0.382 = 38.2%
+    HORIZONTAL_CENTER: '50%', // Keep horizontally centered
+  },
+  
   // Modal styling
   STYLING: {
     BACKGROUND_OPACITY: 0.5,
@@ -41,11 +48,14 @@ export const MODAL_CONSTANTS = {
     BOX_SHADOW: '0 20px 40px rgba(0, 0, 0, 0.3)',
   },
   
-  // Transform values
+  // Transform values for golden ratio positioning
   TRANSFORM: {
     INITIAL_TRANSLATE_Y: '-20px',
     INITIAL_SCALE: '0.95',
     FINAL_TRANSLATE_Y: '0',
     FINAL_SCALE: '1',
+    // Combined transforms for golden ratio positioning
+    INITIAL: 'translate(-50%, -50%) translateY(-20px) scale(0.95)',
+    FINAL: 'translate(-50%, -50%) translateY(0) scale(1)',
   },
 } as const;

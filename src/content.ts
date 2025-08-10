@@ -67,9 +67,9 @@ function openModal() {
     content.style.transition = 'none';
     
     // Show modal instantly
-    modal!.style.display = 'flex';
+    modal!.style.display = 'block';
     modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
-    content.style.transform = `${MODAL_CONSTANTS.TRANSFORM.FINAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.FINAL_SCALE}`;
+    content.style.transform = MODAL_CONSTANTS.TRANSFORM.FINAL;
     
     // Focus immediately
     attemptFocus();
@@ -80,13 +80,13 @@ function openModal() {
     content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
     
     // Show modal
-    modal!.style.display = 'flex';
+    modal!.style.display = 'block';
     modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
     
     // Animate in with spring-like motion
     requestAnimationFrame(() => {
       modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
-      content.style.transform = `${MODAL_CONSTANTS.TRANSFORM.FINAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.FINAL_SCALE}`;
+      content.style.transform = MODAL_CONSTANTS.TRANSFORM.FINAL;
       
       // Start focus attempts immediately after animation starts
       attemptFocus();
@@ -153,7 +153,7 @@ function closeModal() {
     
     // Animate out
     modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
-    content.style.transform = `${MODAL_CONSTANTS.TRANSFORM.INITIAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.INITIAL_SCALE}`;
+    content.style.transform = MODAL_CONSTANTS.TRANSFORM.INITIAL;
     
     // Hide after animation and reset content
     setTimeout(() => {
@@ -224,8 +224,6 @@ function createModal() {
     background: rgba(0, 0, 0, ${MODAL_CONSTANTS.STYLING.BACKGROUND_OPACITY});
     backdrop-filter: blur(${MODAL_CONSTANTS.STYLING.BACKDROP_BLUR});
     display: none;
-    align-items: center;
-    justify-content: center;
     z-index: ${MODAL_CONSTANTS.Z_INDEX.MODAL};
     opacity: ${ANIMATION_CONSTANTS.OPACITY.HIDDEN};
     transition: opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT};
@@ -235,12 +233,15 @@ function createModal() {
   const content = document.createElement('div');
   content.id = 'modal-content';
   content.style.cssText = `
+    position: absolute;
+    top: ${MODAL_CONSTANTS.GOLDEN_RATIO.VERTICAL_OFFSET};
+    left: ${MODAL_CONSTANTS.GOLDEN_RATIO.HORIZONTAL_CENTER};
+    transform: ${MODAL_CONSTANTS.TRANSFORM.INITIAL};
     background: ${MODAL_CONSTANTS.CONTENT.BACKGROUND_COLOR};
     border-radius: ${MODAL_CONSTANTS.STYLING.BORDER_RADIUS};
     padding: ${MODAL_CONSTANTS.STYLING.PADDING};
     width: ${MODAL_CONSTANTS.STYLING.WIDTH_PERCENTAGE};
     max-width: ${MODAL_CONSTANTS.STYLING.MAX_WIDTH};
-    transform: ${MODAL_CONSTANTS.TRANSFORM.INITIAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.INITIAL_SCALE};
     transition: transform ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT};
     box-shadow: ${MODAL_CONSTANTS.CONTENT.BOX_SHADOW};
   `;
