@@ -26,6 +26,14 @@ A Chrome extension designed to maximize productivity, eliminate digital distract
 - Configurable sound volume
 - **Enabled by default**
 
+### ✅ **Box Breathing with Audio & Haptic Cues**
+- Practice 4-4-4-4 box breathing technique with visual guidance
+- **Audio cues**: Different tones for each breathing phase (inhale, hold, exhale, hold)
+- **Haptic feedback**: Vibration patterns for each phase to practice with eyes closed
+- **Customizable**: Toggle audio/haptic features and adjust volume in Eye Care settings
+- **Keyboard shortcut**: Press `Alt+Shift+B` to start breathing exercise
+- **Focus text**: Add custom focus text to guide your meditation
+
 ### ✅ **Tab Limiter**
 - Limit the number of open tabs (default: 3)
 - Configure excluded domains that don't count toward the limit
@@ -95,7 +103,13 @@ A Chrome extension designed to maximize productivity, eliminate digital distract
    - Enter or edit your search query
    - Access saved searches from the popup
 
-3. **Options**: 
+3. **Box Breathing**: 
+   - Press `Alt+Shift+B` to start a breathing exercise
+   - Or use the command palette (`Alt+Shift+I`) and leave it empty, then click "Start Box Breathing"
+   - Add focus text to guide your meditation
+   - Practice with eyes closed using audio cues and haptic feedback
+
+4. **Options**: 
    - Click "Options" in the popup or go to extension settings
    - Configure all features and settings
 

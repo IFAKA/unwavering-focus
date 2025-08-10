@@ -31,6 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
 // Note: Alt+Shift+I is handled by the background script via manifest commands
 // The keyboard listener is removed to avoid conflicts
 
+// Add keyboard shortcut for breathing box (Alt+Shift+B)
+document.addEventListener('keydown', (e) => {
+  if (e.altKey && e.shiftKey && e.key === 'B') {
+    e.preventDefault();
+    startBoxBreathing('');
+  }
+});
+
 function toggleModal() {
   if (modal && modal.style.display === 'block') {
     closeModal();
@@ -688,6 +696,7 @@ function startBoxBreathing(text: string) {
   } else {
     instruction.innerHTML = `
       <div style="font-size: ${UI_CONSTANTS.FONT_SIZE.SM}; opacity: 0.7; color: ${UI_CONSTANTS.COLORS.TEXT_SECONDARY};">Press ESC or tap outside to stop</div>
+      <div style="font-size: ${UI_CONSTANTS.FONT_SIZE.SM}; opacity: 0.6; color: ${UI_CONSTANTS.COLORS.TEXT_SECONDARY}; margin-top: ${UI_CONSTANTS.SPACING.SM};">Audio cues and haptic feedback help you practice with eyes closed</div>
     `;
   }
   
@@ -702,7 +711,7 @@ function startBoxBreathing(text: string) {
     instruction.style.opacity = '1';
   });
   
-  // Box breathing phases with Apple Watch timing
+  // Box breathing phases with Apple Watch timing and audio cues
   const phases = [
     { 
       name: 'Inhale', 
@@ -710,7 +719,9 @@ function startBoxBreathing(text: string) {
       scale: 1.15, 
       opacity: 1,
       borderColor: UI_CONSTANTS.COLORS.ACCENT_PRIMARY,
-      backgroundColor: 'rgba(0, 122, 255, 0.1)'
+      backgroundColor: 'rgba(0, 122, 255, 0.1)',
+      audioCue: 'inhale',
+      hapticPattern: [100, 50, 100] // Short vibration pattern for inhale
     },
     { 
       name: 'Hold', 
@@ -718,7 +729,9 @@ function startBoxBreathing(text: string) {
       scale: 1.15, 
       opacity: 0.9,
       borderColor: UI_CONSTANTS.COLORS.TEXT_SECONDARY,
-      backgroundColor: 'rgba(142, 142, 147, 0.05)'
+      backgroundColor: 'rgba(142, 142, 147, 0.05)',
+      audioCue: 'hold',
+      hapticPattern: [200] // Single longer vibration for hold
     },
     { 
       name: 'Exhale', 
@@ -726,7 +739,9 @@ function startBoxBreathing(text: string) {
       scale: 0.85, 
       opacity: 0.8,
       borderColor: UI_CONSTANTS.COLORS.ACCENT_PRIMARY,
-      backgroundColor: 'rgba(0, 122, 255, 0.05)'
+      backgroundColor: 'rgba(0, 122, 255, 0.05)',
+      audioCue: 'exhale',
+      hapticPattern: [50, 100, 50] // Different pattern for exhale
     },
     { 
       name: 'Hold', 
@@ -734,12 +749,113 @@ function startBoxBreathing(text: string) {
       scale: 0.85, 
       opacity: 0.7,
       borderColor: UI_CONSTANTS.COLORS.TEXT_SECONDARY,
-      backgroundColor: 'rgba(142, 142, 147, 0.03)'
+      backgroundColor: 'rgba(142, 142, 147, 0.03)',
+      audioCue: 'hold',
+      hapticPattern: [200] // Same as first hold
     }
   ];
   
   let currentPhase = 0;
   let isActive = true;
+  
+  // Audio context for breathing cues
+  let audioContext: AudioContext | null = null;
+  let isAudioEnabled = true;
+  let isHapticEnabled = true;
+  let audioVolume = 0.03;
+  
+  // Get breathing box settings from storage
+  function getBreathingBoxSettings() {
+    return new Promise<{
+      audioEnabled: boolean;
+      hapticEnabled: boolean;
+      audioVolume: number;
+    }>((resolve) => {
+      chrome.storage.local.get(['breathingBox'], (result) => {
+        const settings = result.breathingBox || {};
+        resolve({
+          audioEnabled: settings.audioEnabled !== false, // Default to true
+          hapticEnabled: settings.hapticEnabled !== false, // Default to true
+          audioVolume: settings.audioVolume || 0.03 // Default volume
+        });
+      });
+    });
+  }
+  
+  // Initialize audio context
+  async function initAudioContext() {
+    try {
+      const settings = await getBreathingBoxSettings();
+      isAudioEnabled = settings.audioEnabled;
+      isHapticEnabled = settings.hapticEnabled;
+      audioVolume = settings.audioVolume;
+      
+      if (isAudioEnabled && (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined')) {
+        audioContext = new (AudioContext || (window as any).webkitAudioContext)();
+        // Resume audio context if suspended
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+      }
+    } catch (error) {
+      console.warn('Audio context not available:', error);
+      isAudioEnabled = false;
+    }
+  }
+  
+  // Play audio cue for phase
+  function playAudioCue(phase: typeof phases[0]) {
+    if (!isAudioEnabled || !audioContext) return;
+    
+    try {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Different frequencies for different phases
+      let frequency = 800; // Default
+      let duration = 0.2;
+      
+      switch (phase.audioCue) {
+        case 'inhale':
+          frequency = 600; // Lower pitch for inhale
+          duration = 0.3;
+          break;
+        case 'hold':
+          frequency = 800; // Medium pitch for hold
+          duration = 0.1;
+          break;
+        case 'exhale':
+          frequency = 1000; // Higher pitch for exhale
+          duration = 0.3;
+          break;
+      }
+      
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(audioVolume, audioContext.currentTime); // Use user's volume setting
+      gainNode.gain.exponentialRampToValueAtTime(audioVolume * 0.3, audioContext.currentTime + duration);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration);
+    } catch (error) {
+      console.warn('Error playing audio cue:', error);
+    }
+  }
+  
+  // Play haptic feedback
+  function playHapticFeedback(phase: typeof phases[0]) {
+    if (!isHapticEnabled) return;
+    
+    try {
+      if (typeof navigator.vibrate === 'function' && document.hasFocus()) {
+        navigator.vibrate(phase.hapticPattern);
+      }
+    } catch (error) {
+      console.warn('Haptic feedback not available:', error);
+    }
+  }
   
   function updateBreathing() {
     if (!isActive) return;
@@ -751,6 +867,10 @@ function startBoxBreathing(text: string) {
     circle.style.borderColor = phase.borderColor;
     circle.style.background = phase.backgroundColor;
     
+    // Play audio and haptic cues at the start of each phase
+    playAudioCue(phase);
+    playHapticFeedback(phase);
+    
     setTimeout(() => {
       if (isActive) {
         currentPhase = (currentPhase + 1) % phases.length;
@@ -759,8 +879,10 @@ function startBoxBreathing(text: string) {
     }, phase.duration);
   }
   
-  // Start the breathing cycle
-  updateBreathing();
+  // Initialize audio context and start the breathing cycle
+  initAudioContext().then(() => {
+    updateBreathing();
+  });
   
   // Handle close events with smooth animations
   const closeBreathing = () => {
