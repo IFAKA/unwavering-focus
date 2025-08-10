@@ -1618,11 +1618,11 @@ function createPinnedTaskElements(tasks: string[]) {
       const taskCountIndicator = document.createElement('div');
       taskCountIndicator.style.cssText = `
         position: absolute;
-        top: -4px;
-        right: -4px;
+        top: 0;
+        right: 0;
         background: ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
         color: white;
-        border-radius: 50%;
+        border-radius: 0 0 0 8px;
         width: 20px;
         height: 20px;
         display: flex;
