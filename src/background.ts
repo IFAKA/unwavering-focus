@@ -1132,6 +1132,17 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
         });
         break;
       
+      case 'OPEN_FOCUS_PAGE':
+        console.log('Handling OPEN_FOCUS_PAGE request');
+        try {
+          chrome.tabs.create({ url: chrome.runtime.getURL('focus-page.html') });
+          sendResponse({ success: true });
+        } catch (error) {
+          console.error('Error opening focus page:', error);
+          sendResponse({ error: 'Failed to open focus page' });
+        }
+        break;
+      
       default:
         sendResponse({ error: 'Unknown message type' });
     }

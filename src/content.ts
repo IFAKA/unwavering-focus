@@ -14,7 +14,6 @@ let focusAttempts = 0;
 let focusTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let isFocusAttempting = false;
 let isAnimating = false;
-let pinnedTaskElement: HTMLElement | null = null;
 let countdownTimerElement: HTMLElement | null = null;
 let topRightContainer: HTMLElement | null = null;
 let lastEnterTime = 0; // Track last Enter press for double-enter detection
@@ -709,14 +708,8 @@ function executeAction(actionId: string, text: string) {
       saveThought(text);
       break;
     case 'pin-task':
-      // Check if a pinned task already exists
-      hasExistingPinnedTask().then(hasPinnedTask => {
-        if (hasPinnedTask) {
-          showConfirmation('Task already pinned. Remove existing task first.');
-        } else {
-          pinTask(text);
-        }
-      });
+      // Allow multiple pinned tasks - no limit check needed
+      pinTask(text);
       break;
     case 'box-breathing':
       startBoxBreathing(text);
@@ -749,9 +742,15 @@ function saveThought(text: string) {
 function pinTask(text: string) {
   if (!text.trim()) return;
   
-  // Store pinned task in chrome.storage for cross-tab persistence
-  chrome.storage.local.set({ pinnedTask: text }, () => {
-    showConfirmation('Task pinned to top-right corner');
+  // Get existing pinned tasks and add the new one
+  chrome.storage.local.get(['pinnedTasks'], (result) => {
+    const existingTasks = result.pinnedTasks || [];
+    const updatedTasks = [...existingTasks, text];
+    
+    // Store pinned tasks array in chrome.storage for cross-tab persistence
+    chrome.storage.local.set({ pinnedTasks: updatedTasks }, () => {
+      showConfirmation('Task pinned to top-right corner');
+    });
   });
 }
 
@@ -1086,7 +1085,7 @@ function createCountdownTimerElement() {
   countdownTimerElement = document.createElement('div');
   countdownTimerElement.id = 'unwavering-focus-timer';
   countdownTimerElement.style.cssText = `
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(220, 38, 38, 0.9);
     color: white;
     padding: 8px 12px;
     border-radius: 8px 0 0 8px;
@@ -1108,9 +1107,6 @@ function createCountdownTimerElement() {
   
   // Add hover effect
   countdownTimerElement.addEventListener('mouseenter', () => {
-    countdownTimerElement!.style.background = 'rgba(220, 38, 38, 0.9)';
-    countdownTimerElement!.style.transform = 'scale(1.05)';
-    
     // Create cancel text overlay
     const cancelText = document.createElement('div');
     cancelText.textContent = 'Cancel';
@@ -1134,9 +1130,6 @@ function createCountdownTimerElement() {
   });
   
   countdownTimerElement.addEventListener('mouseleave', () => {
-    countdownTimerElement!.style.background = 'rgba(0, 0, 0, 0.9)';
-    countdownTimerElement!.style.transform = 'scale(1)';
-    
     // Remove cancel text overlay
     const cancelText = countdownTimerElement!.querySelector('#cancel-overlay');
     if (cancelText) {
@@ -1146,10 +1139,39 @@ function createCountdownTimerElement() {
   
   // Add click handler to cancel timer
   countdownTimerElement.addEventListener('click', () => {
-    countdownTimerElement?.remove();
-    countdownTimerElement = null;
-    chrome.storage.local.remove('countdownTimer');
-    updateContainerVisibility();
+    if (countdownTimerElement) {
+      // Remove timer from storage immediately to sync across all tabs
+      chrome.storage.local.remove('countdownTimer');
+      
+      // Check for reduced motion preference for accessibility
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      
+      if (prefersReducedMotion) {
+        // Instant removal for users who prefer reduced motion
+        countdownTimerElement.remove();
+        countdownTimerElement = null;
+        updateContainerVisibility();
+      } else {
+        // Smooth slide-to-right animation for better UX
+        // Quick success feedback (120ms) - subtle scale down
+        countdownTimerElement.style.transition = 'transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        countdownTimerElement.style.transform = 'scale(0.95)';
+        
+        // Brief success state, then slide to the right
+        setTimeout(() => {
+          // Slide to right animation (200ms) - hardware accelerated transform only
+          countdownTimerElement!.style.transition = 'transform 200ms cubic-bezier(0.0, 0.0, 0.2, 1)';
+          countdownTimerElement!.style.transform = 'translateX(100%) scale(0.95)';
+          
+          // Remove after animation completes
+          setTimeout(() => {
+            countdownTimerElement?.remove();
+            countdownTimerElement = null;
+            updateContainerVisibility();
+          }, 200);
+        }, 120);
+      }
+    }
   });
   
   function updateTimer() {
@@ -1170,16 +1192,46 @@ function createCountdownTimerElement() {
       const actualRemainingSeconds = Math.max(0, originalRemainingSeconds - elapsedSeconds);
       
       if (actualRemainingSeconds <= 0) {
-        countdownTimerElement.textContent = "Time's up!";
-        countdownTimerElement.style.background = 'rgba(220, 38, 38, 0.9)';
-        countdownTimerElement.style.cursor = 'pointer';
-        countdownTimerElement.title = 'Click to dismiss';
-        setTimeout(() => {
-          countdownTimerElement?.remove();
-          countdownTimerElement = null;
-          chrome.storage.local.remove('countdownTimer');
-          updateContainerVisibility();
-        }, 3000);
+        // Store timer completion flag for cross-tab synchronization
+        chrome.storage.local.set({ timerCompletionOverlay: true }, () => {
+          // Show full-screen timer completion notification
+          showTimerCompletionNotification();
+        });
+        
+        // Remove timer from storage immediately to sync across all tabs
+        chrome.storage.local.remove('countdownTimer');
+        
+        // Animate timer completion with slide-to-right animation
+        if (countdownTimerElement) {
+          // Check for reduced motion preference for accessibility
+          const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          
+          if (prefersReducedMotion) {
+            // Instant removal for users who prefer reduced motion
+            countdownTimerElement.remove();
+            countdownTimerElement = null;
+            updateContainerVisibility();
+          } else {
+            // Smooth slide-to-right animation for better UX
+            // Quick success feedback (120ms) - subtle scale down
+            countdownTimerElement.style.transition = 'transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            countdownTimerElement.style.transform = 'scale(0.95)';
+            
+            // Brief success state, then slide to the right
+            setTimeout(() => {
+              // Slide to right animation (200ms) - hardware accelerated transform only
+              countdownTimerElement!.style.transition = 'transform 200ms cubic-bezier(0.0, 0.0, 0.2, 1)';
+              countdownTimerElement!.style.transform = 'translateX(100%) scale(0.95)';
+              
+              // Remove after animation completes
+              setTimeout(() => {
+                countdownTimerElement?.remove();
+                countdownTimerElement = null;
+                updateContainerVisibility();
+              }, 200);
+            }, 120);
+          }
+        }
         return;
       }
       
@@ -1189,8 +1241,8 @@ function createCountdownTimerElement() {
       countdownTimerElement.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
       countdownTimerElement.title = 'Click to cancel timer';
       
-      // Keep black background always
-      countdownTimerElement.style.background = 'rgba(0, 0, 0, 0.9)';
+      // Keep red background always
+      countdownTimerElement.style.background = 'rgba(220, 38, 38, 0.9)';
       
       // Schedule next update in 1 second
       setTimeout(updateTimer, 1000);
@@ -1207,9 +1259,37 @@ function createCountdownTimerElement() {
 // Function to remove countdown timer element
 function removeCountdownTimerElement() {
   if (countdownTimerElement) {
-    countdownTimerElement.remove();
-    countdownTimerElement = null;
-    updateContainerVisibility();
+    // Remove timer from storage immediately to sync across all tabs
+    chrome.storage.local.remove('countdownTimer');
+    
+    // Check for reduced motion preference for accessibility
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    if (prefersReducedMotion) {
+      // Instant removal for users who prefer reduced motion
+      countdownTimerElement.remove();
+      countdownTimerElement = null;
+      updateContainerVisibility();
+    } else {
+      // Smooth slide-to-right animation for better UX
+      // Quick success feedback (120ms) - subtle scale down
+      countdownTimerElement.style.transition = 'transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      countdownTimerElement.style.transform = 'scale(0.95)';
+      
+      // Brief success state, then slide to the right
+      setTimeout(() => {
+        // Slide to right animation (200ms) - hardware accelerated transform only
+        countdownTimerElement!.style.transition = 'transform 200ms cubic-bezier(0.0, 0.0, 0.2, 1)';
+        countdownTimerElement!.style.transform = 'translateX(100%) scale(0.95)';
+        
+        // Remove after animation completes
+        setTimeout(() => {
+          countdownTimerElement?.remove();
+          countdownTimerElement = null;
+          updateContainerVisibility();
+        }, 200);
+      }, 120);
+    }
   }
 }
 
@@ -1229,11 +1309,12 @@ async function hasExistingTimer(): Promise<boolean> {
   });
 }
 
-// Function to check if a pinned task already exists
+// Function to check if any pinned tasks exist
 async function hasExistingPinnedTask(): Promise<boolean> {
   return new Promise((resolve) => {
-    chrome.storage.local.get(['pinnedTask'], (result) => {
-      resolve(!!result.pinnedTask);
+    chrome.storage.local.get(['pinnedTasks'], (result) => {
+      const tasks = result.pinnedTasks || [];
+      resolve(tasks.length > 0);
     });
   });
 }
@@ -1372,118 +1453,164 @@ function startTimeTracking(domain: string) {
 
 console.log('Content script loaded on:', window.location.href);
 
-// Function to create pinned task element
-function createPinnedTaskElement(text: string) {
-  // Remove existing pinned task
-  if (pinnedTaskElement) {
-    pinnedTaskElement.remove();
-    pinnedTaskElement = null;
-  }
+// Function to create pinned task elements
+function createPinnedTaskElements(tasks: string[]) {
+  // Remove existing pinned task elements
+  const existingElements = document.querySelectorAll('[data-pinned-task]');
+  existingElements.forEach(element => element.remove());
   
-  // Create pinned task element
-  pinnedTaskElement = document.createElement('div');
-  pinnedTaskElement.style.cssText = `
-    max-width: 212px;
-    background: ${UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY};
-    border: 1px solid ${UI_CONSTANTS.COLORS.BORDER_PRIMARY};
-    border-radius: 12px 0 0 12px;
-    padding: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
-    line-height: 1.4;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-    pointer-events: auto;
-    position: relative;
-  `;
-  
-  // Create content wrapper with proper text flow
-  const contentWrapper = document.createElement('div');
-  contentWrapper.style.cssText = `
-    position: relative;
-  `;
-  
-  // Add checkbox positioned absolutely
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.style.cssText = `
-    position: absolute;
-    left: 0;
-    top: 2px;
-    margin: 0;
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    accent-color: ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
-  `;
-  
-  checkbox.addEventListener('change', () => {
-    if (checkbox.checked) {
-      // Task completed - fast, natural completion animation
-      if (pinnedTaskElement) {
-        // Quick success feedback (150ms) - Apple Watch style
-        pinnedTaskElement.style.transition = 'transform 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-        pinnedTaskElement.style.transform = 'scale(0.98)';
-        
-        // Brief success state, then fast exit
-        setTimeout(() => {
-          // Fast exit animation (180ms) - hardware accelerated
-          pinnedTaskElement!.style.transition = 'opacity 180ms cubic-bezier(0.0, 0.0, 0.2, 1), transform 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-          pinnedTaskElement!.style.opacity = '0';
-          pinnedTaskElement!.style.transform = 'scale(0.95) translateY(-8px)';
+  // Create pinned task elements for each task
+  tasks.forEach((text, index) => {
+    const pinnedTaskElement = document.createElement('div');
+    pinnedTaskElement.setAttribute('data-pinned-task', index.toString());
+    pinnedTaskElement.style.cssText = `
+      max-width: 212px;
+      background: ${UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY};
+      border: 1px solid ${UI_CONSTANTS.COLORS.BORDER_PRIMARY};
+      border-radius: 12px 0 0 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
+      line-height: 1.4;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      pointer-events: auto;
+      position: relative;
+    `;
+    
+    // Create content wrapper with proper text flow
+    const contentWrapper = document.createElement('div');
+    contentWrapper.style.cssText = `
+      position: relative;
+    `;
+    
+    // Add checkbox positioned absolutely
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.style.cssText = `
+      position: absolute;
+      left: 0;
+      top: 2px;
+      margin: 0;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
+    `;
+    
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        // Task completed - compliant slide-to-right animation
+        if (pinnedTaskElement) {
+          // Check for reduced motion preference for accessibility
+          const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
           
-          // Remove after animation completes
-          setTimeout(() => {
-            pinnedTaskElement?.remove();
-            pinnedTaskElement = null;
-            chrome.storage.local.remove('pinnedTask');
+          if (prefersReducedMotion) {
+            // Instant removal for users who prefer reduced motion
+            pinnedTaskElement.remove();
+            
+            // Remove the task from storage
+            chrome.storage.local.get(['pinnedTasks'], (result) => {
+              const existingTasks = result.pinnedTasks || [];
+              const updatedTasks = existingTasks.filter((_: string, i: number) => i !== index);
+              chrome.storage.local.set({ pinnedTasks: updatedTasks });
+            });
+            
             updateContainerVisibility();
-          }, 180);
-        }, 150);
+          } else {
+            // Smooth slide-to-right animation for better UX
+            // Quick success feedback (120ms) - subtle scale down
+            pinnedTaskElement.style.transition = 'transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            pinnedTaskElement.style.transform = 'scale(0.95)';
+            
+            // Brief success state with strikethrough animation (120ms)
+            setTimeout(() => {
+              // Add strikethrough animation to text content
+              const textContent = pinnedTaskElement!.querySelector('div:last-child') as HTMLElement;
+              if (textContent) {
+                textContent.style.transition = 'text-decoration 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                textContent.style.textDecoration = 'line-through';
+                textContent.style.textDecorationColor = UI_CONSTANTS.COLORS.TEXT_PRIMARY;
+                textContent.style.textDecorationThickness = '2px';
+              }
+              
+              // Slide to right animation (200ms) - hardware accelerated transform only
+              setTimeout(() => {
+                pinnedTaskElement!.style.transition = 'transform 200ms cubic-bezier(0.0, 0.0, 0.2, 1)';
+                pinnedTaskElement!.style.transform = 'translateX(100%) scale(0.95)';
+                
+                // Remove after animation completes
+                setTimeout(() => {
+                  pinnedTaskElement?.remove();
+                  
+                  // Remove the task from storage
+                  chrome.storage.local.get(['pinnedTasks'], (result) => {
+                    const existingTasks = result.pinnedTasks || [];
+                    const updatedTasks = existingTasks.filter((_: string, i: number) => i !== index);
+                    chrome.storage.local.set({ pinnedTasks: updatedTasks });
+                  });
+                  
+                  updateContainerVisibility();
+                }, 200);
+              }, 120);
+            }, 120);
+          }
+        }
       }
-    }
+    });
+    
+    // Add the text content that flows naturally
+    const textContent = document.createElement('div');
+    textContent.innerHTML = text;
+    textContent.style.cssText = `
+      line-height: 1.4;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      text-indent: 24px;
+    `;
+    
+    // Assemble the content
+    contentWrapper.appendChild(checkbox);
+    contentWrapper.appendChild(textContent);
+    pinnedTaskElement.appendChild(contentWrapper);
+    
+    // Add to container (pinned tasks go after timer)
+    const container = getTopRightContainer();
+    container.appendChild(pinnedTaskElement);
   });
   
-  // Add the text content that flows naturally
-  const textContent = document.createElement('div');
-  textContent.innerHTML = text;
-  textContent.style.cssText = `
-    line-height: 1.4;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-    text-indent: 24px;
-  `;
-  
-  // Assemble the content
-  contentWrapper.appendChild(checkbox);
-  contentWrapper.appendChild(textContent);
-  pinnedTaskElement.appendChild(contentWrapper);
-  
-  // Add to container (pinned task goes after timer)
-  const container = getTopRightContainer();
-  container.appendChild(pinnedTaskElement);
   updateContainerVisibility();
 }
 
-// Function to remove pinned task element
-function removePinnedTaskElement() {
-  if (pinnedTaskElement) {
-    pinnedTaskElement.remove();
-    pinnedTaskElement = null;
-  }
+// Function to remove all pinned task elements
+function removePinnedTaskElements() {
+  const existingElements = document.querySelectorAll('[data-pinned-task]');
+  existingElements.forEach(element => element.remove());
 }
 
-// Check for existing pinned task on page load
-chrome.storage.local.get(['pinnedTask'], (result) => {
-  if (result.pinnedTask) {
-    createPinnedTaskElement(result.pinnedTask);
+// Check for existing pinned tasks on page load and migrate old data if needed
+chrome.storage.local.get(['pinnedTasks', 'pinnedTask'], (result) => {
+  let tasks = result.pinnedTasks || [];
+  
+  // Migrate old single pinnedTask to new pinnedTasks array if needed
+  if (!tasks.length && result.pinnedTask) {
+    tasks = [result.pinnedTask];
+    // Update storage to new format and remove old key
+    chrome.storage.local.set({ pinnedTasks: tasks }, () => {
+      chrome.storage.local.remove('pinnedTask');
+    });
+  }
+  
+  if (tasks.length > 0) {
+    createPinnedTaskElements(tasks);
   }
 });
 
-// Check for existing countdown timer on page load
-chrome.storage.local.get(['countdownTimer'], (result) => {
+// Check for existing countdown timer and timer completion overlay on page load
+chrome.storage.local.get(['countdownTimer', 'timerCompletionOverlay'], (result) => {
   if (result.countdownTimer) {
     const { startTime, remainingSeconds } = result.countdownTimer;
     const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
@@ -1495,19 +1622,24 @@ chrome.storage.local.get(['countdownTimer'], (result) => {
       chrome.storage.local.remove('countdownTimer');
     }
   }
+  
+  // Check for timer completion overlay
+  if (result.timerCompletionOverlay === true) {
+    showTimerCompletionNotification();
+  }
 });
 
 // Listen for storage changes to sync pinned tasks and timers across tabs
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local') {
-    // Handle pinned task changes
-    if (changes.pinnedTask) {
-      const { newValue, oldValue } = changes.pinnedTask;
+    // Handle pinned tasks changes
+    if (changes.pinnedTasks) {
+      const { newValue, oldValue } = changes.pinnedTasks;
       
-      if (newValue && newValue !== oldValue) {
-        createPinnedTaskElement(newValue);
-      } else if (!newValue && oldValue) {
-        removePinnedTaskElement();
+      if (newValue && Array.isArray(newValue) && newValue.length > 0) {
+        createPinnedTaskElements(newValue);
+      } else if (!newValue || newValue.length === 0) {
+        removePinnedTaskElements();
       }
     }
     
@@ -1516,6 +1648,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
       const { newValue, oldValue } = changes.countdownTimer;
       
       if (newValue && newValue !== oldValue) {
+        // New timer started - create timer element on this tab
         const { startTime, remainingSeconds } = newValue;
         const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
         const actualRemainingSeconds = Math.max(0, remainingSeconds - elapsedSeconds);
@@ -1523,10 +1656,22 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
         if (actualRemainingSeconds > 0) {
           createCountdownTimerElement();
         } else {
+          // Timer has already expired, remove it
           chrome.storage.local.remove('countdownTimer');
         }
       } else if (!newValue && oldValue) {
+        // Timer was removed (cancelled or completed) - remove from this tab
         removeCountdownTimerElement();
+      }
+    }
+    
+    // Handle timer completion overlay changes
+    if (changes.timerCompletionOverlay) {
+      const { newValue } = changes.timerCompletionOverlay;
+      
+      if (newValue === true) {
+        // Show timer completion overlay on this tab
+        showTimerCompletionNotification();
       }
     }
   }
@@ -1887,6 +2032,291 @@ function showVisualNotification() {
     notification.remove();
     style.remove();
   }, 2000);
+}
+
+// Function to show full-screen timer completion notification
+function showTimerCompletionNotification() {
+  // Check if overlay already exists to prevent duplicates
+  if (document.getElementById('timer-completion-overlay')) {
+    return;
+  }
+  
+  // Create full-screen overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'timer-completion-overlay';
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    opacity: 0;
+    transition: opacity 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  `;
+  
+  // Create notification content
+  const content = document.createElement('div');
+  content.style.cssText = `
+    text-align: center;
+    color: white;
+    max-width: 400px;
+    padding: 40px 20px;
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  `;
+  
+  // Create timer icon with animation
+  const icon = document.createElement('div');
+  icon.innerHTML = `
+    <svg width="80" height="80" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom: 20px;">
+      <circle cx="12" cy="12" r="10" stroke-width="2"/>
+      <polyline points="12,6 12,12 16,14" stroke-width="2"/>
+    </svg>
+  `;
+  icon.style.cssText = `
+    color: #34c759;
+    margin-bottom: 20px;
+    animation: pulse 2s infinite;
+  `;
+  
+  // Add pulse animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Create title
+  const title = document.createElement('h1');
+  title.textContent = "Time's Up!";
+  title.style.cssText = `
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    color: white;
+  `;
+  
+  // Create subtitle
+  const subtitle = document.createElement('p');
+  subtitle.textContent = "Your timer has completed. Take a break or continue with your work.";
+  subtitle.style.cssText = `
+    font-size: 16px;
+    font-weight: 400;
+    margin: 0 0 30px 0;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.5;
+  `;
+  
+  // Create action buttons
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.cssText = `
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  `;
+  
+  // Continue button
+  const continueButton = document.createElement('button');
+  continueButton.textContent = "Continue Working";
+  continueButton.style.cssText = `
+    background: #007aff;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 140px;
+  `;
+  
+  continueButton.addEventListener('mouseenter', () => {
+    continueButton.style.background = '#0056cc';
+    continueButton.style.transform = 'translateY(-1px)';
+  });
+  
+  continueButton.addEventListener('mouseleave', () => {
+    continueButton.style.background = '#007aff';
+    continueButton.style.transform = 'translateY(0)';
+  });
+  
+  // Take Break button
+  const breakButton = document.createElement('button');
+  breakButton.textContent = "Take a Break";
+  breakButton.style.cssText = `
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 140px;
+  `;
+  
+  breakButton.addEventListener('mouseenter', () => {
+    breakButton.style.background = 'rgba(255, 255, 255, 0.2)';
+    breakButton.style.transform = 'translateY(-1px)';
+  });
+  
+  breakButton.addEventListener('mouseleave', () => {
+    breakButton.style.background = 'rgba(255, 255, 255, 0.1)';
+    breakButton.style.transform = 'translateY(0)';
+  });
+  
+  // Add click handlers
+  const closeOverlay = () => {
+    // Remove the timer completion flag to sync across all tabs
+    chrome.storage.local.remove('timerCompletionOverlay');
+    
+    if (prefersReducedMotion) {
+      // Instant close for users who prefer reduced motion
+      overlay.remove();
+      style.remove();
+    } else {
+      // Smooth close animation for users who don't mind motion
+      overlay.style.opacity = '0';
+      content.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        overlay.remove();
+        style.remove();
+      }, 300);
+    }
+  };
+  
+  continueButton.addEventListener('click', closeOverlay);
+  breakButton.addEventListener('click', () => {
+    closeOverlay();
+    // Optionally redirect to focus page or show breathing exercise
+    chrome.runtime.sendMessage({ type: 'OPEN_FOCUS_PAGE' }).catch(() => {
+      // Fallback: open focus page directly
+      window.open(chrome.runtime.getURL('focus-page.html'), '_blank');
+    });
+  });
+  
+  // Add ESC key handler
+  const handleKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      closeOverlay();
+      document.removeEventListener('keydown', handleKeydown);
+    }
+  };
+  
+  document.addEventListener('keydown', handleKeydown);
+  
+  // Assemble the notification
+  buttonContainer.appendChild(continueButton);
+  buttonContainer.appendChild(breakButton);
+  
+  content.appendChild(icon);
+  content.appendChild(title);
+  content.appendChild(subtitle);
+  content.appendChild(buttonContainer);
+  
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+  
+  // Check for reduced motion preference
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  
+  // Animate in
+  if (prefersReducedMotion) {
+    // Instant appearance for users who prefer reduced motion
+    overlay.style.opacity = '1';
+    content.style.transform = 'scale(1)';
+  } else {
+    // Smooth animation for users who don't mind motion
+    requestAnimationFrame(() => {
+      overlay.style.opacity = '1';
+      content.style.transform = 'scale(1)';
+    });
+  }
+  
+  // Auto-dismiss after 10 seconds if user doesn't interact
+  const autoDismiss = setTimeout(() => {
+    if (document.contains(overlay)) {
+      closeOverlay();
+    }
+  }, 10000);
+  
+  // Clear auto-dismiss if user interacts
+  overlay.addEventListener('click', () => {
+    clearTimeout(autoDismiss);
+  });
+  
+  // Play distinct timer completion sound using Web Audio API
+  // This creates a unique ascending chime pattern (C-E-G) to distinguish from eye care sounds
+  try {
+    if (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined') {
+      const audioContext = new (AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume audio context if it's suspended (required for autoplay policy)
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
+      // Create a distinct timer completion sound (different from eye care)
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Timer completion sound: ascending chime pattern (C-E-G)
+      // This is distinctly different from eye care sounds which use single tones
+      const now = audioContext.currentTime;
+      
+      // First note: C5 (523.25 Hz) - 0.3s duration
+      oscillator.frequency.setValueAtTime(523.25, now);
+      gainNode.gain.setValueAtTime(0.1, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      
+      // Second note: E5 (659.25 Hz) - 0.3s duration
+      oscillator.frequency.setValueAtTime(659.25, now + 0.3);
+      gainNode.gain.setValueAtTime(0.1, now + 0.3);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      
+      // Third note: G5 (783.99 Hz) - 0.3s duration
+      oscillator.frequency.setValueAtTime(783.99, now + 0.6);
+      gainNode.gain.setValueAtTime(0.1, now + 0.6);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.9);
+      
+      oscillator.start(now);
+      oscillator.stop(now + 0.9);
+      
+      console.log('Timer completion chime played (C-E-G pattern)');
+    } else {
+      // Fallback: try vibration with distinct pattern
+      if (navigator.vibrate) {
+        navigator.vibrate([300, 100, 300, 100, 300]);
+      }
+    }
+  } catch (error) {
+    console.log('Could not play timer completion sound:', error);
+    // Final fallback: simple vibration
+    try {
+      if (navigator.vibrate) {
+        navigator.vibrate([300, 100, 300, 100, 300]);
+      }
+    } catch (vibrationError) {
+      console.log('Vibration also failed:', vibrationError);
+    }
+  }
 }
 
 // Create or get the top-right container for stacking pinned tasks and timers
