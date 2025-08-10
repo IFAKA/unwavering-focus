@@ -430,15 +430,33 @@ function resetModalContent() {
         }
         pinTask(inputValue);
         lastEnterTime = 0; // Reset
+        return; // Exit early to prevent single-enter logic
       } else {
         // Single enter: Execute normal action
         if (actionId && actionButton.dataset.disabled !== 'true') {
           if (actionId === 'timer' && inputValue === '') {
             executeAction('timer', '25'); // Default 25 minutes
           } else if (actionId === 'save-thought') {
-            // For save-thought, delay confirmation to allow for double-enter
-            saveThought(inputValue);
+            // For save-thought, delay the actual saving to allow for double-enter
             lastEnterTime = currentTime;
+            // Show immediate feedback but delay the actual save
+            const actionButton = document.getElementById('adaptive-action-button') as HTMLButtonElement;
+            if (actionButton) {
+              const originalText = actionButton.textContent;
+              actionButton.textContent = '💭 Thought Saved! (press Enter again to pin)';
+              actionButton.style.background = UI_CONSTANTS.COLORS.SUCCESS;
+              
+              // Set timeout to actually save the thought if no double-enter occurs
+              saveConfirmationTimeout = setTimeout(() => {
+                saveThought(inputValue);
+                showConfirmation('Thought saved for later');
+                // Reset button to original state
+                if (actionButton) {
+                  actionButton.textContent = originalText;
+                  actionButton.style.background = UI_CONSTANTS.COLORS.ACCENT_PRIMARY;
+                }
+              }, DOUBLE_ENTER_TIMEOUT);
+            }
           } else {
             executeAction(actionId, inputValue);
             lastEnterTime = currentTime;
@@ -586,34 +604,10 @@ function executeAction(actionId: string, text: string) {
 function saveThought(text: string) {
   if (!text.trim()) return;
   
-  // Clear any existing confirmation timeout
-  if (saveConfirmationTimeout) {
-    clearTimeout(saveConfirmationTimeout);
-    saveConfirmationTimeout = null;
-  }
-  
   // Save to storage
   chrome.runtime.sendMessage({
     type: FEATURE_CONSTANTS.MESSAGE_TYPES.SAVE_SEARCH,
     query: text
-  }).then(() => {
-    // Show immediate feedback in button
-    const actionButton = document.getElementById('adaptive-action-button') as HTMLButtonElement;
-    if (actionButton) {
-      const originalText = actionButton.textContent;
-      actionButton.textContent = '💭 Thought Saved! (press Enter again to pin)';
-      actionButton.style.background = UI_CONSTANTS.COLORS.SUCCESS;
-      
-      // Set timeout to show confirmation and reset button
-      saveConfirmationTimeout = setTimeout(() => {
-        showConfirmation('Thought saved for later');
-        // Reset button to original state
-        if (actionButton) {
-          actionButton.textContent = originalText;
-          actionButton.style.background = UI_CONSTANTS.COLORS.ACCENT_PRIMARY;
-        }
-      }, DOUBLE_ENTER_TIMEOUT);
-    }
   }).catch(console.error);
 }
 
