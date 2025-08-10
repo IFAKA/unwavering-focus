@@ -1636,8 +1636,41 @@ function createPinnedTaskElements(tasks: string[]) {
         cursor: pointer;
       `;
       taskCountIndicator.textContent = tasks.length.toString();
-      taskCountIndicator.title = `Hover to see all ${tasks.length} tasks`;
+      taskCountIndicator.title = `Click or hover to see all ${tasks.length} tasks`;
       pinnedTaskElement.appendChild(taskCountIndicator);
+      
+      // Add click functionality to expand the list
+      taskCountIndicator.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+        const pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
+        if (pinnedTasksContainer && !pinnedTasksContainer.classList.contains('expanded')) {
+          // Trigger the same expansion as hover
+          pinnedTasksContainer.classList.add('expanded');
+          pinnedTasksContainer.style.overflowY = 'auto';
+          pinnedTasksContainer.style.overflowX = 'hidden';
+          pinnedTasksContainer.style.scrollbarWidth = 'thin';
+          pinnedTasksContainer.style.scrollbarColor = 'rgba(255, 255, 255, 0.2) transparent';
+          
+          // Make container focusable for keyboard scrolling
+          pinnedTasksContainer.setAttribute('tabindex', '0');
+          pinnedTasksContainer.focus();
+          
+          // Trigger slide-down animation for all cards sequentially from second to last
+          const cards = pinnedTasksContainer.querySelectorAll('[data-pinned-task]');
+          const totalCards = cards.length;
+          
+          // Animate from second card to last card (forward order for hover)
+          for (let i = 1; i < totalCards; i++) {
+            setTimeout(() => {
+              const card = cards[i] as HTMLElement;
+              card.style.setProperty('--slide-down', 'true');
+            }, (i - 1) * 50); // 50ms delay between each card for faster animation
+          }
+          
+          // Start mouse tracking for auto-close
+          startMouseTracking(pinnedTasksContainer);
+        }
+      });
       
       // Hide indicator when expanded
       const style = document.createElement('style');
@@ -2554,24 +2587,18 @@ function getPinnedTasksContainer(): HTMLElement {
     pinnedTasksContainer.addEventListener('mouseleave', () => {
       // Delay collapse to allow moving mouse to scrollbar
       hoverTimeout = setTimeout(() => {
-        pinnedTasksContainer.classList.remove('expanded');
-        pinnedTasksContainer.style.overflowY = 'hidden';
-        pinnedTasksContainer.style.overflowX = 'hidden';
-        pinnedTasksContainer.style.scrollbarWidth = 'none';
-        pinnedTasksContainer.style.scrollbarColor = 'transparent transparent';
-        
-        // Reset slide-down state for all cards sequentially from last to second
-        const cards = pinnedTasksContainer.querySelectorAll('[data-pinned-task]');
-        const totalCards = cards.length;
-        
-        // Animate from last card to second card (reverse order)
-        for (let i = totalCards - 1; i > 0; i--) {
-          setTimeout(() => {
-            const card = cards[i] as HTMLElement;
-            card.style.removeProperty('--slide-down');
-          }, (totalCards - 1 - i) * 50); // 50ms delay between each card for faster animation
-        }
+        closePinnedTasksContainer(pinnedTasksContainer);
       }, 300); // 300ms delay to prevent accidental collapse
+    });
+    
+    // Add ESC key functionality to close the list
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
+        if (pinnedTasksContainer && pinnedTasksContainer.classList.contains('expanded')) {
+          closePinnedTasksContainer(pinnedTasksContainer);
+        }
+      }
     });
     
     // Add the container to the top-right container
@@ -2580,6 +2607,77 @@ function getPinnedTasksContainer(): HTMLElement {
   }
   
   return pinnedTasksContainer;
+}
+
+// Function to start mouse tracking for auto-close
+function startMouseTracking(container: HTMLElement) {
+  let isMouseInside = false;
+  let closeTimeout: ReturnType<typeof setTimeout> | null = null;
+  
+  const checkMousePosition = (e: MouseEvent) => {
+    const rect = container.getBoundingClientRect();
+    const isInside = (
+      e.clientX >= rect.left &&
+      e.clientX <= rect.right &&
+      e.clientY >= rect.top &&
+      e.clientY <= rect.bottom
+    );
+    
+    if (isInside && !isMouseInside) {
+      // Mouse entered the container
+      isMouseInside = true;
+      if (closeTimeout) {
+        clearTimeout(closeTimeout);
+        closeTimeout = null;
+      }
+    } else if (!isInside && isMouseInside) {
+      // Mouse left the container
+      isMouseInside = false;
+      closeTimeout = setTimeout(() => {
+        closePinnedTasksContainer(container);
+      }, 300); // 300ms delay to prevent accidental close
+    } else if (!isInside && !isMouseInside) {
+      // Mouse is outside and was never inside - close immediately
+      closePinnedTasksContainer(container);
+    }
+  };
+  
+  // Add mouse move listener
+  document.addEventListener('mousemove', checkMousePosition);
+  
+  // Store the listener reference for cleanup
+  (container as any)._mouseTrackingListener = checkMousePosition;
+}
+
+// Function to close pinned tasks container
+function closePinnedTasksContainer(container: HTMLElement) {
+  if (!container.classList.contains('expanded')) return;
+  
+  // Remove mouse tracking
+  if ((container as any)._mouseTrackingListener) {
+    document.removeEventListener('mousemove', (container as any)._mouseTrackingListener);
+    delete (container as any)._mouseTrackingListener;
+  }
+  
+  // Collapse the container
+  container.classList.remove('expanded');
+  container.style.overflowY = 'hidden';
+  container.style.overflowX = 'hidden';
+  container.style.scrollbarWidth = 'none';
+  container.style.scrollbarColor = 'transparent transparent';
+  container.removeAttribute('tabindex');
+  
+  // Reset slide-down state for all cards sequentially from last to second
+  const cards = container.querySelectorAll('[data-pinned-task]');
+  const totalCards = cards.length;
+  
+  // Animate from last card to second card (reverse order)
+  for (let i = totalCards - 1; i > 0; i--) {
+    setTimeout(() => {
+      const card = cards[i] as HTMLElement;
+      card.style.removeProperty('--slide-down');
+    }, (totalCards - 1 - i) * 50); // 50ms delay between each card for faster animation
+  }
 }
 
 // Function to calculate dynamic offsets based on first card height
