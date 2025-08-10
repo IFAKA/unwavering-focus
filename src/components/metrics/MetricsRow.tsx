@@ -25,7 +25,7 @@ const MetricsRow: React.FC<MetricsRowProps> = ({
   onSettingsClick
 }) => {
   return (
-    <div className="p-md bg-bg-secondary border-b border-bg-tertiary">
+    <div className="p-md ds-border-bottom">
       <div className="grid grid-cols-4 gap-sm">
         <AppleWatchMetric
           icon="eye"

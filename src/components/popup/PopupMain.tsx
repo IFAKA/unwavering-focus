@@ -259,16 +259,16 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
         copyStatus={copyStatus}
       />
 
-      {/* Footer with Feature Toggle Buttons */}
+      {/* Footer with Feature Toggle Buttons - Apple Watch Style */}
       <div className="p-md ds-border-top">
-        <div className="ds-flex-center gap-lg">
+        <div className="ds-flex-center gap-sm">
           {/* Eye Care */}
           <button
             onClick={() => handleFeatureToggle('eyeCare')}
-            className={`ds-button ds-button-small rounded-full ${
+            className={`ds-button ds-button-small rounded-full transition-all duration-200 ${
               eyeCareStatus === 'enabled' 
-                ? 'ds-button-success' 
-                : 'ds-button-secondary'
+                ? 'bg-accent-primary text-white shadow-sm' 
+                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
             }`}
             title={`Eye Care: ${eyeCareStatus} (Click to toggle)`}
           >
@@ -282,10 +282,10 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
           {/* Tab Limiter */}
           <button
             onClick={() => handleFeatureToggle('tabLimiter')}
-            className={`ds-button ds-button-small rounded-full ${
+            className={`ds-button ds-button-small rounded-full transition-all duration-200 ${
               tabLimiterStatus === 'enabled' 
-                ? 'ds-button-success' 
-                : 'ds-button-secondary'
+                ? 'bg-accent-primary text-white shadow-sm' 
+                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
             }`}
             title={`Tab Limiter: ${tabLimiterStatus} (Click to toggle)`}
           >
@@ -299,10 +299,10 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
           {/* Smart Search */}
           <button
             onClick={() => handleFeatureToggle('smartSearch')}
-            className={`ds-button ds-button-small rounded-full ${
+            className={`ds-button ds-button-small rounded-full transition-all duration-200 ${
               featureStatuses.smartSearch === 'enabled' 
-                ? 'ds-button-success' 
-                : 'ds-button-secondary'
+                ? 'bg-accent-primary text-white shadow-sm' 
+                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
             }`}
             title={`Smart Search: ${featureStatuses.smartSearch || 'disabled'} (Click to toggle)`}
           >
@@ -316,10 +316,10 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
           {/* Distraction Blocker */}
           <button
             onClick={() => handleFeatureToggle('blocker')}
-            className={`ds-button ds-button-small rounded-full ${
+            className={`ds-button ds-button-small rounded-full transition-all duration-200 ${
               featureStatuses.blocker === 'enabled' 
-                ? 'ds-button-success' 
-                : 'ds-button-secondary'
+                ? 'bg-accent-primary text-white shadow-sm' 
+                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
             }`}
             title={`Distraction Blocker: ${featureStatuses.blocker || 'disabled'} (Click to toggle)`}
           >
@@ -333,10 +333,10 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
           {/* Video Focus */}
           <button
             onClick={() => handleFeatureToggle('videoFocus')}
-            className={`ds-button ds-button-small rounded-full ${
+            className={`ds-button ds-button-small rounded-full transition-all duration-200 ${
               featureStatuses.videoFocus === 'enabled' 
-                ? 'ds-button-success' 
-                : 'ds-button-secondary'
+                ? 'bg-accent-primary text-white shadow-sm' 
+                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
             }`}
             title={`Video Focus: ${featureStatuses.videoFocus || 'disabled'} (Click to toggle)`}
           >
@@ -346,8 +346,6 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
               color={featureStatuses.videoFocus === 'enabled' ? '#ffffff' : '#8e8e93'} 
             />
           </button>
-          
-
         </div>
       </div>
     </>

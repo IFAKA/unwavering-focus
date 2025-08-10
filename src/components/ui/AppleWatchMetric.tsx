@@ -31,7 +31,7 @@ const AppleWatchMetric: React.FC<AppleWatchMetricProps> = ({
       <div className="text-sm mb-xs opacity-90">
         <AppleWatchIcon name={icon} size="sm" />
       </div>
-      <div className="text-sm font-semibold text-accent-primary mb-xs">{value}</div>
+      <div className="text-sm font-semibold text-text-primary mb-xs">{value}</div>
       {status === 'disabled' && (
         <div className="absolute top-[1px] right-[1px] bg-danger-color text-white text-[7px] font-semibold px-[3px] py-[1px] rounded-[3px] uppercase tracking-[0.3px]">
           OFF
