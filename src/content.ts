@@ -1251,7 +1251,16 @@ function createCountdownTimerElement() {
   
   // Add to container (timer gets priority - first position)
   const container = getTopRightContainer();
-  container.insertBefore(countdownTimerElement, container.firstChild);
+  const pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
+  
+  if (pinnedTasksContainer) {
+    // Insert timer before the pinned tasks container
+    container.insertBefore(countdownTimerElement, pinnedTasksContainer);
+  } else {
+    // If no pinned tasks container exists, just insert at the beginning
+    container.insertBefore(countdownTimerElement, container.firstChild);
+  }
+  
   updateContainerVisibility();
   updateTimer();
 }
@@ -1459,18 +1468,34 @@ function createPinnedTaskElements(tasks: string[]) {
   const existingElements = document.querySelectorAll('[data-pinned-task]');
   existingElements.forEach(element => element.remove());
   
+  // If no tasks, clean up and return
+  if (!tasks || tasks.length === 0) {
+    removePinnedTaskElements();
+    updateContainerVisibility();
+    return;
+  }
+  
+  // Get the scrollable pinned tasks container
+  const pinnedTasksContainer = getPinnedTasksContainer();
+  
   // Create pinned task elements for each task
   tasks.forEach((text, index) => {
     const pinnedTaskElement = document.createElement('div');
     pinnedTaskElement.setAttribute('data-pinned-task', index.toString());
+    
+    // Apply different styles based on position for collapsed view
+    const isFirstTask = index === 0;
+    const isSecondTask = index === 1;
+    const isThirdTask = index === 2;
+    const isBeyondVisible = index >= 3;
+    
     pinnedTaskElement.style.cssText = `
       max-width: 212px;
       background: ${UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY};
       border: 1px solid ${UI_CONSTANTS.COLORS.BORDER_PRIMARY};
       border-radius: 12px 0 0 12px;
       padding: 12px;
-      margin-bottom: 8px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      box-shadow: ${!isFirstTask ? '0 4px 12px rgba(0, 0, 0, 0.2)' : '0 8px 24px rgba(0, 0, 0, 0.3)'};
       backdrop-filter: blur(10px);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
@@ -1479,6 +1504,17 @@ function createPinnedTaskElements(tasks: string[]) {
       white-space: pre-wrap;
       pointer-events: auto;
       position: relative;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      ${!isFirstTask ? `
+        margin-top: var(--stack-offset-${index});
+        transform: scale(${isSecondTask ? '0.95' : isThirdTask ? '0.9' : '0.85'});
+        z-index: ${tasks.length - index};
+        pointer-events: ${isBeyondVisible ? 'none' : 'auto'};
+        border-radius: 12px;
+      ` : `
+        z-index: ${tasks.length + 20};
+        position: relative;
+      `}
     `;
     
     // Create content wrapper with proper text flow
@@ -1577,10 +1613,51 @@ function createPinnedTaskElements(tasks: string[]) {
     contentWrapper.appendChild(textContent);
     pinnedTaskElement.appendChild(contentWrapper);
     
-    // Add to container (pinned tasks go after timer)
-    const container = getTopRightContainer();
-    container.appendChild(pinnedTaskElement);
+    // Add task count indicator to the first task if there are more than 3 tasks
+    if (isFirstTask && tasks.length > 3) {
+      const taskCountIndicator = document.createElement('div');
+      taskCountIndicator.style.cssText = `
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1000;
+        cursor: pointer;
+      `;
+      taskCountIndicator.textContent = tasks.length.toString();
+      taskCountIndicator.title = `Hover to see all ${tasks.length} tasks`;
+      pinnedTaskElement.appendChild(taskCountIndicator);
+      
+      // Hide indicator when expanded
+      const style = document.createElement('style');
+      style.textContent = `
+        #unwavering-focus-pinned-tasks-container.expanded [data-pinned-task="0"] > div:last-child {
+          opacity: 0 !important;
+          transform: scale(0.8) !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // Add to the scrollable pinned tasks container
+    pinnedTasksContainer.appendChild(pinnedTaskElement);
   });
+  
+  // Calculate dynamic offsets after first card is rendered
+  setTimeout(() => {
+    calculateDynamicOffsets(pinnedTasksContainer, tasks.length);
+  }, 0);
   
   updateContainerVisibility();
 }
@@ -1589,6 +1666,12 @@ function createPinnedTaskElements(tasks: string[]) {
 function removePinnedTaskElements() {
   const existingElements = document.querySelectorAll('[data-pinned-task]');
   existingElements.forEach(element => element.remove());
+  
+  // Clean up the pinned tasks container if it exists and has no children
+  const pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
+  if (pinnedTasksContainer && pinnedTasksContainer.children.length === 0) {
+    pinnedTasksContainer.remove();
+  }
 }
 
 // Check for existing pinned tasks on page load and migrate old data if needed
@@ -1640,6 +1723,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
         createPinnedTaskElements(newValue);
       } else if (!newValue || newValue.length === 0) {
         removePinnedTaskElements();
+        updateContainerVisibility();
       }
     }
     
@@ -2328,10 +2412,11 @@ function getTopRightContainer(): HTMLElement {
       position: fixed;
       top: 72px;
       right: 0;
+      bottom: 0;
       z-index: ${MODAL_CONSTANTS.Z_INDEX.COUNTDOWN_TIMER};
       display: flex;
-      flex-direction: column;
       gap: 12px;
+      flex-direction: column;
       pointer-events: none;
       transition: opacity 0.3s ease;
     `;
@@ -2362,10 +2447,174 @@ function getTopRightContainer(): HTMLElement {
   return topRightContainer;
 }
 
+// Create or get the scrollable pinned tasks container
+function getPinnedTasksContainer(): HTMLElement {
+  let pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
+  
+  if (!pinnedTasksContainer) {
+    pinnedTasksContainer = document.createElement('div');
+    pinnedTasksContainer.id = 'unwavering-focus-pinned-tasks-container';
+    pinnedTasksContainer.style.cssText = `
+      flex: 1;
+      overflow: hidden;
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    `;
+    
+    // Custom scrollbar styling for webkit browsers
+    const style = document.createElement('style');
+    style.textContent = `
+      #unwavering-focus-pinned-tasks-container.expanded::-webkit-scrollbar {
+        width: 4px;
+      }
+      #unwavering-focus-pinned-tasks-container.expanded::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      #unwavering-focus-pinned-tasks-container.expanded::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+      }
+      #unwavering-focus-pinned-tasks-container.expanded::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+      
+      /* Expanded state styles for pinned tasks */
+      #unwavering-focus-pinned-tasks-container.expanded {
+        gap: 8px !important;
+      }
+      
+      #unwavering-focus-pinned-tasks-container.expanded [data-pinned-task] {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        margin-top: 0 !important;
+        transform: scale(1) !important;
+        z-index: auto !important;
+        pointer-events: auto !important;
+        overflow: visible !important;
+        max-height: none !important;
+        border-radius: 12px 0 0 12px !important;
+        transition: all 200ms cubic-bezier(0.0, 0.0, 0.2, 1) !important;
+      }
+      
+      /* Ensure proper z-index during animation */
+      #unwavering-focus-pinned-tasks-container.expanded [data-pinned-task="0"] {
+        z-index: 1000 !important;
+      }
+      
+      #unwavering-focus-pinned-tasks-container.expanded [data-pinned-task]:not([data-pinned-task="0"]) {
+        z-index: 999 !important;
+      }
+      
+      /* Slide-down animation for cards */
+      [data-pinned-task][style*="--slide-down: true"] {
+        margin-top: 0 !important;
+        transform: scale(1) !important;
+        border-radius: 12px 0 0 12px !important;
+        transition: all 200ms cubic-bezier(0.0, 0.0, 0.2, 1) !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Add hover behavior
+    let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
+    
+    pinnedTasksContainer.addEventListener('mouseenter', () => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+        hoverTimeout = null;
+      }
+      
+      // Expand the container with smooth slide-down animation
+      pinnedTasksContainer.classList.add('expanded');
+      pinnedTasksContainer.style.overflowY = 'auto';
+      pinnedTasksContainer.style.overflowX = 'hidden';
+      pinnedTasksContainer.style.scrollbarWidth = 'thin';
+      pinnedTasksContainer.style.scrollbarColor = 'rgba(255, 255, 255, 0.2) transparent';
+      
+      // Trigger slide-down animation for all cards sequentially from second to last
+      const cards = pinnedTasksContainer.querySelectorAll('[data-pinned-task]');
+      const totalCards = cards.length;
+      
+      // Animate from second card to last card (forward order for hover)
+      for (let i = 1; i < totalCards; i++) {
+        setTimeout(() => {
+          const card = cards[i] as HTMLElement;
+          card.style.setProperty('--slide-down', 'true');
+        }, (i - 1) * 50); // 50ms delay between each card for faster animation
+      }
+    });
+    
+    pinnedTasksContainer.addEventListener('mouseleave', () => {
+      // Delay collapse to allow moving mouse to scrollbar
+      hoverTimeout = setTimeout(() => {
+        pinnedTasksContainer.classList.remove('expanded');
+        pinnedTasksContainer.style.overflowY = 'hidden';
+        pinnedTasksContainer.style.overflowX = 'hidden';
+        pinnedTasksContainer.style.scrollbarWidth = 'none';
+        pinnedTasksContainer.style.scrollbarColor = 'transparent transparent';
+        
+        // Reset slide-down state for all cards sequentially from last to second
+        const cards = pinnedTasksContainer.querySelectorAll('[data-pinned-task]');
+        const totalCards = cards.length;
+        
+        // Animate from last card to second card (reverse order)
+        for (let i = totalCards - 1; i > 0; i--) {
+          setTimeout(() => {
+            const card = cards[i] as HTMLElement;
+            card.style.removeProperty('--slide-down');
+          }, (totalCards - 1 - i) * 50); // 50ms delay between each card for faster animation
+        }
+      }, 300); // 300ms delay to prevent accidental collapse
+    });
+    
+    // Add the container to the top-right container
+    const container = getTopRightContainer();
+    container.appendChild(pinnedTasksContainer);
+  }
+  
+  return pinnedTasksContainer;
+}
+
+// Function to calculate dynamic offsets based on first card height
+function calculateDynamicOffsets(container: HTMLElement, totalTasks: number) {
+  const firstCard = container.querySelector('[data-pinned-task="0"]') as HTMLElement;
+  if (!firstCard) return;
+  
+  const firstCardHeight = firstCard.offsetHeight;
+  const bottomEdgeHeight = 16; // Height of visible bottom edge
+  
+  // Calculate offsets for each card
+  for (let i = 1; i < totalTasks; i++) {
+    const card = container.querySelector(`[data-pinned-task="${i}"]`) as HTMLElement;
+    if (!card) continue;
+    
+    // Show 2 cards behind the first one, then stack the rest
+    if (i <= 2) {
+      const offset = -(firstCardHeight - bottomEdgeHeight) - (i - 1) * bottomEdgeHeight;
+      card.style.setProperty('--stack-offset-' + i, `${offset}px`);
+    } else {
+      // Stack the rest behind the second card
+      const offset = -(firstCardHeight - bottomEdgeHeight) - bottomEdgeHeight - (i - 2) * bottomEdgeHeight;
+      card.style.setProperty('--stack-offset-' + i, `${offset}px`);
+    }
+  }
+}
+
 // Function to update container visibility
 function updateContainerVisibility() {
   if (topRightContainer) {
-    const hasChildren = topRightContainer.children.length > 0;
+    const hasTimer = countdownTimerElement !== null;
+    const pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
+    const hasPinnedTasks = pinnedTasksContainer && pinnedTasksContainer.children.length > 0;
+    
+    const hasChildren = hasTimer || hasPinnedTasks;
     topRightContainer.style.display = hasChildren ? 'flex' : 'none';
   }
 }
