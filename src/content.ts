@@ -1150,45 +1150,67 @@ function createPinnedTaskElement(text: string) {
     position: relative;
   `;
   
-  // Add close button
-  const closeButton = document.createElement('button');
-  closeButton.innerHTML = '✕';
-  closeButton.style.cssText = `
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: none;
-    border: none;
-    color: ${UI_CONSTANTS.COLORS.TEXT_SECONDARY};
-    cursor: pointer;
-    font-size: 14px;
-    padding: 4px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
+  // Create content wrapper with proper text flow
+  const contentWrapper = document.createElement('div');
+  contentWrapper.style.cssText = `
+    position: relative;
   `;
   
-  closeButton.addEventListener('click', () => {
-    pinnedTaskElement?.remove();
-    pinnedTaskElement = null;
-    // Remove from storage when closed
-    chrome.storage.local.remove('pinnedTask');
-    updateContainerVisibility();
+  // Add checkbox positioned absolutely
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.style.cssText = `
+    position: absolute;
+    left: 0;
+    top: 2px;
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
+  `;
+  
+  checkbox.addEventListener('change', () => {
+    if (checkbox.checked) {
+      // Task completed - fast, natural completion animation
+      if (pinnedTaskElement) {
+        // Quick success feedback (150ms) - Apple Watch style
+        pinnedTaskElement.style.transition = 'transform 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        pinnedTaskElement.style.transform = 'scale(0.98)';
+        
+        // Brief success state, then fast exit
+        setTimeout(() => {
+          // Fast exit animation (180ms) - hardware accelerated
+          pinnedTaskElement!.style.transition = 'opacity 180ms cubic-bezier(0.0, 0.0, 0.2, 1), transform 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          pinnedTaskElement!.style.opacity = '0';
+          pinnedTaskElement!.style.transform = 'scale(0.95) translateY(-8px)';
+          
+          // Remove after animation completes
+          setTimeout(() => {
+            pinnedTaskElement?.remove();
+            pinnedTaskElement = null;
+            chrome.storage.local.remove('pinnedTask');
+            updateContainerVisibility();
+          }, 180);
+        }, 150);
+      }
+    }
   });
   
-  closeButton.addEventListener('mouseenter', () => {
-    closeButton.style.background = 'rgba(255, 255, 255, 0.1)';
-  });
-  
-  closeButton.addEventListener('mouseleave', () => {
-    closeButton.style.background = 'none';
-  });
-  
-  pinnedTaskElement.appendChild(closeButton);
-  
-  // Add the text content
+  // Add the text content that flows naturally
   const textContent = document.createElement('div');
   textContent.innerHTML = text;
-  pinnedTaskElement.appendChild(textContent);
+  textContent.style.cssText = `
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    text-indent: 24px;
+  `;
+  
+  // Assemble the content
+  contentWrapper.appendChild(checkbox);
+  contentWrapper.appendChild(textContent);
+  pinnedTaskElement.appendChild(contentWrapper);
   
   // Add to container (pinned task goes after timer)
   const container = getTopRightContainer();
