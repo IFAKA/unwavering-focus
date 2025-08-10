@@ -51,6 +51,42 @@ const SearchItem: React.FC<SearchItemProps> = ({
 
     // Specialized actions for different URL types
     switch (urlTypeInfo?.type) {
+      case 'ai-chatbot-highlight':
+        return (
+          <button 
+            className="ds-button ds-button-small"
+            onClick={() => onSearch(query)}
+            title={`Open ${urlTypeInfo.platform} Chat Highlight`}
+            style={{ backgroundColor: urlTypeInfo.color, borderColor: urlTypeInfo.color }}
+          >
+            <AppleWatchIcon name="message-square" size="sm" />
+          </button>
+        );
+      
+      case 'ai-chatbot':
+        return (
+          <button 
+            className="ds-button ds-button-small"
+            onClick={() => onSearch(query)}
+            title={`Open ${urlTypeInfo.platform} Chat`}
+            style={{ backgroundColor: urlTypeInfo.color, borderColor: urlTypeInfo.color }}
+          >
+            <AppleWatchIcon name="message-square" size="sm" />
+          </button>
+        );
+      
+      case 'copy-link-highlight':
+        return (
+          <button 
+            className="ds-button ds-button-small"
+            onClick={() => onSearch(query)}
+            title="Open Text Highlight"
+            style={{ backgroundColor: urlTypeInfo.color, borderColor: urlTypeInfo.color }}
+          >
+            <AppleWatchIcon name="highlighter" size="sm" />
+          </button>
+        );
+      
       case 'merge-request':
       case 'pull-request':
         return (

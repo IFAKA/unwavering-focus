@@ -90,11 +90,122 @@ export function isUrl(text: string): boolean {
   return urlPattern.test(text.trim());
 }
 
+// Detect "Copy link to Highlight" URLs
+export function isCopyLinkToHighlight(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    const hash = urlObj.hash;
+    
+    // Check for the "Copy link to Highlight" pattern: #:~:text=...
+    const highlightPattern = /#:~:text=/;
+    return highlightPattern.test(hash);
+  } catch {
+    return false;
+  }
+}
+
+// Detect AI Chatbot URLs
+export function isAiChatbotUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+    const pathname = urlObj.pathname;
+    
+    // AI Chatbot patterns
+    const aiChatbotPatterns = [
+      // Gemini
+      /^gemini\.google\.com$/,
+      // Copilot
+      /^copilot\.microsoft\.com$/,
+      // Perplexity
+      /^www\.perplexity\.ai$/,
+      // Grok
+      /^grok\.com$/,
+      // ChatGPT
+      /^chatgpt\.com$/
+    ];
+    
+    // Check if hostname matches any AI chatbot pattern
+    const isAiChatbot = aiChatbotPatterns.some(pattern => pattern.test(hostname));
+    
+    // Additional path checks for specific patterns
+    if (isAiChatbot) {
+      // Check for chat-specific paths
+      const chatPaths = [
+        /^\/app\//, // Gemini app
+        /^\/chats\//, // Copilot chats
+        /^\/search\//, // Perplexity search
+        /^\/chat\//, // Grok chat
+        /^\/c\// // ChatGPT conversation
+      ];
+      
+      return chatPaths.some(pattern => pattern.test(pathname));
+    }
+    
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+// Detect AI Chatbot URLs with "Copy link to Highlight"
+export function isAiChatbotCopyLinkToHighlight(url: string): boolean {
+  return isAiChatbotUrl(url) && isCopyLinkToHighlight(url);
+}
+
+// Extract highlighted text from "Copy link to Highlight" URLs
+export function extractHighlightedText(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    const hash = urlObj.hash;
+    
+    // Check for the "Copy link to Highlight" pattern: #:~:text=...
+    const highlightPattern = /#:~:text=(.+)/;
+    const match = hash.match(highlightPattern);
+    
+    if (match && match[1]) {
+      // Decode the URL-encoded text
+      const decodedText = decodeURIComponent(match[1]);
+      return decodedText;
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Helper function to get AI chatbot platform name
+function getAiChatbotPlatform(hostname: string): string {
+  if (hostname.includes('gemini.google.com')) return 'Gemini';
+  if (hostname.includes('copilot.microsoft.com')) return 'Copilot';
+  if (hostname.includes('perplexity.ai')) return 'Perplexity';
+  if (hostname.includes('grok.com')) return 'Grok';
+  if (hostname.includes('chatgpt.com')) return 'ChatGPT';
+  return 'AI Chatbot';
+}
+
 export function formatUrlForDisplay(url: string): string {
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase();
     const pathname = urlObj.pathname;
+    
+    // Check for highlighted text FIRST - this is what the user cares about most
+    const highlightedText = extractHighlightedText(url);
+    if (highlightedText) {
+      // For any highlighted URL, show the highlighted text as the primary content
+      const truncatedText = highlightedText.length > 80 
+        ? highlightedText.substring(0, 80) + '...' 
+        : highlightedText;
+      return truncatedText;
+    }
+    
+    // AI Chatbot URLs (without highlight)
+    if (isAiChatbotUrl(url)) {
+      const platform = getAiChatbotPlatform(hostname);
+      return `${platform} Chat`;
+    }
     
     // GitLab URLs
     if (hostname.includes('gitlab.com')) {
@@ -259,7 +370,7 @@ export function formatUrlForDisplay(url: string): string {
 
 // Enhanced URL type detection for specialized styling
 export interface UrlTypeInfo {
-  type: 'merge-request' | 'pull-request' | 'jira-ticket' | 'confluence-page' | 'stackoverflow' | 'github-issue' | 'gitlab-issue' | 'notion-page' | 'figma-design' | 'linear-ticket' | 'asana-task' | 'trello-card' | 'slack-channel' | 'discord-channel' | 'youtube-video' | 'medium-article' | 'dev-post' | 'hackernews' | 'reddit-post' | 'twitter-post' | 'linkedin-post' | 'documentation' | 'api-docs' | 'npm-package' | 'docker-hub' | 'kubernetes-docs' | 'aws-docs' | 'google-cloud' | 'azure-docs' | 'databricks' | 'snowflake' | 'tableau' | 'powerbi' | 'jupyter-notebook' | 'kaggle' | 'leetcode' | 'hackerrank' | 'codewars' | 'udemy' | 'coursera' | 'edx' | 'other';
+  type: 'merge-request' | 'pull-request' | 'jira-ticket' | 'confluence-page' | 'stackoverflow' | 'github-issue' | 'gitlab-issue' | 'notion-page' | 'figma-design' | 'linear-ticket' | 'asana-task' | 'trello-card' | 'slack-channel' | 'discord-channel' | 'youtube-video' | 'medium-article' | 'dev-post' | 'hackernews' | 'reddit-post' | 'twitter-post' | 'linkedin-post' | 'documentation' | 'api-docs' | 'npm-package' | 'docker-hub' | 'kubernetes-docs' | 'aws-docs' | 'google-cloud' | 'azure-docs' | 'databricks' | 'snowflake' | 'tableau' | 'powerbi' | 'jupyter-notebook' | 'kaggle' | 'leetcode' | 'hackerrank' | 'codewars' | 'udemy' | 'coursera' | 'edx' | 'copy-link-highlight' | 'ai-chatbot' | 'ai-chatbot-highlight' | 'other';
   platform: string;
   identifier?: string;
   title?: string;
@@ -274,6 +385,41 @@ export function detectUrlType(url: string): UrlTypeInfo {
     const hostname = urlObj.hostname.toLowerCase();
     const pathname = urlObj.pathname;
     const search = urlObj.search;
+
+    // Check for highlighted text FIRST - this is what the user cares about most
+    const highlightedText = extractHighlightedText(url);
+    if (highlightedText) {
+      // For any highlighted URL, prioritize the highlighted content
+      const platform = isAiChatbotUrl(url) ? getAiChatbotPlatform(hostname) : 'Web';
+      const type = isAiChatbotUrl(url) ? 'ai-chatbot-highlight' : 'copy-link-highlight';
+      const color = isAiChatbotUrl(url) ? '#FF6B6B' : '#FFD93D';
+      const icon = isAiChatbotUrl(url) ? 'message-square' : 'highlighter';
+      
+      // Show the source/platform in description instead of redundant text
+      const description = isAiChatbotUrl(url) 
+        ? `${platform} Chat Highlight` 
+        : `Text Highlight from ${hostname.replace(/^www\./, '')}`;
+      
+      return {
+        type: type,
+        platform: platform,
+        color: color,
+        icon: icon,
+        description: description
+      };
+    }
+
+    // AI Chatbot URLs (without highlight)
+    if (isAiChatbotUrl(url)) {
+      const platform = getAiChatbotPlatform(hostname);
+      return {
+        type: 'ai-chatbot',
+        platform: platform,
+        color: '#4ECDC4',
+        icon: 'message-square',
+        description: `${platform} Chat`
+      };
+    }
 
     // GitLab Merge Requests
     if (hostname.includes('gitlab.com') && pathname.includes('/-/merge_requests/')) {

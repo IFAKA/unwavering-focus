@@ -79,6 +79,7 @@ const AppleWatchIcon: React.FC<AppleWatchIconProps> = ({
     database: 'M4 7c0-1.1.9-2 2-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7z M4 7v10 M8 7v10 M12 7v10 M16 7v10',
     'bar-chart-3': 'M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3',
     code: 'M16 18l6-6-6-6 M8 6l-6 6 6 6',
+    highlighter: 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z',
     
     // Status
     loading: 'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z',
