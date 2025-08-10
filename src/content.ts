@@ -740,12 +740,20 @@ function saveThought(text: string) {
 }
 
 function pinTask(text: string) {
-  if (!text.trim()) return;
+  const trimmedText = text.trim();
+  if (!trimmedText) return;
   
   // Get existing pinned tasks and add the new one
   chrome.storage.local.get(['pinnedTasks'], (result) => {
     const existingTasks = result.pinnedTasks || [];
-    const updatedTasks = [...existingTasks, text];
+    
+    // Check if task already exists to prevent duplicates
+    if (existingTasks.includes(trimmedText)) {
+      showConfirmation('Task already pinned');
+      return;
+    }
+    
+    const updatedTasks = [...existingTasks, trimmedText];
     
     // Store pinned tasks array in chrome.storage for cross-tab persistence
     chrome.storage.local.set({ pinnedTasks: updatedTasks }, () => {
@@ -1548,10 +1556,10 @@ function createPinnedTaskElements(tasks: string[]) {
             // Instant removal for users who prefer reduced motion
             pinnedTaskElement.remove();
             
-            // Remove the task from storage
+            // Remove the task from storage by content (not index to avoid sync issues)
             chrome.storage.local.get(['pinnedTasks'], (result) => {
               const existingTasks = result.pinnedTasks || [];
-              const updatedTasks = existingTasks.filter((_: string, i: number) => i !== index);
+              const updatedTasks = existingTasks.filter((task: string) => task !== text);
               chrome.storage.local.set({ pinnedTasks: updatedTasks });
             });
             
@@ -1582,10 +1590,10 @@ function createPinnedTaskElements(tasks: string[]) {
                 setTimeout(() => {
                   pinnedTaskElement?.remove();
                   
-                  // Remove the task from storage
+                  // Remove the task from storage by content (not index to avoid sync issues)
                   chrome.storage.local.get(['pinnedTasks'], (result) => {
                     const existingTasks = result.pinnedTasks || [];
-                    const updatedTasks = existingTasks.filter((_: string, i: number) => i !== index);
+                    const updatedTasks = existingTasks.filter((task: string) => task !== text);
                     chrome.storage.local.set({ pinnedTasks: updatedTasks });
                   });
                   
@@ -1637,6 +1645,21 @@ function createPinnedTaskElements(tasks: string[]) {
       `;
       taskCountIndicator.textContent = tasks.length.toString();
       taskCountIndicator.title = `Click or hover to see all ${tasks.length} tasks`;
+      
+      // Add subtle entrance animation for new count indicators (following PRD animation principles)
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReducedMotion) {
+        taskCountIndicator.style.transform = 'scale(0)';
+        taskCountIndicator.style.opacity = '0';
+        
+        // Fast, natural entrance animation (under 300ms as per PRD)
+        setTimeout(() => {
+          taskCountIndicator.style.transition = 'all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          taskCountIndicator.style.transform = 'scale(1)';
+          taskCountIndicator.style.opacity = '1';
+        }, 50);
+      }
+      
       pinnedTaskElement.appendChild(taskCountIndicator);
       
       // Add click functionality to expand the list
@@ -1651,9 +1674,8 @@ function createPinnedTaskElements(tasks: string[]) {
           pinnedTasksContainer.style.scrollbarWidth = 'thin';
           pinnedTasksContainer.style.scrollbarColor = 'rgba(255, 255, 255, 0.2) transparent';
           
-          // Make container focusable for keyboard scrolling
+          // Make container focusable for keyboard scrolling (but don't auto-focus)
           pinnedTasksContainer.setAttribute('tabindex', '0');
-          pinnedTasksContainer.focus();
           
           // Trigger slide-down animation for all cards sequentially from second to last
           const cards = pinnedTasksContainer.querySelectorAll('[data-pinned-task]');
@@ -1752,9 +1774,77 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     if (changes.pinnedTasks) {
       const { newValue, oldValue } = changes.pinnedTasks;
       
-      if (newValue && Array.isArray(newValue) && newValue.length > 0) {
-        createPinnedTaskElements(newValue);
-      } else if (!newValue || newValue.length === 0) {
+      // Ensure newValue is an array and handle edge cases
+      if (newValue && Array.isArray(newValue)) {
+        if (newValue.length > 0) {
+          // Check if this is an increase in task count (new task added)
+          const oldCount = oldValue && Array.isArray(oldValue) ? oldValue.length : 0;
+          const newCount = newValue.length;
+          const isCountIncrease = newCount > oldCount;
+          
+          createPinnedTaskElements(newValue);
+          
+          // Animate the count indicator if it increased and we have more than 3 tasks
+          if (isCountIncrease && newCount > 3) {
+            // Delay animation until modal is completely closed to ensure user can see it
+            // Check if modal is currently open
+            const isModalOpen = modal && modal.style.display === 'block';
+            
+            if (isModalOpen) {
+              // Wait for modal to close, then animate
+              const checkModalClosed = () => {
+                if (!modal || modal.style.display === 'none') {
+                  // Modal is closed, now animate the count increase
+                  setTimeout(() => {
+                    animateTaskCountIncrease(newCount);
+                  }, 200); // Additional delay for modal close animation
+                } else {
+                  // Modal still open, check again in 50ms
+                  setTimeout(checkModalClosed, 50);
+                }
+              };
+              checkModalClosed();
+            } else {
+              // Modal not open, animate immediately
+              setTimeout(() => {
+                animateTaskCountIncrease(newCount);
+              }, 100);
+            }
+          } else if (newCount > 3) {
+            // If we already have more than 3 tasks and the count changed, animate the update
+            const existingIndicator = document.querySelector('[data-pinned-task="0"] > div:last-child') as HTMLElement;
+            if (existingIndicator && existingIndicator.textContent !== newCount.toString()) {
+              // Check if modal is currently open
+              const isModalOpen = modal && modal.style.display === 'block';
+              
+              if (isModalOpen) {
+                // Wait for modal to close, then animate
+                const checkModalClosed = () => {
+                  if (!modal || modal.style.display === 'none') {
+                    // Modal is closed, now animate the count increase
+                    setTimeout(() => {
+                      animateTaskCountIncrease(newCount);
+                    }, 200); // Additional delay for modal close animation
+                  } else {
+                    // Modal still open, check again in 50ms
+                    setTimeout(checkModalClosed, 50);
+                  }
+                };
+                checkModalClosed();
+              } else {
+                // Modal not open, animate immediately
+                setTimeout(() => {
+                  animateTaskCountIncrease(newCount);
+                }, 100);
+              }
+            }
+          }
+        } else {
+          removePinnedTaskElements();
+          updateContainerVisibility();
+        }
+      } else if (!newValue) {
+        // Handle case where pinnedTasks is removed or set to null/undefined
         removePinnedTaskElements();
         updateContainerVisibility();
       }
@@ -2711,6 +2801,52 @@ function calculateDynamicOffsets(container: HTMLElement, totalTasks: number) {
       card.style.setProperty('--stack-offset-' + i, `${offset}px`);
     }
   }
+}
+
+// Function to animate task count indicator when it increases
+function animateTaskCountIncrease(newCount: number) {
+  const taskCountIndicator = document.querySelector('[data-pinned-task="0"] > div:last-child') as HTMLElement;
+  if (!taskCountIndicator) return;
+  
+  // Check for reduced motion preference for accessibility
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  
+  if (prefersReducedMotion) {
+    // Instant update for users who prefer reduced motion
+    taskCountIndicator.textContent = newCount.toString();
+    return;
+  }
+  
+  // Fast animation following Emil Kowalski's principles (under 300ms total)
+  // Use spring-like easing for natural motion
+  taskCountIndicator.style.transition = 'all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  taskCountIndicator.style.transform = 'scale(1.2)';
+  taskCountIndicator.style.background = UI_CONSTANTS.COLORS.SUCCESS;
+  taskCountIndicator.style.boxShadow = '0 0 16px rgba(52, 199, 89, 0.5)';
+  
+  // Update the text content
+  taskCountIndicator.textContent = newCount.toString();
+  
+  // Add subtle haptic feedback if supported (following PRD requirements)
+  try {
+    if (typeof navigator.vibrate === 'function' && document.hasFocus()) {
+      navigator.vibrate(30); // Very short vibration for immediate feedback
+    }
+  } catch (error) {
+    // Ignore vibration errors gracefully
+  }
+  
+  // Animate back to normal (fast, natural motion)
+  setTimeout(() => {
+    taskCountIndicator.style.transform = 'scale(1)';
+    taskCountIndicator.style.background = UI_CONSTANTS.COLORS.ACCENT_PRIMARY;
+    taskCountIndicator.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+  }, 150);
+  
+  // Reset transition after animation completes
+  setTimeout(() => {
+    taskCountIndicator.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+  }, 250);
 }
 
 // Function to update container visibility
