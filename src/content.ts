@@ -10,19 +10,17 @@ import { VideoFocusManager, supportsVideoFocus } from './utils/videoFocusUtils';
 // Smart Search Modal - Command Palette Implementation
 let modal: HTMLElement | null = null;
 let input: HTMLTextAreaElement | null = null;
-let actionsList: HTMLElement | null = null;
-let isAnimating = false;
 let focusAttempts = 0;
-const MAX_FOCUS_ATTEMPTS = 25; // Very high number for maximum reliability
-
-// Command palette state
-let selectedActionIndex = 0;
-let pinnedTaskElement: HTMLElement | null = null;
-let previousActionBeforeTimer = 0; // Store previous action before switching to timer
-
-// Focus management state
 let focusTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let isFocusAttempting = false;
+let isAnimating = false;
+let pinnedTaskElement: HTMLElement | null = null;
+let countdownTimerElement: HTMLElement | null = null;
+let topRightContainer: HTMLElement | null = null;
+let lastEnterTime = 0; // Track last Enter press for double-enter detection
+let saveConfirmationTimeout: ReturnType<typeof setTimeout> | null = null; // Track confirmation timeout
+const DOUBLE_ENTER_TIMEOUT = 500; // Reduced to 500ms for faster response
+const MAX_FOCUS_ATTEMPTS = 10; // Reduced to prevent infinite loops
 
 // Clean up any existing overlays on page load/refresh
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,13 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
   existingOverlays.forEach(overlay => overlay.remove());
 });
 
-// Keyboard shortcut listener
-document.addEventListener('keydown', (e) => {
-  if (e.altKey && e.shiftKey && e.key === 'S') {
-    e.preventDefault();
-    toggleModal();
-  }
-});
+// Note: Alt+Shift+I is handled by the background script via manifest commands
+// The keyboard listener is removed to avoid conflicts
 
 function toggleModal() {
   if (modal && modal.style.display === 'block') {
@@ -47,7 +40,9 @@ function toggleModal() {
 }
 
 function openModal() {
-  if (isAnimating) return;
+  if (isAnimating) {
+    return;
+  }
   isAnimating = true;
   focusAttempts = 0;
   isFocusAttempting = false;
@@ -72,7 +67,6 @@ function openModal() {
   // Reset global state
   modal = null;
   input = null;
-  actionsList = null;
   
   // Create modal
   createModal();
@@ -157,11 +151,21 @@ function attemptFocus() {
     console.warn('Input element not found, attempting to recreate');
     resetModalContent();
     
-    // Try again after a short delay
-    focusTimeoutId = setTimeout(() => {
-      isFocusAttempting = false;
-      attemptFocus();
-    }, 150);
+    // Wait for the next frame to ensure DOM is updated, then try again
+    requestAnimationFrame(() => {
+      // Double-check that input was created
+      if (!input) {
+        console.warn('Input element still not found after recreation');
+        isFocusAttempting = false;
+        return;
+      }
+      
+      // Try again after ensuring input exists
+      setTimeout(() => {
+        isFocusAttempting = false;
+        attemptFocus();
+      }, 100);
+    });
     return;
   }
   
@@ -314,18 +318,17 @@ function resetModalContent() {
   const content = modal.querySelector('#modal-content') as HTMLElement;
   if (!content) return;
   
-  // Clear content and recreate command palette
+  // Clear content and recreate simplified UI
   content.innerHTML = '';
-  selectedActionIndex = 0;
   
   // Get selected text if any
   const selectedText = window.getSelection()?.toString().trim() || '';
   
-  // Create input (now a textarea for formatted text support)
+  // Create input (textarea for formatted text support)
   input = document.createElement('textarea');
   input.placeholder = 'Type your command or thought...';
-  input.autocomplete = 'off'; // Prevent browser autocomplete interference
-  input.value = selectedText; // Pre-populate with selected text
+  input.autocomplete = 'off';
+  input.value = selectedText;
   input.style.cssText = `
     width: 100%;
     padding: ${MODAL_CONSTANTS.INPUT.PADDING};
@@ -346,7 +349,7 @@ function resetModalContent() {
     font-weight: ${UI_CONSTANTS.FONT_WEIGHT.NORMAL};
   `;
   
-  // Add focus styles for better interaction feedback
+  // Add focus styles
   input.addEventListener('focus', () => {
     input!.style.borderColor = MODAL_CONSTANTS.CONTENT.FOCUS_BORDER_COLOR;
     input!.style.boxShadow = MODAL_CONSTANTS.CONTENT.FOCUS_BOX_SHADOW;
@@ -357,80 +360,172 @@ function resetModalContent() {
     input!.style.boxShadow = 'none';
   });
   
-  // Create actions list
-  actionsList = document.createElement('div');
-  actionsList.style.cssText = `
-    max-height: ${MODAL_CONSTANTS.COMMAND_PALETTE.MAX_HEIGHT};
-    overflow-y: auto;
-    padding: ${MODAL_CONSTANTS.COMMAND_PALETTE.SCROLL_PADDING};
+  // Create adaptive action button
+  const actionButton = document.createElement('button');
+  actionButton.id = 'adaptive-action-button';
+  actionButton.type = 'button';
+  actionButton.style.cssText = `
+    width: 100%;
+    padding: ${UI_CONSTANTS.SPACING.MD} ${UI_CONSTANTS.SPACING.LG};
+    background: ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
+    color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
+    border: none;
+    border-radius: ${UI_CONSTANTS.BORDER_RADIUS.MD};
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    font-size: ${UI_CONSTANTS.FONT_SIZE.MD};
+    font-weight: ${UI_CONSTANTS.FONT_WEIGHT.SEMIBOLD};
+    cursor: pointer;
+    transition: ${UI_CONSTANTS.TRANSITIONS.FAST};
+    box-shadow: ${UI_CONSTANTS.SHADOWS.SMALL};
+    outline: none;
   `;
   
-  // Create action items with Apple Watch-style design
-  MODAL_CONSTANTS.ACTIONS.forEach((action, index) => {
-    const actionItem = document.createElement('div');
-    actionItem.className = 'action-item';
-    actionItem.dataset.actionId = action.id;
-    actionItem.style.cssText = `
-      display: flex;
-      align-items: center;
-      padding: ${MODAL_CONSTANTS.COMMAND_PALETTE.ITEM_PADDING};
-      margin: ${MODAL_CONSTANTS.COMMAND_PALETTE.ITEM_MARGIN};
-      border-radius: ${MODAL_CONSTANTS.COMMAND_PALETTE.ITEM_BORDER_RADIUS};
-      cursor: pointer;
-      transition: ${UI_CONSTANTS.TRANSITIONS.FAST};
-      background: ${index === 0 ? 'rgba(0, 122, 255, 0.1)' : 'transparent'};
-      border: 1px solid ${index === 0 ? 'rgba(0, 122, 255, 0.3)' : 'transparent'};
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-      min-height: ${UI_CONSTANTS.LAYOUT.TOUCH_TARGET_MIN};
-    `;
+  // Add hover effects
+  actionButton.addEventListener('mouseenter', () => {
+    actionButton.style.transform = 'translateY(-1px)';
+    actionButton.style.boxShadow = UI_CONSTANTS.SHADOWS.MEDIUM;
+  });
+  
+  actionButton.addEventListener('mouseleave', () => {
+    actionButton.style.transform = 'translateY(0)';
+    actionButton.style.boxShadow = UI_CONSTANTS.SHADOWS.SMALL;
+  });
+  
+  // Add focus styles for accessibility
+  actionButton.addEventListener('focus', () => {
+    actionButton.style.boxShadow = `0 0 0 3px ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY}40`;
+  });
+  
+  actionButton.addEventListener('blur', () => {
+    actionButton.style.boxShadow = UI_CONSTANTS.SHADOWS.SMALL;
+  });
+  
+  // Function to update button based on input
+  function updateActionButton() {
+    if (!input || !actionButton) return;
     
-    actionItem.innerHTML = `
-      <span style="font-size: 20px; margin-right: ${UI_CONSTANTS.SPACING.MD}; opacity: 0.9;">${action.icon}</span>
-      <div style="flex: 1;">
-        <div style="font-weight: ${UI_CONSTANTS.FONT_WEIGHT.SEMIBOLD}; color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY}; margin-bottom: 2px; font-size: ${UI_CONSTANTS.FONT_SIZE.MD};">${action.title}</div>
-        <div style="font-size: ${UI_CONSTANTS.FONT_SIZE.SM}; color: ${UI_CONSTANTS.COLORS.TEXT_SECONDARY}; opacity: 0.8; line-height: 1.3;">${action.description}</div>
-      </div>
-    `;
+    const inputValue = input.value.trim();
+    let buttonText = '';
+    let actionId = '';
+    let isDisabled = false;
     
-    // Add hover effects for better interactivity
-    actionItem.addEventListener('mouseenter', () => {
-      if (index !== selectedActionIndex) {
-        actionItem.style.background = 'rgba(255, 255, 255, 0.05)';
-        actionItem.style.transform = 'translateY(-1px)';
+    if (inputValue === '') {
+      // Empty input: Box Breathing
+      buttonText = '🫁 Start Box Breathing';
+      actionId = 'box-breathing';
+    } else if (/^\d+$/.test(inputValue)) {
+      // Numbers only: Timer
+      buttonText = `⏱️ Start ${inputValue}-minute Timer`;
+      actionId = 'timer';
+    } else {
+      // Any other content: Save Thought
+      buttonText = '💭 Save Thought (double-enter to pin)';
+      actionId = 'save-thought';
+    }
+    
+    // Check if action should be disabled
+    if (actionId === 'timer') {
+      hasExistingTimer().then(hasTimer => {
+        if (hasTimer) {
+          actionButton.textContent = '⏱️ Timer Already Running';
+          actionButton.style.background = UI_CONSTANTS.COLORS.TEXT_SECONDARY;
+          actionButton.style.cursor = 'not-allowed';
+          isDisabled = true;
+        } else {
+          actionButton.textContent = buttonText;
+          actionButton.style.background = UI_CONSTANTS.COLORS.ACCENT_PRIMARY;
+          actionButton.style.cursor = 'pointer';
+          isDisabled = false;
+        }
+      });
+    } else {
+      actionButton.textContent = buttonText;
+      actionButton.style.background = UI_CONSTANTS.COLORS.ACCENT_PRIMARY;
+      actionButton.style.cursor = 'pointer';
+      isDisabled = false;
+    }
+    
+    // Store current action for execution
+    actionButton.dataset.actionId = actionId;
+    actionButton.dataset.disabled = isDisabled.toString();
+  }
+  
+  // Add input change listener
+  input.addEventListener('input', updateActionButton);
+  
+  // Add keyboard listeners with double-enter logic
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      
+      const currentTime = Date.now();
+      const inputValue = input!.value.trim();
+      const actionId = actionButton.dataset.actionId;
+      
+      // Check for double-enter (pin task)
+      if (inputValue && actionId === 'save-thought' && 
+          currentTime - lastEnterTime < DOUBLE_ENTER_TIMEOUT) {
+        // Double-enter detected: Pin Task
+        // Clear any pending save confirmation
+        if (saveConfirmationTimeout) {
+          clearTimeout(saveConfirmationTimeout);
+          saveConfirmationTimeout = null;
+        }
+        pinTask(inputValue);
+        lastEnterTime = 0; // Reset
+      } else {
+        // Single enter: Execute normal action
+        if (actionId && actionButton.dataset.disabled !== 'true') {
+          if (actionId === 'timer' && inputValue === '') {
+            executeAction('timer', '25'); // Default 25 minutes
+          } else if (actionId === 'save-thought') {
+            // For save-thought, delay confirmation to allow for double-enter
+            saveThought(inputValue);
+            lastEnterTime = currentTime;
+          } else {
+            executeAction(actionId, inputValue);
+            lastEnterTime = currentTime;
+          }
+        } else {
+          lastEnterTime = currentTime;
+        }
       }
-    });
-    
-    actionItem.addEventListener('mouseleave', () => {
-      if (index !== selectedActionIndex) {
-        actionItem.style.background = 'transparent';
-        actionItem.style.transform = 'translateY(0)';
-      }
-    });
-    
-    actionItem.addEventListener('click', () => {
-      executeAction(action.id, input!.value);
-    });
-    
-    if (actionsList) {
-      actionsList.appendChild(actionItem);
+    } else if (e.key === 'Escape') {
+      closeModal();
     }
   });
   
-  // Add keyboard event listener for command palette navigation
-  input.addEventListener('keydown', handleCommandPaletteKeydown);
-  input.addEventListener('input', handleInputChange); // Add input event listener for smart selection
+  // Add button click listener
+  actionButton.addEventListener('click', () => {
+    if (actionButton.dataset.disabled === 'true') return;
+    
+    const actionId = actionButton.dataset.actionId;
+    const inputValue = input!.value.trim();
+    
+    if (actionId) {
+      if (actionId === 'timer' && inputValue === '') {
+        executeAction('timer', '25'); // Default 25 minutes
+      } else {
+        executeAction(actionId, inputValue);
+      }
+    }
+  });
   
-  // Append elements to content
+  // Append elements
   content.appendChild(input);
-  content.appendChild(actionsList);
+  content.appendChild(actionButton);
   
-  // Initialize smart selection based on pre-populated text
-  if (selectedText) {
-    handleInputChange();
-  }
+  // Initialize button state
+  updateActionButton();
   
   // Force a reflow to ensure proper rendering
   input.offsetHeight;
+  
+  // Verify input is properly attached to DOM
+  if (!document.contains(input)) {
+    console.warn('Input element not properly attached to DOM after creation');
+    input = null;
+  }
 }
 
 function createModal() {
@@ -483,136 +578,33 @@ function createModal() {
   document.body.appendChild(modal);
 }
 
-// Handle command palette keyboard navigation
-function handleCommandPaletteKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    
-    // Smart input detection for intelligent default actions
-    const inputValue = input!.value.trim();
-    
-    if (inputValue === '') {
-      // Empty input: default to box breathing
-      executeAction('box-breathing', '');
-    } else if (/^\d+$/.test(inputValue)) {
-      // Only numbers: default to timer
-      executeAction('timer', inputValue);
-    } else {
-      // Mixed content: use currently selected action
-      const selectedAction = MODAL_CONSTANTS.ACTIONS[selectedActionIndex];
-      if (selectedAction) {
-        executeAction(selectedAction.id, inputValue);
-      }
-    }
-  } else if (e.key === 'Escape') {
-    closeModal();
-  } else if (e.key === 'ArrowDown' || (e.shiftKey && e.key === 'J')) {
-    e.preventDefault();
-    selectNextAction();
-  } else if (e.key === 'ArrowUp' || (e.shiftKey && e.key === 'K')) {
-    e.preventDefault();
-    selectPreviousAction();
-  }
-}
-
-// Smart input detection for automatic action selection
-function handleInputChange() {
-  if (!input) return;
-  
-  const inputValue = input.value.trim();
-  const previousSelectedIndex = selectedActionIndex;
-  
-  if (inputValue === '') {
-    // Empty input: select box breathing (index 2)
-    selectedActionIndex = 2;
-  } else if (/^\d+$/.test(inputValue)) {
-    // Only numbers: select timer (index 3)
-    selectedActionIndex = 3;
-  } else {
-    // Mixed content: if we were previously on timer (numbers), go back to previous selection
-    // Store the previous selection before switching to timer
-    if (previousSelectedIndex === 3) {
-      // If we were on timer and now have mixed content, go back to the stored previous selection
-      selectedActionIndex = previousActionBeforeTimer || 0;
-    } else {
-      // Store current selection as previous (unless it's timer)
-      if (previousSelectedIndex !== 3) {
-        previousActionBeforeTimer = previousSelectedIndex;
-      }
-      selectedActionIndex = previousSelectedIndex >= 0 ? previousSelectedIndex : 0;
-    }
-  }
-  
-  // Update visual selection if it changed
-  if (selectedActionIndex !== previousSelectedIndex) {
-    updateActionSelection();
-    
-    // Add subtle visual feedback for automatic selection
-    const selectedAction = MODAL_CONSTANTS.ACTIONS[selectedActionIndex];
-    if (selectedAction) {
-      // Update input placeholder to show the selected action
-      const originalPlaceholder = 'Type your command or thought...';
-      if (inputValue === '' && selectedActionIndex === 2) {
-        input.placeholder = 'Press Enter to start box breathing session';
-      } else if (/^\d+$/.test(inputValue) && selectedActionIndex === 3) {
-        input.placeholder = `Press Enter to start ${inputValue}-minute timer`;
-      } else {
-        input.placeholder = originalPlaceholder;
-      }
-    }
-  }
-}
-
-function selectNextAction() {
-  selectedActionIndex = (selectedActionIndex + 1) % MODAL_CONSTANTS.ACTIONS.length;
-  updateActionSelection();
-}
-
-function selectPreviousAction() {
-  selectedActionIndex = selectedActionIndex === 0 
-    ? MODAL_CONSTANTS.ACTIONS.length - 1 
-    : selectedActionIndex - 1;
-  updateActionSelection();
-}
-
-function updateActionSelection() {
-  if (!actionsList) return;
-  const actionItems = actionsList.querySelectorAll('.action-item');
-  if (!actionItems) return;
-  
-  actionItems.forEach((item, index) => {
-    const element = item as HTMLElement;
-    if (index === selectedActionIndex) {
-      // Selected state with smooth transition
-      element.style.background = 'rgba(0, 122, 255, 0.15)';
-      element.style.border = '1px solid rgba(0, 122, 255, 0.4)';
-      element.style.transform = 'translateY(-2px) scale(1.02)';
-      element.style.boxShadow = UI_CONSTANTS.SHADOWS.SMALL;
-      element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    } else {
-      // Unselected state
-      element.style.background = 'transparent';
-      element.style.border = '1px solid transparent';
-      element.style.transform = 'translateY(0) scale(1)';
-      element.style.boxShadow = 'none';
-    }
-  });
-}
-
-// Execute selected action
 function executeAction(actionId: string, text: string) {
   switch (actionId) {
     case 'save-thought':
       saveThought(text);
       break;
     case 'pin-task':
-      pinTask(text);
+      // Check if a pinned task already exists
+      hasExistingPinnedTask().then(hasPinnedTask => {
+        if (hasPinnedTask) {
+          showConfirmation('Task already pinned. Remove existing task first.');
+        } else {
+          pinTask(text);
+        }
+      });
       break;
     case 'box-breathing':
       startBoxBreathing(text);
       break;
     case 'timer':
-      startTimer(text);
+      // Check if a timer already exists
+      hasExistingTimer().then(hasTimer => {
+        if (hasTimer) {
+          showConfirmation('Timer already running. Cancel existing timer first.');
+        } else {
+          startTimer(text);
+        }
+      });
       break;
     default:
       console.warn('Unknown action:', actionId);
@@ -622,12 +614,34 @@ function executeAction(actionId: string, text: string) {
 function saveThought(text: string) {
   if (!text.trim()) return;
   
+  // Clear any existing confirmation timeout
+  if (saveConfirmationTimeout) {
+    clearTimeout(saveConfirmationTimeout);
+    saveConfirmationTimeout = null;
+  }
+  
   // Save to storage
   chrome.runtime.sendMessage({
     type: FEATURE_CONSTANTS.MESSAGE_TYPES.SAVE_SEARCH,
     query: text
   }).then(() => {
-    showConfirmation('Thought saved for later');
+    // Show immediate feedback in button
+    const actionButton = document.getElementById('adaptive-action-button') as HTMLButtonElement;
+    if (actionButton) {
+      const originalText = actionButton.textContent;
+      actionButton.textContent = '💭 Thought Saved! (press Enter again to pin)';
+      actionButton.style.background = UI_CONSTANTS.COLORS.SUCCESS;
+      
+      // Set timeout to show confirmation and reset button
+      saveConfirmationTimeout = setTimeout(() => {
+        showConfirmation('Thought saved for later');
+        // Reset button to original state
+        if (actionButton) {
+          actionButton.textContent = originalText;
+          actionButton.style.background = UI_CONSTANTS.COLORS.ACCENT_PRIMARY;
+        }
+      }, DOUBLE_ENTER_TIMEOUT);
+    }
   }).catch(console.error);
 }
 
@@ -644,7 +658,7 @@ function startBoxBreathing(text: string) {
   // Close the command palette first
   closeModal();
   
-  // Create box breathing visualizer
+  // Create box breathing visualizer with Apple Watch styling
   const breathingElement = document.createElement('div');
   breathingElement.style.cssText = `
     position: fixed;
@@ -652,54 +666,62 @@ function startBoxBreathing(text: string) {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
+    background: ${UI_CONSTANTS.COLORS.BACKGROUND_PRIMARY};
+    backdrop-filter: blur(20px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: ${MODAL_CONSTANTS.Z_INDEX.MODAL};
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    opacity: 0;
+    transition: opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING};
   `;
   
-  // Create the breathing circle
+  // Create the breathing circle with Apple Watch design
   const circle = document.createElement('div');
   circle.style.cssText = `
-    width: 200px;
-    height: 200px;
-    border: 3px solid ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
-    border-radius: 50%;
+    width: 160px;
+    height: 160px;
+    border: 2px solid ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
+    border-radius: ${UI_CONSTANTS.BORDER_RADIUS.FULL};
     display: flex;
     align-items: center;
     justify-content: center;
     color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
-    font-size: 24px;
-    font-weight: 600;
-    transition: all 4s ease-in-out;
+    font-size: ${UI_CONSTANTS.FONT_SIZE.XL};
+    font-weight: ${UI_CONSTANTS.FONT_WEIGHT.SEMIBOLD};
+    transition: all 4s ${ANIMATION_CONSTANTS.EASING.EASE_IN_OUT};
     position: relative;
+    background: rgba(0, 122, 255, 0.05);
+    box-shadow: ${UI_CONSTANTS.SHADOWS.LARGE};
+    transform: scale(${ANIMATION_CONSTANTS.SCALE.SPRING_IN});
   `;
   
-  // Create instruction text
+  // Create instruction text with Apple Watch typography
   const instruction = document.createElement('div');
   instruction.style.cssText = `
     position: absolute;
-    bottom: 40px;
+    bottom: ${UI_CONSTANTS.SPACING.XXXL};
     left: 50%;
     transform: translateX(-50%);
     color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
-    font-size: 18px;
+    font-size: ${UI_CONSTANTS.FONT_SIZE.MD};
+    font-weight: ${UI_CONSTANTS.FONT_WEIGHT.MEDIUM};
     text-align: center;
     max-width: 400px;
     line-height: 1.4;
+    opacity: 0;
+    transition: opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING};
   `;
   
   if (text.trim()) {
     instruction.innerHTML = `
-      <div style="margin-bottom: 16px; font-size: 16px; opacity: 0.8;">Focus on:</div>
-      <div style="white-space: pre-wrap;">${text}</div>
+      <div style="margin-bottom: ${UI_CONSTANTS.SPACING.MD}; font-size: ${UI_CONSTANTS.FONT_SIZE.SM}; opacity: 0.7; color: ${UI_CONSTANTS.COLORS.TEXT_SECONDARY};">Focus on:</div>
+      <div style="white-space: pre-wrap; font-weight: ${UI_CONSTANTS.FONT_WEIGHT.NORMAL};">${text}</div>
     `;
   } else {
     instruction.innerHTML = `
-      <div style="font-size: 16px; opacity: 0.8;">Press ESC or click outside to stop</div>
+      <div style="font-size: ${UI_CONSTANTS.FONT_SIZE.SM}; opacity: 0.7; color: ${UI_CONSTANTS.COLORS.TEXT_SECONDARY};">Press ESC or tap outside to stop</div>
     `;
   }
   
@@ -707,12 +729,47 @@ function startBoxBreathing(text: string) {
   breathingElement.appendChild(instruction);
   document.body.appendChild(breathingElement);
   
-  // Box breathing phases: Inhale (4s) → Hold (4s) → Exhale (4s) → Hold (4s)
+  // Animate in with spring effect
+  requestAnimationFrame(() => {
+    breathingElement.style.opacity = '1';
+    circle.style.transform = 'scale(1)';
+    instruction.style.opacity = '1';
+  });
+  
+  // Box breathing phases with Apple Watch timing
   const phases = [
-    { name: 'Inhale', duration: 4000, scale: 1.2, opacity: 1 },
-    { name: 'Hold', duration: 4000, scale: 1.2, opacity: 0.8 },
-    { name: 'Exhale', duration: 4000, scale: 0.8, opacity: 0.6 },
-    { name: 'Hold', duration: 4000, scale: 0.8, opacity: 0.4 }
+    { 
+      name: 'Inhale', 
+      duration: 4000, 
+      scale: 1.15, 
+      opacity: 1,
+      borderColor: UI_CONSTANTS.COLORS.ACCENT_PRIMARY,
+      backgroundColor: 'rgba(0, 122, 255, 0.1)'
+    },
+    { 
+      name: 'Hold', 
+      duration: 4000, 
+      scale: 1.15, 
+      opacity: 0.9,
+      borderColor: UI_CONSTANTS.COLORS.TEXT_SECONDARY,
+      backgroundColor: 'rgba(142, 142, 147, 0.05)'
+    },
+    { 
+      name: 'Exhale', 
+      duration: 4000, 
+      scale: 0.85, 
+      opacity: 0.8,
+      borderColor: UI_CONSTANTS.COLORS.ACCENT_PRIMARY,
+      backgroundColor: 'rgba(0, 122, 255, 0.05)'
+    },
+    { 
+      name: 'Hold', 
+      duration: 4000, 
+      scale: 0.85, 
+      opacity: 0.7,
+      borderColor: UI_CONSTANTS.COLORS.TEXT_SECONDARY,
+      backgroundColor: 'rgba(142, 142, 147, 0.03)'
+    }
   ];
   
   let currentPhase = 0;
@@ -725,9 +782,8 @@ function startBoxBreathing(text: string) {
     circle.textContent = phase.name;
     circle.style.transform = `scale(${phase.scale})`;
     circle.style.opacity = phase.opacity.toString();
-    circle.style.borderColor = phase.name === 'Inhale' || phase.name === 'Exhale' 
-      ? UI_CONSTANTS.COLORS.ACCENT_PRIMARY 
-      : UI_CONSTANTS.COLORS.TEXT_SECONDARY;
+    circle.style.borderColor = phase.borderColor;
+    circle.style.background = phase.backgroundColor;
     
     setTimeout(() => {
       if (isActive) {
@@ -740,10 +796,18 @@ function startBoxBreathing(text: string) {
   // Start the breathing cycle
   updateBreathing();
   
-  // Handle close events
+  // Handle close events with smooth animations
   const closeBreathing = () => {
     isActive = false;
-    breathingElement.remove();
+    
+    // Animate out with spring effect
+    breathingElement.style.opacity = '0';
+    circle.style.transform = `scale(${ANIMATION_CONSTANTS.SCALE.SPRING_IN})`;
+    instruction.style.opacity = '0';
+    
+    setTimeout(() => {
+      breathingElement.remove();
+    }, ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE);
   };
   
   // ESC key to close
@@ -764,8 +828,6 @@ function startBoxBreathing(text: string) {
   
   document.addEventListener('keydown', handleKeydown);
   breathingElement.addEventListener('click', handleClick);
-  
-  showConfirmation('Box breathing session started');
 }
 
 function startTimer(text: string) {
@@ -798,72 +860,168 @@ function startTimer(text: string) {
 }
 
 // Function to create countdown timer element
-function createCountdownTimerElement(remainingSeconds: number) {
+function createCountdownTimerElement() {
   // Remove existing timer
-  const existingTimer = document.getElementById('unwavering-focus-timer');
-  if (existingTimer) {
-    existingTimer.remove();
+  if (countdownTimerElement) {
+    countdownTimerElement.remove();
+    countdownTimerElement = null;
   }
   
   // Create countdown timer
-  const timerElement = document.createElement('div');
-  timerElement.id = 'unwavering-focus-timer';
-  timerElement.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
+  countdownTimerElement = document.createElement('div');
+  countdownTimerElement.id = 'unwavering-focus-timer';
+  countdownTimerElement.style.cssText = `
     background: rgba(0, 0, 0, 0.9);
     color: white;
-    padding: 12px 16px;
-    border-radius: 8px;
+    padding: 8px 12px;
+    border-radius: 8px 0 0 8px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 16px;
     font-weight: 600;
-    z-index: ${MODAL_CONSTANTS.Z_INDEX.COUNTDOWN_TIMER};
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    min-width: 80px;
     text-align: center;
+    cursor: pointer;
+    width: fit-content;
+    transition: ${UI_CONSTANTS.TRANSITIONS.FAST};
+    user-select: none;
+    pointer-events: auto;
+    align-self: flex-end;
+    position: relative;
   `;
   
+  // Add hover effect
+  countdownTimerElement.addEventListener('mouseenter', () => {
+    countdownTimerElement!.style.background = 'rgba(220, 38, 38, 0.9)';
+    countdownTimerElement!.style.transform = 'scale(1.05)';
+    
+    // Create cancel text overlay
+    const cancelText = document.createElement('div');
+    cancelText.textContent = 'Cancel';
+    cancelText.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      background: rgba(220, 38, 38, 0.9);
+      border-radius: 8px 0 0 8px;
+    `;
+    cancelText.id = 'cancel-overlay';
+    countdownTimerElement!.appendChild(cancelText);
+  });
+  
+  countdownTimerElement.addEventListener('mouseleave', () => {
+    countdownTimerElement!.style.background = 'rgba(0, 0, 0, 0.9)';
+    countdownTimerElement!.style.transform = 'scale(1)';
+    
+    // Remove cancel text overlay
+    const cancelText = countdownTimerElement!.querySelector('#cancel-overlay');
+    if (cancelText) {
+      cancelText.remove();
+    }
+  });
+  
+  // Add click handler to cancel timer
+  countdownTimerElement.addEventListener('click', () => {
+    countdownTimerElement?.remove();
+    countdownTimerElement = null;
+    chrome.storage.local.remove('countdownTimer');
+    updateContainerVisibility();
+  });
+  
   function updateTimer() {
-    if (remainingSeconds <= 0) {
-      timerElement.textContent = "Time's up!";
-      timerElement.style.background = 'rgba(220, 38, 38, 0.9)';
-      setTimeout(() => {
-        timerElement.remove();
-        chrome.storage.local.remove('countdownTimer');
-      }, 3000);
-      return;
-    }
+    if (!countdownTimerElement) return;
     
-    // Format as mm:ss
-    const mins = Math.floor(remainingSeconds / 60);
-    const secs = remainingSeconds % 60;
-    timerElement.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-    
-    // Change color when less than 10 minutes remaining
-    if (remainingSeconds < 600) {
-      timerElement.style.background = 'rgba(245, 158, 11, 0.9)';
-    }
-    
-    remainingSeconds--;
-    setTimeout(updateTimer, 1000);
+    // Calculate remaining time based on stored start time and current time
+    chrome.storage.local.get(['countdownTimer'], (result) => {
+      if (!result.countdownTimer) {
+        // Timer was removed, clean up
+        countdownTimerElement?.remove();
+        countdownTimerElement = null;
+        updateContainerVisibility();
+        return;
+      }
+      
+      const { startTime, remainingSeconds: originalRemainingSeconds } = result.countdownTimer;
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      const actualRemainingSeconds = Math.max(0, originalRemainingSeconds - elapsedSeconds);
+      
+      if (actualRemainingSeconds <= 0) {
+        countdownTimerElement.textContent = "Time's up!";
+        countdownTimerElement.style.background = 'rgba(220, 38, 38, 0.9)';
+        countdownTimerElement.style.cursor = 'pointer';
+        countdownTimerElement.title = 'Click to dismiss';
+        setTimeout(() => {
+          countdownTimerElement?.remove();
+          countdownTimerElement = null;
+          chrome.storage.local.remove('countdownTimer');
+          updateContainerVisibility();
+        }, 3000);
+        return;
+      }
+      
+      // Format as mm:ss
+      const mins = Math.floor(actualRemainingSeconds / 60);
+      const secs = actualRemainingSeconds % 60;
+      countdownTimerElement.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+      countdownTimerElement.title = 'Click to cancel timer';
+      
+      // Keep black background always
+      countdownTimerElement.style.background = 'rgba(0, 0, 0, 0.9)';
+      
+      // Schedule next update in 1 second
+      setTimeout(updateTimer, 1000);
+    });
   }
   
-  document.body.appendChild(timerElement);
+  // Add to container (timer gets priority - first position)
+  const container = getTopRightContainer();
+  container.insertBefore(countdownTimerElement, container.firstChild);
+  updateContainerVisibility();
   updateTimer();
 }
 
 // Function to remove countdown timer element
 function removeCountdownTimerElement() {
-  const existingTimer = document.getElementById('unwavering-focus-timer');
-  if (existingTimer) {
-    existingTimer.remove();
+  if (countdownTimerElement) {
+    countdownTimerElement.remove();
+    countdownTimerElement = null;
+    updateContainerVisibility();
   }
 }
 
+// Function to check if a timer already exists
+async function hasExistingTimer(): Promise<boolean> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['countdownTimer'], (result) => {
+      if (result.countdownTimer) {
+        const { startTime, remainingSeconds } = result.countdownTimer;
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const actualRemainingSeconds = Math.max(0, remainingSeconds - elapsedSeconds);
+        resolve(actualRemainingSeconds > 0);
+      } else {
+        resolve(false);
+      }
+    });
+  });
+}
+
+// Function to check if a pinned task already exists
+async function hasExistingPinnedTask(): Promise<boolean> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['pinnedTask'], (result) => {
+      resolve(!!result.pinnedTask);
+    });
+  });
+}
 
 
 function showConfirmation(message: string) {
@@ -1004,27 +1162,26 @@ function createPinnedTaskElement(text: string) {
   // Remove existing pinned task
   if (pinnedTaskElement) {
     pinnedTaskElement.remove();
+    pinnedTaskElement = null;
   }
   
   // Create pinned task element
   pinnedTaskElement = document.createElement('div');
   pinnedTaskElement.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    max-width: 300px;
+    max-width: 212px;
     background: ${UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY};
     border: 1px solid ${UI_CONSTANTS.COLORS.BORDER_PRIMARY};
-    border-radius: 12px;
-    padding: 16px;
+    border-radius: 12px 0 0 12px;
+    padding: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
-    z-index: ${MODAL_CONSTANTS.Z_INDEX.PINNED_TASK};
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
     line-height: 1.4;
     word-wrap: break-word;
     white-space: pre-wrap;
+    pointer-events: auto;
+    position: relative;
   `;
   
   // Add close button
@@ -1049,6 +1206,7 @@ function createPinnedTaskElement(text: string) {
     pinnedTaskElement = null;
     // Remove from storage when closed
     chrome.storage.local.remove('pinnedTask');
+    updateContainerVisibility();
   });
   
   closeButton.addEventListener('mouseenter', () => {
@@ -1066,7 +1224,10 @@ function createPinnedTaskElement(text: string) {
   textContent.innerHTML = text;
   pinnedTaskElement.appendChild(textContent);
   
-  document.body.appendChild(pinnedTaskElement);
+  // Add to container (pinned task goes after timer)
+  const container = getTopRightContainer();
+  container.appendChild(pinnedTaskElement);
+  updateContainerVisibility();
 }
 
 // Function to remove pinned task element
@@ -1092,7 +1253,7 @@ chrome.storage.local.get(['countdownTimer'], (result) => {
     const actualRemainingSeconds = Math.max(0, remainingSeconds - elapsedSeconds);
     
     if (actualRemainingSeconds > 0) {
-      createCountdownTimerElement(actualRemainingSeconds);
+      createCountdownTimerElement();
     } else {
       chrome.storage.local.remove('countdownTimer');
     }
@@ -1123,7 +1284,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
         const actualRemainingSeconds = Math.max(0, remainingSeconds - elapsedSeconds);
         
         if (actualRemainingSeconds > 0) {
-          createCountdownTimerElement(actualRemainingSeconds);
+          createCountdownTimerElement();
         } else {
           chrome.storage.local.remove('countdownTimer');
         }
@@ -1167,7 +1328,6 @@ chrome.runtime.sendMessage({
 // Initialize YouTube distraction blocking if on YouTube
 let youtubeBlocker: YouTubeDistractionBlocker | null = null;
 if (isYouTubePage()) {
-  console.log('YouTube page detected, initializing distraction blocker');
   // Get configuration from storage
   chrome.runtime.sendMessage({ type: 'GET_STORAGE_DATA' }).then(data => {
     if (data && data.config && data.config.youtubeDistraction) {
@@ -1186,7 +1346,6 @@ if (isYouTubePage()) {
 // Initialize video focus manager if supported
 let videoFocusManager: VideoFocusManager | null = null;
 if (supportsVideoFocus()) {
-  console.log('Video platform detected, initializing video focus manager');
   chrome.runtime.sendMessage({ type: 'GET_STORAGE_DATA' }).then(data => {
     if (data && data.config && data.config.videoFocus) {
       videoFocusManager = new VideoFocusManager(data.config.videoFocus);
@@ -1289,13 +1448,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'UPDATE_YOUTUBE_DISTRACTION_CONFIG') {
-    console.log('Content script: Received UPDATE_YOUTUBE_DISTRACTION_CONFIG message:', message);
     if (youtubeBlocker && isYouTubePage()) {
-      console.log('Content script: Updating YouTube blocker config');
       youtubeBlocker.updateConfig(message.config);
       sendResponse({ success: true });
     } else {
-      console.log('Content script: YouTube blocker not available or not on YouTube');
       sendResponse({ error: 'YouTube blocker not available or not on YouTube' });
     }
     return true;
@@ -1494,4 +1650,55 @@ function showVisualNotification() {
     notification.remove();
     style.remove();
   }, 2000);
+}
+
+// Create or get the top-right container for stacking pinned tasks and timers
+function getTopRightContainer(): HTMLElement {
+  if (!topRightContainer) {
+    topRightContainer = document.createElement('div');
+    topRightContainer.id = 'unwavering-focus-top-right-container';
+    topRightContainer.style.cssText = `
+      position: fixed;
+      top: 72px;
+      right: 0;
+      z-index: ${MODAL_CONSTANTS.Z_INDEX.COUNTDOWN_TIMER};
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    `;
+    document.body.appendChild(topRightContainer);
+    
+    // Add scroll listener for transparency effect
+    let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+    let isScrolling = false;
+    
+    window.addEventListener('scroll', () => {
+      if (!isScrolling) {
+        isScrolling = true;
+        topRightContainer!.style.opacity = '0.3'; // More transparent when scrolling
+      }
+      
+      // Clear existing timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      
+      // Reset opacity after scrolling stops
+      scrollTimeout = setTimeout(() => {
+        isScrolling = false;
+        topRightContainer!.style.opacity = '1'; // Full opacity when not scrolling
+      }, 150); // 150ms delay after scroll stops
+    });
+  }
+  return topRightContainer;
+}
+
+// Function to update container visibility
+function updateContainerVisibility() {
+  if (topRightContainer) {
+    const hasChildren = topRightContainer.children.length > 0;
+    topRightContainer.style.display = hasChildren ? 'flex' : 'none';
+  }
 }
