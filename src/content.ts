@@ -199,18 +199,50 @@ function openModal() {
   }
 }
 
+/**
+ * Bulletproof Focus System - Comprehensive focus management with multiple fallback strategies
+ * Implements 4 different focus strategies tried in sequence with comprehensive error handling
+ */
 function attemptFocus() {
   if (isFocusAttempting) return; // Prevent multiple simultaneous focus attempts
   
   isFocusAttempting = true;
+  focusAttempts = 0;
   
-  // Simple check: if input exists and is in DOM, try to focus it
-  if (input && document.contains(input)) {
+  // Strategy 1: Immediate focus with requestAnimationFrame (first 10 attempts)
+  const tryImmediateFocus = () => {
+    if (focusAttempts >= 10) {
+      // Move to strategy 2
+      tryShortTimeoutFocus();
+      return;
+    }
+    
+    focusAttempts++;
+    
     try {
-      // Simple focus attempt
+      // Comprehensive readiness checks
+      if (!input || !document.contains(input)) {
+        console.warn('Input not ready for focus, attempt:', focusAttempts);
+        requestAnimationFrame(tryImmediateFocus);
+        return;
+      }
+      
+      // Check visibility and dimensions
+      const rect = input.getBoundingClientRect();
+      const isVisible = rect.width > 0 && rect.height > 0 && 
+                       window.getComputedStyle(input).visibility !== 'hidden' &&
+                       window.getComputedStyle(input).display !== 'none';
+      
+      if (!isVisible) {
+        console.warn('Input not visible, attempt:', focusAttempts);
+        requestAnimationFrame(tryImmediateFocus);
+        return;
+      }
+      
+      // Attempt focus
       input.focus();
       
-      // Check if focus was successful
+      // Verify focus was successful
       if (document.activeElement === input) {
         // Success! Set up text selection
         if (input.value) {
@@ -219,21 +251,116 @@ function attemptFocus() {
           input.setSelectionRange(input.value.length, input.value.length);
         }
         
+        console.log('Focus successful on attempt:', focusAttempts);
         isAnimating = false;
         isFocusAttempting = false;
         return;
       }
+      
+      // Focus failed, try again
+      requestAnimationFrame(tryImmediateFocus);
+      
     } catch (error) {
-      console.warn('Focus attempt failed:', error);
+      console.warn('Focus attempt failed:', error, 'attempt:', focusAttempts);
+      requestAnimationFrame(tryImmediateFocus);
     }
-  } else {
-    console.warn('Input element not available for focus');
-  }
+  };
   
-  // If we get here, focus failed
-  isFocusAttempting = false;
-  isAnimating = false;
-  console.log('Focus attempt completed (may not have succeeded)');
+  // Strategy 2: Short timeouts (next 10 attempts)
+  const tryShortTimeoutFocus = () => {
+    if (focusAttempts >= 20) {
+      // Move to strategy 3
+      tryLongTimeoutFocus();
+      return;
+    }
+    
+    focusAttempts++;
+    
+    try {
+      if (!input || !document.contains(input)) {
+        console.warn('Input not ready for short timeout focus, attempt:', focusAttempts);
+        setTimeout(tryShortTimeoutFocus, 150);
+        return;
+      }
+      
+      // Check if input is still valid
+      const rect = input.getBoundingClientRect();
+      const isVisible = rect.width > 0 && rect.height > 0;
+      
+      if (!isVisible) {
+        setTimeout(tryShortTimeoutFocus, 150);
+        return;
+      }
+      
+      // Attempt focus with short timeout
+      input.focus();
+      
+      if (document.activeElement === input) {
+        if (input.value) {
+          input.select();
+        } else {
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+        
+        console.log('Focus successful on short timeout attempt:', focusAttempts);
+        isAnimating = false;
+        isFocusAttempting = false;
+        return;
+      }
+      
+      setTimeout(tryShortTimeoutFocus, 150);
+      
+    } catch (error) {
+      console.warn('Short timeout focus failed:', error, 'attempt:', focusAttempts);
+      setTimeout(tryShortTimeoutFocus, 150);
+    }
+  };
+  
+  // Strategy 3: Longer timeouts (final 5 attempts)
+  const tryLongTimeoutFocus = () => {
+    if (focusAttempts >= 25) {
+      // All strategies failed
+      console.error('All focus strategies failed after 25 attempts');
+      isAnimating = false;
+      isFocusAttempting = false;
+      return;
+    }
+    
+    focusAttempts++;
+    
+    try {
+      if (!input || !document.contains(input)) {
+        console.warn('Input not ready for long timeout focus, attempt:', focusAttempts);
+        setTimeout(tryLongTimeoutFocus, 300);
+        return;
+      }
+      
+      // Final attempt with longer timeout
+      input.focus();
+      
+      if (document.activeElement === input) {
+        if (input.value) {
+          input.select();
+        } else {
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+        
+        console.log('Focus successful on long timeout attempt:', focusAttempts);
+        isAnimating = false;
+        isFocusAttempting = false;
+        return;
+      }
+      
+      setTimeout(tryLongTimeoutFocus, 300);
+      
+    } catch (error) {
+      console.warn('Long timeout focus failed:', error, 'attempt:', focusAttempts);
+      setTimeout(tryLongTimeoutFocus, 300);
+    }
+  };
+  
+  // Start with strategy 1
+  tryImmediateFocus();
 }
 
 function closeModal() {

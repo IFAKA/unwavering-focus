@@ -205,6 +205,10 @@
     @apply border-b border-bg-tertiary;
   }
   
+  .ds-border-left {
+    @apply border-l border-bg-tertiary;
+  }
+  
   /* Animation Classes - Minimal */
   .ds-animate-fade-in {
     @apply animate-fadeIn;
