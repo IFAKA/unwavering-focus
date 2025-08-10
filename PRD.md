@@ -2,7 +2,7 @@
 
 **Project Title:** Unwavering Focus Chrome Extension
 
-**Version:** 2.0
+**Version:** 3.0
 
 ---
 
@@ -26,6 +26,7 @@ This document outlines the features, user experience, and technical specificatio
 * To implement Apple Watch design principles across all UI components for optimal glanceability and minimal interaction.
 * To provide immediate feedback for all user actions to reinforce the "Later" concept.
 * To implement great animations following Emil Kowalski's principles for natural, fast, and accessible motion.
+* To provide a bulletproof focus system that eliminates all edge cases and ensures reliable user interaction.
 
 ### 3. Key Features & User Experience (UX)
 
@@ -35,12 +36,13 @@ This document outlines the features, user experience, and technical specificatio
 
 * **Trigger:** User presses the keyboard shortcut `Option+Shift+S`.
 * **Action:**
-    1.  A small, non-intrusive, floating input modal appears centrally on the current active tab/window.
+    1.  A small, non-intrusive, floating input modal appears centrally on the current active tab/window with natural spring-like animation.
     2.  If text is selected on the page, this text should pre-populate the input field. The user can edit or type new text.
-    3.  Upon pressing `Enter` in the input field:
+    3.  **Bulletproof Focus System:** The input field automatically focuses with comprehensive error handling and multiple fallback strategies.
+    4.  Upon pressing `Enter` in the input field:
         * The thought/idea is saved to a persistent list (within Chrome's `chrome.storage.local`).
         * A confirmation notification appears: "Saved for later" with the captured text.
-        * The input modal immediately disappears.
+        * The input modal immediately disappears with natural exit animation.
         * **Crucially, no new tab is opened, and no search is performed at this moment.**
 * **Accessing Saved Items:**
     1.  User clicks the extension icon in the Chrome toolbar. This opens the extension's pop-up UI.
@@ -48,7 +50,7 @@ This document outlines the features, user experience, and technical specificatio
     3.  Each listed item should have:
         * The item text itself (truncated if too long).
         * Action buttons that appear on hover: Search (🔍), Copy (📋), Delete (✕).
-        * Hover-activated buttons for clean interface.
+        * Hover-activated buttons for clean interface with smooth transitions.
     4.  An optional "Search All" button that opens all current items as searches in separate new tabs.
     5. **Auto-remove behavior:** After performing a search (individual or bulk), the item(s) are automatically removed from the list.
     6. **Configurable Search All:** Users can enable/disable the "Search All" feature from settings.
@@ -239,14 +241,96 @@ This document outlines the features, user experience, and technical specificatio
 * Loading states for async operations.
 * Status indicators for feature states.
 
-### 5. Technical Specifications & Best Practices
+### 5. Animation System & Emil Kowalski's Principles
+
+**Core Requirement:** All animations must follow Emil Kowalski's principles for great animations, ensuring natural, fast, and accessible motion.
+
+#### 5.1. Animation Principles
+
+**Fast Animations:**
+* All animations under 300ms for snappy, responsive feel.
+* Quick open: 180ms for immediate response.
+* Quick close: 200ms for natural exit.
+* Confirmation animations: 100-150ms for fast feedback.
+
+**Natural Motion:**
+* Use spring-like easing curves for organic, natural movement.
+* Primary easing: `cubic-bezier(0.25, 0.46, 0.45, 0.94)` for spring-like feel.
+* Secondary easing: `cubic-bezier(0.0, 0.0, 0.2, 1)` for ease-out interactions.
+* Custom easing curves for specific interactions.
+
+**Purposeful Animations:**
+* Only animate state changes and transitions that enhance user understanding.
+* Focus on meaningful interactions rather than decorative motion.
+* Use animations to guide user attention and provide feedback.
+
+**Accessibility:**
+* Respect `prefers-reduced-motion` media query for users who prefer minimal animations.
+* Provide instant alternatives for users with motion sensitivity.
+* Ensure animations don't interfere with screen readers or assistive technologies.
+
+**Interruptible:**
+* Animations can be interrupted and smoothly transition to new states.
+* Use CSS transitions for interruptible animations.
+* Implement proper cleanup for interrupted animations.
+
+**Hardware Accelerated:**
+* Use only `transform` and `opacity` properties for optimal performance.
+* Avoid animating layout properties (width, height, padding, margin).
+* Leverage GPU acceleration for smooth 60fps animations.
+
+#### 5.2. Bulletproof Focus System
+
+**Core Requirement:** Implement a comprehensive focus system that eliminates all edge cases and ensures reliable user interaction.
+
+**Focus Management:**
+* **Multiple Focus Strategies:** Implement 4 different focus strategies that are tried in sequence.
+* **Comprehensive Readiness Checks:** DOM containment, visibility, dimensions, CSS visibility.
+* **Race Condition Prevention:** Prevent multiple simultaneous focus attempts.
+* **Input Recreation:** Automatically recreate input elements if missing.
+* **Focus Verification:** Verify that focus was actually successful before proceeding.
+
+**Timing Strategies:**
+* **First 10 attempts:** `requestAnimationFrame` for immediate response.
+* **Next 10 attempts:** Short timeouts (150ms) for persistence.
+* **Final 5 attempts:** Longer timeouts (300ms) for edge cases.
+* **Maximum attempts:** 25 attempts for maximum reliability.
+
+**Error Handling:**
+* **Comprehensive try-catch blocks** around all focus operations.
+* **Multiple fallback methods** for different scenarios.
+* **Graceful degradation** when focus fails.
+* **User feedback** for focus failures.
+
+#### 5.3. Animation Implementation Details
+
+**Modal Animations:**
+* **Entrance:** Spring-like scale and translate with natural motion.
+* **Exit:** Smooth fade with ease-in timing.
+* **Focus:** Immediate focus with multiple fallback strategies.
+
+**Interactive Elements:**
+* **Hover effects:** Subtle scale and translate transforms.
+* **Selection feedback:** Smooth transitions with spring-like easing.
+* **Button interactions:** Quick, responsive feedback.
+
+**State Transitions:**
+* **Loading states:** Smooth opacity transitions.
+* **Error states:** Immediate feedback with clear messaging.
+* **Success states:** Quick confirmation with natural motion.
+
+**Performance Optimization:**
+* **Hardware acceleration:** Use `transform3d` for GPU acceleration.
+* **Debouncing:** Prevent animation conflicts and performance issues.
+* **Cleanup:** Proper cleanup of animation frames and timeouts.
+
+### 6. Technical Specifications & Best Practices
 
 * **Technology Stack:**
     * **Manifest V3:** The extension *must* be built using Chrome Extension Manifest V3 for security and future compatibility.
     * **Frontend:** React (preferred for components, state management, and reusability) or Vue.js for the pop-up, options page, and Focus Page.
     * **State Management:** Minimal, context-based state management for React/Vue, or simple `chrome.storage.local` directly for persistent data. Avoid heavy libraries like Redux unless truly necessary for complexity.
     * **Styling:** SCSS/CSS Modules for scoped and maintainable styles. Prioritize clean, minimalistic UI following Apple Watch design principles.
-* **Animations:** Implement great animations following Emil Kowalski's principles for natural, fast, and accessible motion.
     * **Bundler:** Webpack or Vite for efficient bundling and development workflow.
 * **Architecture:**
     * **Clean Architecture / Layered Design:**
@@ -269,13 +353,6 @@ This document outlines the features, user experience, and technical specificatio
     * **Efficient Storage:** Use `chrome.storage.local` for persistent data. Avoid `chrome.storage.sync` for large data sets.
     * **Debouncing/Throttling:** For events that fire frequently (e.g., tab updates, resizing).
     * **Hardware Acceleration:** Use `transform` and `opacity` for animations to leverage GPU acceleration.
-* **Animation Principles (Emil Kowalski's Guidelines):**
-    * **Fast Animations:** All animations under 300ms for snappy, responsive feel.
-    * **Natural Motion:** Use spring-like easing curves for organic, natural movement.
-    * **Purposeful Animations:** Only animate state changes and transitions that enhance user understanding.
-    * **Accessibility:** Respect `prefers-reduced-motion` media query for users who prefer minimal animations.
-    * **Interruptible:** Animations can be interrupted and smoothly transition to new states.
-    * **Hardware Accelerated:** Use only `transform` and `opacity` properties for optimal performance.
 * **Security:**
     * **CSP (Content Security Policy):** Strict CSP defined in `manifest.json`.
     * **Sanitize User Input:** If any user-generated content is displayed, ensure it's properly sanitized.
@@ -284,7 +361,7 @@ This document outlines the features, user experience, and technical specificatio
     * Emphasize writing unit tests for core logic (e.g., URL matching, habit tracking logic).
     * Consider basic integration tests for interactions between components and Chrome APIs.
 
-### 6. Development Workflow (Implied for AI)
+### 7. Development Workflow (Implied for AI)
 
 * Modular development, focusing on one feature at a time.
 * Clear separation of concerns for easy debugging and future enhancements.
@@ -292,8 +369,9 @@ This document outlines the features, user experience, and technical specificatio
 * All UI components must adhere to the Apple Watch design system from initial development.
 * Implement feedback systems early to reinforce user trust in the "Later" concept.
 * All animations must follow Emil Kowalski's principles for great animations.
+* Implement the bulletproof focus system early to ensure reliable user interaction.
 
-### 7. Deliverables
+### 8. Deliverables
 
 * Complete Chrome Extension source code, ready for packaging.
 * `manifest.json` configured for Manifest V3.
@@ -301,4 +379,5 @@ This document outlines the features, user experience, and technical specificatio
 * All UI components following Apple Watch design principles for optimal glanceability.
 * Comprehensive feedback systems for user actions.
 * **Animation System:** Fast, natural, and accessible animations following Emil Kowalski's principles.
+* **Bulletproof Focus System:** Comprehensive focus management with multiple fallback strategies.
 * (Optional, but good to think about) Basic test suite.

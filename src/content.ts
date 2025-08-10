@@ -7,12 +7,21 @@ import {
 import { YouTubeDistractionBlocker, isYouTubePage } from './utils/youtubeUtils';
 import { VideoFocusManager, supportsVideoFocus } from './utils/videoFocusUtils';
 
-// Smart Search Modal - Simple Implementation
+// Smart Search Modal - Command Palette Implementation
 let modal: HTMLElement | null = null;
-let input: HTMLInputElement | null = null;
+let input: HTMLTextAreaElement | null = null;
+let actionsList: HTMLElement | null = null;
 let isAnimating = false;
 let focusAttempts = 0;
-const MAX_FOCUS_ATTEMPTS = 10;
+const MAX_FOCUS_ATTEMPTS = 25; // Very high number for maximum reliability
+
+// Command palette state
+let selectedActionIndex = 0;
+let pinnedTaskElement: HTMLElement | null = null;
+
+// Focus management state
+let focusTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let isFocusAttempting = false;
 
 // Clean up any existing overlays on page load/refresh
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   existingOverlays.forEach(overlay => overlay.remove());
 });
 
-// Listen for keyboard shortcut
+// Keyboard shortcut listener
 document.addEventListener('keydown', (e) => {
   if (e.altKey && e.shiftKey && e.key === 'S') {
     e.preventDefault();
@@ -29,7 +38,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 function toggleModal() {
-  if (modal && modal.style.display === 'flex') {
+  if (modal && modal.style.display === 'block') {
     closeModal();
   } else {
     openModal();
@@ -40,6 +49,13 @@ function openModal() {
   if (isAnimating) return;
   isAnimating = true;
   focusAttempts = 0;
+  isFocusAttempting = false;
+  
+  // Clear any existing focus attempts
+  if (focusTimeoutId) {
+    clearTimeout(focusTimeoutId);
+    focusTimeoutId = null;
+  }
   
   // Ensure we're not in a restricted page context
   if (window.location.protocol === 'chrome:' || window.location.protocol === 'chrome-extension:') {
@@ -48,88 +64,205 @@ function openModal() {
     return;
   }
   
-  // Create modal if it doesn't exist
+  // Remove any existing modals to prevent conflicts
+  const existingModals = document.querySelectorAll('[data-extension="unwavering-focus"]');
+  existingModals.forEach(existingModal => existingModal.remove());
+  
+  // Reset global state
+  modal = null;
+  input = null;
+  actionsList = null;
+  
+  // Create modal
+  createModal();
+  
+  // Ensure modal was created successfully
   if (!modal) {
-    createModal();
-  } else {
-    // Reset content to ensure we have a fresh input
-    resetModalContent();
+    console.error('Failed to create modal');
+    isAnimating = false;
+    return;
   }
   
-  // Check for reduced motion preference
+  // Check for reduced motion preference - Accessibility first
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   
   // Set animation based on user preference
   if (prefersReducedMotion) {
     // Instant animation for users who prefer reduced motion
-    modal!.style.transition = 'none';
-    const content = modal!.querySelector('#modal-content') as HTMLElement;
-    content.style.transition = 'none';
-    
-    // Show modal instantly
-    modal!.style.display = 'block';
-    modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
-    content.style.transform = MODAL_CONSTANTS.TRANSFORM.FINAL;
-    
-    // Focus immediately
-    attemptFocus();
-  } else {
-    // Smooth animation with spring-like easing for natural motion
-    modal!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
-    const content = modal!.querySelector('#modal-content') as HTMLElement;
-    content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
-    
-    // Show modal
-    modal!.style.display = 'block';
-    modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
-    
-    // Animate in with spring-like motion
-    requestAnimationFrame(() => {
-      modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
-      content.style.transform = MODAL_CONSTANTS.TRANSFORM.FINAL;
+    if (modal) {
+      modal.style.transition = 'none';
+      const content = modal.querySelector('#modal-content') as HTMLElement;
+      if (content) {
+        content.style.transition = 'none';
+      }
       
-      // Start focus attempts immediately after animation starts
-      attemptFocus();
-    });
+      // Show modal instantly
+      modal.style.display = 'block';
+      modal.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
+      if (content) {
+        content.style.transform = MODAL_CONSTANTS.TRANSFORM.FINAL;
+      }
+      
+      // Focus after ensuring DOM is fully ready
+      focusTimeoutId = setTimeout(() => {
+        attemptFocus();
+      }, 50);
+    }
+  } else {
+    // Natural animation with spring-like easing for delightful motion
+    if (modal) {
+      modal.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
+      const content = modal.querySelector('#modal-content') as HTMLElement;
+      if (content) {
+        content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
+      }
+      
+      // Show modal
+      modal.style.display = 'block';
+      modal.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
+      
+      // Animate in with natural spring-like motion
+      requestAnimationFrame(() => {
+        if (modal) {
+          modal.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
+          if (content) {
+            content.style.transform = MODAL_CONSTANTS.TRANSFORM.FINAL;
+          }
+          
+          // Start focus attempts after animation starts
+          focusTimeoutId = setTimeout(() => {
+            attemptFocus();
+          }, 150);
+        }
+      });
+    }
   }
 }
 
 function attemptFocus() {
+  if (isFocusAttempting) return; // Prevent multiple simultaneous focus attempts
   if (focusAttempts >= MAX_FOCUS_ATTEMPTS) {
     console.warn('Failed to focus input after maximum attempts');
     isAnimating = false;
+    isFocusAttempting = false;
     return;
   }
   
+  isFocusAttempting = true;
   focusAttempts++;
   
-  // Try to focus the input
-  if (input && input.offsetParent !== null) { // Check if input is visible
+  // Ensure we have a valid input element
+  if (!input) {
+    console.warn('Input element not found, attempting to recreate');
+    resetModalContent();
+    
+    // Try again after a short delay
+    focusTimeoutId = setTimeout(() => {
+      isFocusAttempting = false;
+      attemptFocus();
+    }, 150);
+    return;
+  }
+  
+  // Comprehensive visibility and readiness checks
+  const isInputReady = () => {
     try {
-      input.focus();
-      
-      // If there's text, select all of it for easy replacement
-      if (input.value) {
-        input.select();
-      } else {
-        // If no text, just place cursor at the end
-        input.setSelectionRange(input.value.length, input.value.length);
+      // Check if input exists and is in DOM
+      if (!input || !document.contains(input)) {
+        return false;
       }
       
-      isAnimating = false;
-      return;
+      // Check if input is visible
+      if (input.style.display === 'none' || input.style.visibility === 'hidden') {
+        return false;
+      }
+      
+      // Check if input has dimensions
+      if (input.offsetWidth <= 0 || input.offsetHeight <= 0) {
+        return false;
+      }
+      
+      // Check if input is not hidden by CSS
+      if (input.offsetParent === null) {
+        return false;
+      }
+      
+      // Force a reflow to ensure the input is properly rendered
+      input.offsetHeight;
+      
+      return true;
+    } catch (error) {
+      console.warn('Input readiness check failed:', error);
+      return false;
+    }
+  };
+  
+  if (isInputReady()) {
+    try {
+      // Multiple focus strategies
+      const focusStrategies = [
+        () => input!.focus(),
+        () => input!.click(),
+        () => {
+          input!.focus();
+          input!.click();
+        },
+        () => {
+          input!.focus();
+          // Force selection
+          if (input!.value) {
+            input!.select();
+          } else {
+            input!.setSelectionRange(input!.value.length, input!.value.length);
+          }
+        }
+      ];
+      
+      // Try each strategy
+      for (const strategy of focusStrategies) {
+        try {
+          strategy();
+          
+          // Verify focus was successful
+          if (document.activeElement === input) {
+            // Success! Set up text selection
+            if (input.value) {
+              input.select();
+            } else {
+              input.setSelectionRange(input.value.length, input.value.length);
+            }
+            
+            isAnimating = false;
+            isFocusAttempting = false;
+            return;
+          }
+        } catch (strategyError) {
+          console.warn('Focus strategy failed:', strategyError);
+        }
+      }
     } catch (error) {
       console.warn('Focus attempt failed:', error);
     }
   }
   
-  // If focus failed, try again using requestAnimationFrame for better timing
-  if (focusAttempts <= 3) {
-    // First few attempts use requestAnimationFrame for immediate response
-    requestAnimationFrame(attemptFocus);
+  // If focus failed, try again with different timing strategies
+  isFocusAttempting = false;
+  
+  if (focusAttempts <= 10) {
+    // First attempts use requestAnimationFrame for immediate response
+    requestAnimationFrame(() => {
+      attemptFocus();
+    });
+  } else if (focusAttempts <= 20) {
+    // Middle attempts use short timeouts
+    focusTimeoutId = setTimeout(() => {
+      attemptFocus();
+    }, 150);
   } else {
-    // Later attempts use setTimeout with increasing delays
-    setTimeout(attemptFocus, Math.min(50 * focusAttempts, 200));
+    // Later attempts use longer timeouts
+    focusTimeoutId = setTimeout(() => {
+      attemptFocus();
+    }, 300);
   }
 }
 
@@ -137,30 +270,40 @@ function closeModal() {
   if (isAnimating) return;
   isAnimating = true;
   
-  // Check for reduced motion preference
+  // Check for reduced motion preference - Accessibility first
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   
   if (prefersReducedMotion) {
     // Instant close for users who prefer reduced motion
-    modal!.style.display = 'none';
+    if (modal) {
+      modal.style.display = 'none';
+    }
     resetModalContent();
     isAnimating = false;
   } else {
-    // Smooth animation with spring-like easing for natural motion
-    modal!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_IN}`;
-    const content = modal!.querySelector('#modal-content') as HTMLElement;
-    content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_IN}`;
-    
-    // Animate out
-    modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
-    content.style.transform = MODAL_CONSTANTS.TRANSFORM.INITIAL;
-    
-    // Hide after animation and reset content
-    setTimeout(() => {
-      modal!.style.display = 'none';
-      resetModalContent();
-      isAnimating = false;
-    }, ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE_DELAY);
+    // Natural animation with spring-like easing for delightful motion
+    if (modal) {
+      modal.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_IN}`;
+      const content = modal.querySelector('#modal-content') as HTMLElement;
+      if (content) {
+        content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_IN}`;
+      }
+      
+      // Animate out with natural motion
+      modal.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
+      if (content) {
+        content.style.transform = MODAL_CONSTANTS.TRANSFORM.INITIAL;
+      }
+      
+      // Hide after animation and reset content
+      setTimeout(() => {
+        if (modal) {
+          modal.style.display = 'none';
+        }
+        resetModalContent();
+        isAnimating = false;
+      }, ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE_DELAY);
+    }
   }
 }
 
@@ -170,16 +313,16 @@ function resetModalContent() {
   const content = modal.querySelector('#modal-content') as HTMLElement;
   if (!content) return;
   
-  // Clear content and recreate input
+  // Clear content and recreate command palette
   content.innerHTML = '';
+  selectedActionIndex = 0;
   
   // Get selected text if any
   const selectedText = window.getSelection()?.toString().trim() || '';
   
-  // Recreate input
-  input = document.createElement('input');
-  input.type = 'text';
-  input.placeholder = 'Enter your thought...';
+  // Create input (now a textarea for formatted text support)
+  input = document.createElement('textarea');
+  input.placeholder = 'Type your command or thought...';
   input.autocomplete = 'off'; // Prevent browser autocomplete interference
   input.value = selectedText; // Pre-populate with selected text
   input.style.cssText = `
@@ -192,22 +335,94 @@ function resetModalContent() {
     background: ${UI_CONSTANTS.COLORS.BACKGROUND_PRIMARY};
     color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
     box-sizing: border-box;
-    transition: border-color 0.2s;
+    transition: ${UI_CONSTANTS.TRANSITIONS.NORMAL};
+    margin-bottom: ${UI_CONSTANTS.SPACING.MD};
+    min-height: ${MODAL_CONSTANTS.INPUT.MIN_HEIGHT};
+    max-height: ${MODAL_CONSTANTS.INPUT.MAX_HEIGHT};
+    resize: vertical;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.4;
+    font-weight: ${UI_CONSTANTS.FONT_WEIGHT.NORMAL};
   `;
   
-  // Add event listeners
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      saveThought();
-    } else if (e.key === 'Escape') {
-      closeModal();
+  // Add focus styles for better interaction feedback
+  input.addEventListener('focus', () => {
+    input!.style.borderColor = MODAL_CONSTANTS.CONTENT.FOCUS_BORDER_COLOR;
+    input!.style.boxShadow = MODAL_CONSTANTS.CONTENT.FOCUS_BOX_SHADOW;
+  });
+  
+  input.addEventListener('blur', () => {
+    input!.style.borderColor = MODAL_CONSTANTS.CONTENT.BORDER_COLOR;
+    input!.style.boxShadow = 'none';
+  });
+  
+  // Create actions list
+  actionsList = document.createElement('div');
+  actionsList.style.cssText = `
+    max-height: ${MODAL_CONSTANTS.COMMAND_PALETTE.MAX_HEIGHT};
+    overflow-y: auto;
+    padding: ${MODAL_CONSTANTS.COMMAND_PALETTE.SCROLL_PADDING};
+  `;
+  
+  // Create action items with Apple Watch-style design
+  MODAL_CONSTANTS.ACTIONS.forEach((action, index) => {
+    const actionItem = document.createElement('div');
+    actionItem.className = 'action-item';
+    actionItem.dataset.actionId = action.id;
+    actionItem.style.cssText = `
+      display: flex;
+      align-items: center;
+      padding: ${MODAL_CONSTANTS.COMMAND_PALETTE.ITEM_PADDING};
+      margin: ${MODAL_CONSTANTS.COMMAND_PALETTE.ITEM_MARGIN};
+      border-radius: ${MODAL_CONSTANTS.COMMAND_PALETTE.ITEM_BORDER_RADIUS};
+      cursor: pointer;
+      transition: ${UI_CONSTANTS.TRANSITIONS.FAST};
+      background: ${index === 0 ? 'rgba(0, 122, 255, 0.1)' : 'transparent'};
+      border: 1px solid ${index === 0 ? 'rgba(0, 122, 255, 0.3)' : 'transparent'};
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+      min-height: ${UI_CONSTANTS.LAYOUT.TOUCH_TARGET_MIN};
+    `;
+    
+    actionItem.innerHTML = `
+      <span style="font-size: 20px; margin-right: ${UI_CONSTANTS.SPACING.MD}; opacity: 0.9;">${action.icon}</span>
+      <div style="flex: 1;">
+        <div style="font-weight: ${UI_CONSTANTS.FONT_WEIGHT.SEMIBOLD}; color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY}; margin-bottom: 2px; font-size: ${UI_CONSTANTS.FONT_SIZE.MD};">${action.title}</div>
+        <div style="font-size: ${UI_CONSTANTS.FONT_SIZE.SM}; color: ${UI_CONSTANTS.COLORS.TEXT_SECONDARY}; opacity: 0.8; line-height: 1.3;">${action.description}</div>
+      </div>
+    `;
+    
+    // Add hover effects for better interactivity
+    actionItem.addEventListener('mouseenter', () => {
+      if (index !== selectedActionIndex) {
+        actionItem.style.background = 'rgba(255, 255, 255, 0.05)';
+        actionItem.style.transform = 'translateY(-1px)';
+      }
+    });
+    
+    actionItem.addEventListener('mouseleave', () => {
+      if (index !== selectedActionIndex) {
+        actionItem.style.background = 'transparent';
+        actionItem.style.transform = 'translateY(0)';
+      }
+    });
+    
+    actionItem.addEventListener('click', () => {
+      executeAction(action.id, input!.value);
+    });
+    
+    if (actionsList) {
+      actionsList.appendChild(actionItem);
     }
   });
   
-  // Add to content
-  content.appendChild(input);
+  // Add keyboard event listener for command palette navigation
+  input.addEventListener('keydown', handleCommandPaletteKeydown);
   
-  // Force a reflow to ensure the input is properly rendered
+  // Append elements to content
+  content.appendChild(input);
+  content.appendChild(actionsList);
+  
+  // Force a reflow to ensure proper rendering
   input.offsetHeight;
 }
 
@@ -227,6 +442,7 @@ function createModal() {
     z-index: ${MODAL_CONSTANTS.Z_INDEX.MODAL};
     opacity: ${ANIMATION_CONSTANTS.OPACITY.HIDDEN};
     transition: opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT};
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
   `;
   
   // Create content
@@ -244,38 +460,9 @@ function createModal() {
     max-width: ${MODAL_CONSTANTS.STYLING.MAX_WIDTH};
     transition: transform ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT};
     box-shadow: ${MODAL_CONSTANTS.CONTENT.BOX_SHADOW};
+    border: 1px solid ${MODAL_CONSTANTS.CONTENT.BORDER_COLOR};
+    backdrop-filter: blur(20px);
   `;
-  
-  // Get selected text if any
-  const selectedText = window.getSelection()?.toString().trim() || '';
-  
-  // Create input
-  input = document.createElement('input');
-  input.type = 'text';
-  input.placeholder = 'Enter your thought...';
-  input.autocomplete = 'off'; // Prevent browser autocomplete interference
-  input.value = selectedText; // Pre-populate with selected text
-  input.style.cssText = `
-    width: 100%;
-    padding: ${MODAL_CONSTANTS.INPUT.PADDING};
-    border: ${MODAL_CONSTANTS.INPUT.BORDER_WIDTH} solid ${MODAL_CONSTANTS.CONTENT.BORDER_COLOR};
-    border-radius: ${MODAL_CONSTANTS.INPUT.BORDER_RADIUS};
-    font-size: ${MODAL_CONSTANTS.INPUT.FONT_SIZE};
-    outline: none;
-    background: ${UI_CONSTANTS.COLORS.BACKGROUND_PRIMARY};
-    color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
-    box-sizing: border-box;
-    transition: border-color 0.2s;
-  `;
-  
-  // Add event listeners
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      saveThought();
-    } else if (e.key === 'Escape') {
-      closeModal();
-    }
-  });
   
   // Click outside to close
   modal.addEventListener('click', (e) => {
@@ -285,66 +472,374 @@ function createModal() {
   });
   
   // Assemble
-  content.appendChild(input);
   modal.appendChild(content);
   document.body.appendChild(modal);
 }
 
-function saveThought() {
-  const text = input!.value.trim();
-  if (!text) return;
+// Handle command palette keyboard navigation
+function handleCommandPaletteKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    const selectedAction = MODAL_CONSTANTS.ACTIONS[selectedActionIndex];
+    if (selectedAction) {
+      executeAction(selectedAction.id, input!.value);
+    }
+  } else if (e.key === 'Escape') {
+    closeModal();
+  } else if (e.key === 'ArrowDown' || (e.shiftKey && e.key === 'J')) {
+    e.preventDefault();
+    selectNextAction();
+  } else if (e.key === 'ArrowUp' || (e.shiftKey && e.key === 'K')) {
+    e.preventDefault();
+    selectPreviousAction();
+  }
+}
+
+function selectNextAction() {
+  selectedActionIndex = (selectedActionIndex + 1) % MODAL_CONSTANTS.ACTIONS.length;
+  updateActionSelection();
+}
+
+function selectPreviousAction() {
+  selectedActionIndex = selectedActionIndex === 0 
+    ? MODAL_CONSTANTS.ACTIONS.length - 1 
+    : selectedActionIndex - 1;
+  updateActionSelection();
+}
+
+function updateActionSelection() {
+  if (!actionsList) return;
+  const actionItems = actionsList.querySelectorAll('.action-item');
+  if (!actionItems) return;
+  
+  actionItems.forEach((item, index) => {
+    const element = item as HTMLElement;
+    if (index === selectedActionIndex) {
+      // Selected state with smooth transition
+      element.style.background = 'rgba(0, 122, 255, 0.15)';
+      element.style.border = '1px solid rgba(0, 122, 255, 0.4)';
+      element.style.transform = 'translateY(-2px) scale(1.02)';
+      element.style.boxShadow = UI_CONSTANTS.SHADOWS.SMALL;
+      element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    } else {
+      // Unselected state
+      element.style.background = 'transparent';
+      element.style.border = '1px solid transparent';
+      element.style.transform = 'translateY(0) scale(1)';
+      element.style.boxShadow = 'none';
+    }
+  });
+}
+
+// Execute selected action
+function executeAction(actionId: string, text: string) {
+  switch (actionId) {
+    case 'save-thought':
+      saveThought(text);
+      break;
+    case 'pin-task':
+      pinTask(text);
+      break;
+    case 'box-breathing':
+      startBoxBreathing(text);
+      break;
+    case 'timer':
+      startTimer(text);
+      break;
+    default:
+      console.warn('Unknown action:', actionId);
+  }
+}
+
+function saveThought(text: string) {
+  if (!text.trim()) return;
   
   // Save to storage
   chrome.runtime.sendMessage({
     type: FEATURE_CONSTANTS.MESSAGE_TYPES.SAVE_SEARCH,
     query: text
   }).then(() => {
-    showConfirmation();
+    showConfirmation('Thought saved for later');
   }).catch(console.error);
 }
 
-function showConfirmation() {
+function pinTask(text: string) {
+  if (!text.trim()) return;
+  
+  // Store pinned task in chrome.storage for cross-tab persistence
+  chrome.storage.local.set({ pinnedTask: text }, () => {
+    showConfirmation('Task pinned to top-right corner');
+  });
+}
+
+function startBoxBreathing(text: string) {
+  // Close the command palette first
+  closeModal();
+  
+  // Create box breathing visualizer
+  const breathingElement = document.createElement('div');
+  breathingElement.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: ${MODAL_CONSTANTS.Z_INDEX.MODAL};
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  `;
+  
+  // Create the breathing circle
+  const circle = document.createElement('div');
+  circle.style.cssText = `
+    width: 200px;
+    height: 200px;
+    border: 3px solid ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
+    font-size: 24px;
+    font-weight: 600;
+    transition: all 4s ease-in-out;
+    position: relative;
+  `;
+  
+  // Create instruction text
+  const instruction = document.createElement('div');
+  instruction.style.cssText = `
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
+    font-size: 18px;
+    text-align: center;
+    max-width: 400px;
+    line-height: 1.4;
+  `;
+  
+  if (text.trim()) {
+    instruction.innerHTML = `
+      <div style="margin-bottom: 16px; font-size: 16px; opacity: 0.8;">Focus on:</div>
+      <div style="white-space: pre-wrap;">${text}</div>
+    `;
+  } else {
+    instruction.innerHTML = `
+      <div style="font-size: 16px; opacity: 0.8;">Press ESC or click outside to stop</div>
+    `;
+  }
+  
+  breathingElement.appendChild(circle);
+  breathingElement.appendChild(instruction);
+  document.body.appendChild(breathingElement);
+  
+  // Box breathing phases: Inhale (4s) → Hold (4s) → Exhale (4s) → Hold (4s)
+  const phases = [
+    { name: 'Inhale', duration: 4000, scale: 1.2, opacity: 1 },
+    { name: 'Hold', duration: 4000, scale: 1.2, opacity: 0.8 },
+    { name: 'Exhale', duration: 4000, scale: 0.8, opacity: 0.6 },
+    { name: 'Hold', duration: 4000, scale: 0.8, opacity: 0.4 }
+  ];
+  
+  let currentPhase = 0;
+  let isActive = true;
+  
+  function updateBreathing() {
+    if (!isActive) return;
+    
+    const phase = phases[currentPhase];
+    circle.textContent = phase.name;
+    circle.style.transform = `scale(${phase.scale})`;
+    circle.style.opacity = phase.opacity.toString();
+    circle.style.borderColor = phase.name === 'Inhale' || phase.name === 'Exhale' 
+      ? UI_CONSTANTS.COLORS.ACCENT_PRIMARY 
+      : UI_CONSTANTS.COLORS.TEXT_SECONDARY;
+    
+    setTimeout(() => {
+      if (isActive) {
+        currentPhase = (currentPhase + 1) % phases.length;
+        updateBreathing();
+      }
+    }, phase.duration);
+  }
+  
+  // Start the breathing cycle
+  updateBreathing();
+  
+  // Handle close events
+  const closeBreathing = () => {
+    isActive = false;
+    breathingElement.remove();
+  };
+  
+  // ESC key to close
+  const handleKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      closeBreathing();
+      document.removeEventListener('keydown', handleKeydown);
+    }
+  };
+  
+  // Click outside to close
+  const handleClick = (e: MouseEvent) => {
+    if (e.target === breathingElement) {
+      closeBreathing();
+      breathingElement.removeEventListener('click', handleClick);
+    }
+  };
+  
+  document.addEventListener('keydown', handleKeydown);
+  breathingElement.addEventListener('click', handleClick);
+  
+  showConfirmation('Box breathing session started');
+}
+
+function startTimer(text: string) {
+  // Parse input as minutes
+  const inputValue = text.trim();
+  let minutes = 25; // Default 25 minutes
+  
+  if (inputValue) {
+    const numValue = parseFloat(inputValue);
+    if (!isNaN(numValue)) {
+      minutes = Math.round(numValue);
+    }
+  }
+  
+  // Ensure minimum 1 minute
+  minutes = Math.max(1, minutes);
+  
+  // Close the modal
+  closeModal();
+  
+  // Store timer data for cross-tab synchronization
+  const timerData = {
+    startTime: Date.now(),
+    remainingSeconds: minutes * 60
+  };
+  
+  chrome.storage.local.set({ countdownTimer: timerData }, () => {
+    showConfirmation(`Timer started: ${minutes} minutes`);
+  });
+}
+
+// Function to create countdown timer element
+function createCountdownTimerElement(remainingSeconds: number) {
+  // Remove existing timer
+  const existingTimer = document.getElementById('unwavering-focus-timer');
+  if (existingTimer) {
+    existingTimer.remove();
+  }
+  
+  // Create countdown timer
+  const timerElement = document.createElement('div');
+  timerElement.id = 'unwavering-focus-timer';
+  timerElement.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    z-index: ${MODAL_CONSTANTS.Z_INDEX.COUNTDOWN_TIMER};
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    min-width: 80px;
+    text-align: center;
+  `;
+  
+  function updateTimer() {
+    if (remainingSeconds <= 0) {
+      timerElement.textContent = "Time's up!";
+      timerElement.style.background = 'rgba(220, 38, 38, 0.9)';
+      setTimeout(() => {
+        timerElement.remove();
+        chrome.storage.local.remove('countdownTimer');
+      }, 3000);
+      return;
+    }
+    
+    // Format as mm:ss
+    const mins = Math.floor(remainingSeconds / 60);
+    const secs = remainingSeconds % 60;
+    timerElement.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    
+    // Change color when less than 10 minutes remaining
+    if (remainingSeconds < 600) {
+      timerElement.style.background = 'rgba(245, 158, 11, 0.9)';
+    }
+    
+    remainingSeconds--;
+    setTimeout(updateTimer, 1000);
+  }
+  
+  document.body.appendChild(timerElement);
+  updateTimer();
+}
+
+// Function to remove countdown timer element
+function removeCountdownTimerElement() {
+  const existingTimer = document.getElementById('unwavering-focus-timer');
+  if (existingTimer) {
+    existingTimer.remove();
+  }
+}
+
+
+
+function showConfirmation(message: string) {
   const content = modal!.querySelector('#modal-content') as HTMLElement;
   
-  // Check for reduced motion preference
+  // Check for reduced motion preference - Accessibility first
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   
   if (prefersReducedMotion) {
     // Instant confirmation for users who prefer reduced motion
     content.innerHTML = `
-      <div style="text-align: center; padding: 20px;">
-        <div style="margin-bottom: 16px;">
+      <div style="text-align: center; padding: ${UI_CONSTANTS.SPACING.LG};">
+        <div style="margin-bottom: ${UI_CONSTANTS.SPACING.MD};">
           <svg width="48" height="48" fill="none" stroke="${UI_CONSTANTS.COLORS.SUCCESS}" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <div style="font-size: 18px; font-weight: 600; color: white;">Saved for later</div>
+        <div style="font-size: ${UI_CONSTANTS.FONT_SIZE.LG}; font-weight: ${UI_CONSTANTS.FONT_WEIGHT.SEMIBOLD}; color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY}; line-height: 1.4;">${message}</div>
       </div>
     `;
     
     // Auto close after a short delay
     setTimeout(() => {
       closeModal();
-    }, 800);
+    }, ANIMATION_CONSTANTS.TIMING.CONFIRMATION_AUTO_CLOSE);
   } else {
-    // Smooth animation with spring-like easing for natural motion
+    // Natural animation with spring-like easing for delightful motion
     input!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
     input!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_OUT}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
     
     setTimeout(() => {
       // Replace with confirmation
       content.innerHTML = `
-        <div style="text-align: center; padding: 20px;">
-          <div style="margin-bottom: 16px;">
+        <div style="text-align: center; padding: ${UI_CONSTANTS.SPACING.LG};">
+          <div style="margin-bottom: ${UI_CONSTANTS.SPACING.MD};">
             <svg width="48" height="48" fill="none" stroke="${UI_CONSTANTS.COLORS.SUCCESS}" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+            </svg>
+          </div>
+          <div style="font-size: ${UI_CONSTANTS.FONT_SIZE.LG}; font-weight: ${UI_CONSTANTS.FONT_WEIGHT.SEMIBOLD}; color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY}; line-height: 1.4;">${message}</div>
         </div>
-        <div style="font-size: 18px; font-weight: 600; color: white;">Saved for later</div>
-      </div>
-    `;
+      `;
       
-      // Fade in confirmation with spring-like motion
+      // Fade in confirmation with natural spring-like motion
       content.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
       content.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_IN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
       
@@ -435,6 +930,141 @@ function startTimeTracking(domain: string) {
 }
 
 console.log('Content script loaded on:', window.location.href);
+
+// Function to create pinned task element
+function createPinnedTaskElement(text: string) {
+  // Remove existing pinned task
+  if (pinnedTaskElement) {
+    pinnedTaskElement.remove();
+  }
+  
+  // Create pinned task element
+  pinnedTaskElement = document.createElement('div');
+  pinnedTaskElement.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 300px;
+    background: ${UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY};
+    border: 1px solid ${UI_CONSTANTS.COLORS.BORDER_PRIMARY};
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    z-index: ${MODAL_CONSTANTS.Z_INDEX.PINNED_TASK};
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  `;
+  
+  // Add close button
+  const closeButton = document.createElement('button');
+  closeButton.innerHTML = '✕';
+  closeButton.style.cssText = `
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: ${UI_CONSTANTS.COLORS.TEXT_SECONDARY};
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  `;
+  
+  closeButton.addEventListener('click', () => {
+    pinnedTaskElement?.remove();
+    pinnedTaskElement = null;
+    // Remove from storage when closed
+    chrome.storage.local.remove('pinnedTask');
+  });
+  
+  closeButton.addEventListener('mouseenter', () => {
+    closeButton.style.background = 'rgba(255, 255, 255, 0.1)';
+  });
+  
+  closeButton.addEventListener('mouseleave', () => {
+    closeButton.style.background = 'none';
+  });
+  
+  pinnedTaskElement.appendChild(closeButton);
+  
+  // Add the text content
+  const textContent = document.createElement('div');
+  textContent.innerHTML = text;
+  pinnedTaskElement.appendChild(textContent);
+  
+  document.body.appendChild(pinnedTaskElement);
+}
+
+// Function to remove pinned task element
+function removePinnedTaskElement() {
+  if (pinnedTaskElement) {
+    pinnedTaskElement.remove();
+    pinnedTaskElement = null;
+  }
+}
+
+// Check for existing pinned task on page load
+chrome.storage.local.get(['pinnedTask'], (result) => {
+  if (result.pinnedTask) {
+    createPinnedTaskElement(result.pinnedTask);
+  }
+});
+
+// Check for existing countdown timer on page load
+chrome.storage.local.get(['countdownTimer'], (result) => {
+  if (result.countdownTimer) {
+    const { startTime, remainingSeconds } = result.countdownTimer;
+    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+    const actualRemainingSeconds = Math.max(0, remainingSeconds - elapsedSeconds);
+    
+    if (actualRemainingSeconds > 0) {
+      createCountdownTimerElement(actualRemainingSeconds);
+    } else {
+      chrome.storage.local.remove('countdownTimer');
+    }
+  }
+});
+
+// Listen for storage changes to sync pinned tasks and timers across tabs
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local') {
+    // Handle pinned task changes
+    if (changes.pinnedTask) {
+      const { newValue, oldValue } = changes.pinnedTask;
+      
+      if (newValue && newValue !== oldValue) {
+        createPinnedTaskElement(newValue);
+      } else if (!newValue && oldValue) {
+        removePinnedTaskElement();
+      }
+    }
+    
+    // Handle countdown timer changes
+    if (changes.countdownTimer) {
+      const { newValue, oldValue } = changes.countdownTimer;
+      
+      if (newValue && newValue !== oldValue) {
+        const { startTime, remainingSeconds } = newValue;
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const actualRemainingSeconds = Math.max(0, remainingSeconds - elapsedSeconds);
+        
+        if (actualRemainingSeconds > 0) {
+          createCountdownTimerElement(actualRemainingSeconds);
+        } else {
+          chrome.storage.local.remove('countdownTimer');
+        }
+      } else if (!newValue && oldValue) {
+        removeCountdownTimerElement();
+      }
+    }
+  }
+});
 
 // Helper to get the root domain for tracking
 function getRootDomain(url: string) {
