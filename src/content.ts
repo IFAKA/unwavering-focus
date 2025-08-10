@@ -20,7 +20,7 @@ let topRightContainer: HTMLElement | null = null;
 let lastEnterTime = 0; // Track last Enter press for double-enter detection
 let saveConfirmationTimeout: ReturnType<typeof setTimeout> | null = null; // Track confirmation timeout
 const DOUBLE_ENTER_TIMEOUT = 500; // Reduced to 500ms for faster response
-const MAX_FOCUS_ATTEMPTS = 10; // Reduced to prevent infinite loops
+// Focus attempts are now simplified - no retry limit needed
 
 // Clean up any existing overlays on page load/refresh
 document.addEventListener('DOMContentLoaded', () => {
@@ -43,8 +43,24 @@ function openModal() {
   if (isAnimating) {
     return;
   }
+  
+  // Wait for DOM to be ready
+  if (document.readyState !== 'complete') {
+    console.log('DOM not ready, waiting for complete state...');
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => openModal(), 100);
+    });
+    return;
+  }
+  
+  // Ensure document.body exists and is accessible
+  if (!document.body) {
+    console.warn('Document body not available, retrying...');
+    setTimeout(() => openModal(), 100);
+    return;
+  }
+  
   isAnimating = true;
-  focusAttempts = 0;
   isFocusAttempting = false;
   
   // Clear any existing focus attempts
@@ -68,12 +84,55 @@ function openModal() {
   modal = null;
   input = null;
   
+  // Ensure the page is stable before creating modal
+  if (document.visibilityState === 'hidden') {
+    console.log('Page not visible, waiting for visibility...');
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        setTimeout(() => openModal(), 100);
+      }
+    });
+    isAnimating = false;
+    return;
+  }
+  
   // Create modal
   createModal();
   
   // Ensure modal was created successfully
   if (!modal) {
     console.error('Failed to create modal');
+    isAnimating = false;
+    return;
+  }
+  
+  // Ensure modal is properly attached to DOM
+  if (!document.contains(modal)) {
+    console.error('Modal not properly attached to DOM');
+    isAnimating = false;
+    return;
+  }
+  
+  // Create content and ensure it's properly attached
+  resetModalContent();
+  
+  // Double-check that input was created and is in DOM
+  if (!input || !document.contains(input)) {
+    console.error('Failed to create input element or input not in DOM');
+    isAnimating = false;
+    return;
+  }
+  
+  // Ensure the modal content is properly rendered
+  if (!modal) {
+    console.error('Modal not found');
+    isAnimating = false;
+    return;
+  }
+  
+  const modalContent = modal.querySelector('#modal-content') as HTMLElement;
+  if (!modalContent) {
+    console.error('Modal content not found');
     isAnimating = false;
     return;
   }
@@ -86,30 +145,28 @@ function openModal() {
     // Instant animation for users who prefer reduced motion
     if (modal) {
       modal.style.transition = 'none';
-      const content = modal.querySelector('#modal-content') as HTMLElement;
-      if (content) {
-        content.style.transition = 'none';
+      if (modalContent) {
+        modalContent.style.transition = 'none';
       }
       
       // Show modal instantly
       modal.style.display = 'block';
       modal.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
-      if (content) {
-        content.style.transform = MODAL_CONSTANTS.TRANSFORM.FINAL;
+      if (modalContent) {
+        modalContent.style.transform = MODAL_CONSTANTS.TRANSFORM.FINAL;
       }
       
-      // Focus after ensuring DOM is fully ready
+      // Focus after a short delay to ensure modal is fully rendered
       focusTimeoutId = setTimeout(() => {
         attemptFocus();
-      }, 50);
+      }, 100);
     }
   } else {
     // Natural animation with spring-like easing for delightful motion
     if (modal) {
       modal.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
-      const content = modal.querySelector('#modal-content') as HTMLElement;
-      if (content) {
-        content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
+      if (modalContent) {
+        modalContent.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
       }
       
       // Show modal
@@ -120,14 +177,14 @@ function openModal() {
       requestAnimationFrame(() => {
         if (modal) {
           modal.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
-          if (content) {
-            content.style.transform = MODAL_CONSTANTS.TRANSFORM.FINAL;
+          if (modalContent) {
+            modalContent.style.transform = MODAL_CONSTANTS.TRANSFORM.FINAL;
           }
           
-          // Start focus attempts after animation starts
+          // Start focus attempts after animation completes
           focusTimeoutId = setTimeout(() => {
             attemptFocus();
-          }, 150);
+          }, ANIMATION_CONSTANTS.TIMING.QUICK_OPEN + 50);
         }
       });
     }
@@ -136,139 +193,39 @@ function openModal() {
 
 function attemptFocus() {
   if (isFocusAttempting) return; // Prevent multiple simultaneous focus attempts
-  if (focusAttempts >= MAX_FOCUS_ATTEMPTS) {
-    console.warn('Failed to focus input after maximum attempts');
-    isAnimating = false;
-    isFocusAttempting = false;
-    return;
-  }
   
   isFocusAttempting = true;
-  focusAttempts++;
   
-  // Ensure we have a valid input element
-  if (!input) {
-    console.warn('Input element not found, attempting to recreate');
-    resetModalContent();
-    
-    // Wait for the next frame to ensure DOM is updated, then try again
-    requestAnimationFrame(() => {
-      // Double-check that input was created
-      if (!input) {
-        console.warn('Input element still not found after recreation');
+  // Simple check: if input exists and is in DOM, try to focus it
+  if (input && document.contains(input)) {
+    try {
+      // Simple focus attempt
+      input.focus();
+      
+      // Check if focus was successful
+      if (document.activeElement === input) {
+        // Success! Set up text selection
+        if (input.value) {
+          input.select();
+        } else {
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+        
+        isAnimating = false;
         isFocusAttempting = false;
         return;
-      }
-      
-      // Try again after ensuring input exists
-      setTimeout(() => {
-        isFocusAttempting = false;
-        attemptFocus();
-      }, 100);
-    });
-    return;
-  }
-  
-  // Comprehensive visibility and readiness checks
-  const isInputReady = () => {
-    try {
-      // Check if input exists and is in DOM
-      if (!input || !document.contains(input)) {
-        return false;
-      }
-      
-      // Check if input is visible
-      if (input.style.display === 'none' || input.style.visibility === 'hidden') {
-        return false;
-      }
-      
-      // Check if input has dimensions
-      if (input.offsetWidth <= 0 || input.offsetHeight <= 0) {
-        return false;
-      }
-      
-      // Check if input is not hidden by CSS
-      if (input.offsetParent === null) {
-        return false;
-      }
-      
-      // Force a reflow to ensure the input is properly rendered
-      input.offsetHeight;
-      
-      return true;
-    } catch (error) {
-      console.warn('Input readiness check failed:', error);
-      return false;
-    }
-  };
-  
-  if (isInputReady()) {
-    try {
-      // Multiple focus strategies
-      const focusStrategies = [
-        () => input!.focus(),
-        () => input!.click(),
-        () => {
-          input!.focus();
-          input!.click();
-        },
-        () => {
-          input!.focus();
-          // Force selection
-          if (input!.value) {
-            input!.select();
-          } else {
-            input!.setSelectionRange(input!.value.length, input!.value.length);
-          }
-        }
-      ];
-      
-      // Try each strategy
-      for (const strategy of focusStrategies) {
-        try {
-          strategy();
-          
-          // Verify focus was successful
-          if (document.activeElement === input) {
-            // Success! Set up text selection
-            if (input.value) {
-              input.select();
-            } else {
-              input.setSelectionRange(input.value.length, input.value.length);
-            }
-            
-            isAnimating = false;
-            isFocusAttempting = false;
-            return;
-          }
-        } catch (strategyError) {
-          console.warn('Focus strategy failed:', strategyError);
-        }
       }
     } catch (error) {
       console.warn('Focus attempt failed:', error);
     }
-  }
-  
-  // If focus failed, try again with different timing strategies
-  isFocusAttempting = false;
-  
-  if (focusAttempts <= 10) {
-    // First attempts use requestAnimationFrame for immediate response
-    requestAnimationFrame(() => {
-      attemptFocus();
-    });
-  } else if (focusAttempts <= 20) {
-    // Middle attempts use short timeouts
-    focusTimeoutId = setTimeout(() => {
-      attemptFocus();
-    }, 150);
   } else {
-    // Later attempts use longer timeouts
-    focusTimeoutId = setTimeout(() => {
-      attemptFocus();
-    }, 300);
+    console.warn('Input element not available for focus');
   }
+  
+  // If we get here, focus failed
+  isFocusAttempting = false;
+  isAnimating = false;
+  console.log('Focus attempt completed (may not have succeeded)');
 }
 
 function closeModal() {
@@ -525,6 +482,21 @@ function resetModalContent() {
   if (!document.contains(input)) {
     console.warn('Input element not properly attached to DOM after creation');
     input = null;
+    return;
+  }
+  
+  // Additional verification that input is accessible
+  try {
+    const testFocus = input.focus;
+    if (typeof testFocus !== 'function') {
+      console.warn('Input element focus method not available');
+      input = null;
+      return;
+    }
+  } catch (error) {
+    console.warn('Error testing input element:', error);
+    input = null;
+    return;
   }
 }
 
