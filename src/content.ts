@@ -18,6 +18,7 @@ const MAX_FOCUS_ATTEMPTS = 25; // Very high number for maximum reliability
 // Command palette state
 let selectedActionIndex = 0;
 let pinnedTaskElement: HTMLElement | null = null;
+let previousActionBeforeTimer = 0; // Store previous action before switching to timer
 
 // Focus management state
 let focusTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -417,10 +418,16 @@ function resetModalContent() {
   
   // Add keyboard event listener for command palette navigation
   input.addEventListener('keydown', handleCommandPaletteKeydown);
+  input.addEventListener('input', handleInputChange); // Add input event listener for smart selection
   
   // Append elements to content
   content.appendChild(input);
   content.appendChild(actionsList);
+  
+  // Initialize smart selection based on pre-populated text
+  if (selectedText) {
+    handleInputChange();
+  }
   
   // Force a reflow to ensure proper rendering
   input.offsetHeight;
@@ -480,9 +487,22 @@ function createModal() {
 function handleCommandPaletteKeydown(e: KeyboardEvent) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    const selectedAction = MODAL_CONSTANTS.ACTIONS[selectedActionIndex];
-    if (selectedAction) {
-      executeAction(selectedAction.id, input!.value);
+    
+    // Smart input detection for intelligent default actions
+    const inputValue = input!.value.trim();
+    
+    if (inputValue === '') {
+      // Empty input: default to box breathing
+      executeAction('box-breathing', '');
+    } else if (/^\d+$/.test(inputValue)) {
+      // Only numbers: default to timer
+      executeAction('timer', inputValue);
+    } else {
+      // Mixed content: use currently selected action
+      const selectedAction = MODAL_CONSTANTS.ACTIONS[selectedActionIndex];
+      if (selectedAction) {
+        executeAction(selectedAction.id, inputValue);
+      }
     }
   } else if (e.key === 'Escape') {
     closeModal();
@@ -492,6 +512,54 @@ function handleCommandPaletteKeydown(e: KeyboardEvent) {
   } else if (e.key === 'ArrowUp' || (e.shiftKey && e.key === 'K')) {
     e.preventDefault();
     selectPreviousAction();
+  }
+}
+
+// Smart input detection for automatic action selection
+function handleInputChange() {
+  if (!input) return;
+  
+  const inputValue = input.value.trim();
+  const previousSelectedIndex = selectedActionIndex;
+  
+  if (inputValue === '') {
+    // Empty input: select box breathing (index 2)
+    selectedActionIndex = 2;
+  } else if (/^\d+$/.test(inputValue)) {
+    // Only numbers: select timer (index 3)
+    selectedActionIndex = 3;
+  } else {
+    // Mixed content: if we were previously on timer (numbers), go back to previous selection
+    // Store the previous selection before switching to timer
+    if (previousSelectedIndex === 3) {
+      // If we were on timer and now have mixed content, go back to the stored previous selection
+      selectedActionIndex = previousActionBeforeTimer || 0;
+    } else {
+      // Store current selection as previous (unless it's timer)
+      if (previousSelectedIndex !== 3) {
+        previousActionBeforeTimer = previousSelectedIndex;
+      }
+      selectedActionIndex = previousSelectedIndex >= 0 ? previousSelectedIndex : 0;
+    }
+  }
+  
+  // Update visual selection if it changed
+  if (selectedActionIndex !== previousSelectedIndex) {
+    updateActionSelection();
+    
+    // Add subtle visual feedback for automatic selection
+    const selectedAction = MODAL_CONSTANTS.ACTIONS[selectedActionIndex];
+    if (selectedAction) {
+      // Update input placeholder to show the selected action
+      const originalPlaceholder = 'Type your command or thought...';
+      if (inputValue === '' && selectedActionIndex === 2) {
+        input.placeholder = 'Press Enter to start box breathing session';
+      } else if (/^\d+$/.test(inputValue) && selectedActionIndex === 3) {
+        input.placeholder = `Press Enter to start ${inputValue}-minute timer`;
+      } else {
+        input.placeholder = originalPlaceholder;
+      }
+    }
   }
 }
 
