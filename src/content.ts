@@ -2596,12 +2596,20 @@ function calculateDynamicOffsets(container: HTMLElement, totalTasks: number) {
     if (!card) continue;
     
     // Show 2 cards behind the first one, then stack the rest
-    if (i <= 2) {
-      const offset = -(firstCardHeight - bottomEdgeHeight) - (i - 1) * bottomEdgeHeight;
+    if (i === 1) {
+      // Second card: standard offset
+      const offset = -(firstCardHeight - bottomEdgeHeight);
       card.style.setProperty('--stack-offset-' + i, `${offset}px`);
+    } else if (i === 2) {
+      // Third card: positioned to be visible but not covered by second card
+      const secondCardOffset = -(firstCardHeight - bottomEdgeHeight);
+      const thirdCardOffset = secondCardOffset - (bottomEdgeHeight * 0.3); // Reduced by 30% of 16px = 4.8px
+      card.style.setProperty('--stack-offset-' + i, `${thirdCardOffset}px`);
     } else {
-      // Stack the rest behind the second card
-      const offset = -(firstCardHeight - bottomEdgeHeight) - bottomEdgeHeight - (i - 2) * bottomEdgeHeight;
+      // Stack the rest behind the third card
+      const secondCardOffset = -(firstCardHeight - bottomEdgeHeight);
+      const thirdCardOffset = secondCardOffset - (bottomEdgeHeight * 0.3);
+      const offset = thirdCardOffset - (i - 2) * bottomEdgeHeight;
       card.style.setProperty('--stack-offset-' + i, `${offset}px`);
     }
   }
