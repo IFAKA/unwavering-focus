@@ -242,7 +242,9 @@
   }
 }
 
-/* Minimal Animations - Apple Watch style */
+/* Great Animations - Following Emil Kowalski's principles */
+/* https://emilkowal.ski/ui/great-animations#great-animations-are-fast */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -261,7 +263,53 @@
   }
 }
 
-/* Reduced motion support - Apple Watch standard */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Spring-like animations for natural motion */
+@keyframes springIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Accessibility - Reduced motion support */
+/* Following Emil Kowalski's principle: "Great animations are accessible" */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -269,10 +317,28 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
   
+  /* Disable all custom animations for users who prefer reduced motion */
   .ds-animate-fade-in,
-  .ds-animate-fade-out {
+  .ds-animate-fade-out,
+  .ds-animate-slide-down,
+  .ds-animate-slide-up,
+  .ds-animate-scale-in,
+  .ds-animate-spring-in {
     animation: none !important;
+    transition: none !important;
+  }
+  
+  /* Ensure modals and overlays appear instantly */
+  [data-extension="unwavering-focus"] {
+    transition: none !important;
+  }
+  
+  /* Disable hover animations */
+  *:hover {
+    transform: none !important;
+    transition: none !important;
   }
 } 

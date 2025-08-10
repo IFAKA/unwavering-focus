@@ -98,24 +98,29 @@ export const DESIGN_SYSTEM = {
     },
   },
   
-  // Animation - Minimal and purposeful
+  // Animation - Following Emil Kowalski's principles for great animations
+  // https://emilkowal.ski/ui/great-animations#great-animations-are-fast
   ANIMATION: {
-    // Timing - Quick and responsive
+    // Timing - Fast animations for better perceived performance
     TIMING: {
-      QUICK: '150ms',
-      NORMAL: '200ms',
+      QUICK: '200ms', // Under 300ms for snappy feel
+      NORMAL: '250ms', // Slightly longer for natural exit
+      SPRING: '180ms', // Spring-like for natural motion
     },
     
-    // Easing - Simple and predictable
+    // Easing - Using Material Design curves for natural motion
     EASING: {
       LINEAR: 'linear',
-      EASE_OUT: 'ease-out',
+      EASE_OUT: 'cubic-bezier(0.0, 0.0, 0.2, 1)', // Material Design ease-out
+      EASE_IN: 'cubic-bezier(0.4, 0.0, 1, 1)', // Material Design ease-in
+      SPRING: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Natural spring feel
     },
     
-    // Transitions - Only essential animations
+    // Transitions - Hardware accelerated transforms only
     TRANSITION: {
-      QUICK: 'all 150ms ease-out',
-      NORMAL: 'all 200ms ease-out',
+      QUICK: 'transform 200ms cubic-bezier(0.0, 0.0, 0.2, 1), opacity 200ms cubic-bezier(0.0, 0.0, 0.2, 1)',
+      NORMAL: 'transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      SPRING: 'transform 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
     },
   },
   

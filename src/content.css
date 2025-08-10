@@ -146,14 +146,14 @@
   max-width: 320px;
   width: 90%;
   overflow: hidden;
-  animation: modalSlideIn 0.3s ease-out;
+  animation: modalSlideIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   backdrop-filter: blur(10px);
 }
 
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(-20px) scale(0.95);
+    transform: translateY(-16px) scale(0.96);
   }
   to {
     opacity: 1;
@@ -278,7 +278,7 @@
   right: 20px;
   z-index: 1000000;
   transform: translateX(100%);
-  transition: transform 0.3s ease-out;
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .save-confirmation.confirmation-visible {
@@ -294,13 +294,13 @@
   box-shadow: 0 8px 24px var(--shadow);
   backdrop-filter: blur(10px);
   max-width: 300px;
-  animation: confirmationSlideIn 0.3s ease-out;
+  animation: confirmationSlideIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 @keyframes confirmationSlideIn {
   from {
     opacity: 0;
-    transform: translateX(100%) scale(0.95);
+    transform: translateX(100%) scale(0.96);
   }
   to {
     opacity: 1;

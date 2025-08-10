@@ -25,6 +25,7 @@ This document outlines the features, user experience, and technical specificatio
 * To ensure the extension is performant, secure, and user-friendly.
 * To implement Apple Watch design principles across all UI components for optimal glanceability and minimal interaction.
 * To provide immediate feedback for all user actions to reinforce the "Later" concept.
+* To implement great animations following Emil Kowalski's principles for natural, fast, and accessible motion.
 
 ### 3. Key Features & User Experience (UX)
 
@@ -245,6 +246,7 @@ This document outlines the features, user experience, and technical specificatio
     * **Frontend:** React (preferred for components, state management, and reusability) or Vue.js for the pop-up, options page, and Focus Page.
     * **State Management:** Minimal, context-based state management for React/Vue, or simple `chrome.storage.local` directly for persistent data. Avoid heavy libraries like Redux unless truly necessary for complexity.
     * **Styling:** SCSS/CSS Modules for scoped and maintainable styles. Prioritize clean, minimalistic UI following Apple Watch design principles.
+* **Animations:** Implement great animations following Emil Kowalski's principles for natural, fast, and accessible motion.
     * **Bundler:** Webpack or Vite for efficient bundling and development workflow.
 * **Architecture:**
     * **Clean Architecture / Layered Design:**
@@ -266,6 +268,14 @@ This document outlines the features, user experience, and technical specificatio
     * **Lightweight:** Minimize resource consumption (CPU, memory).
     * **Efficient Storage:** Use `chrome.storage.local` for persistent data. Avoid `chrome.storage.sync` for large data sets.
     * **Debouncing/Throttling:** For events that fire frequently (e.g., tab updates, resizing).
+    * **Hardware Acceleration:** Use `transform` and `opacity` for animations to leverage GPU acceleration.
+* **Animation Principles (Emil Kowalski's Guidelines):**
+    * **Fast Animations:** All animations under 300ms for snappy, responsive feel.
+    * **Natural Motion:** Use spring-like easing curves for organic, natural movement.
+    * **Purposeful Animations:** Only animate state changes and transitions that enhance user understanding.
+    * **Accessibility:** Respect `prefers-reduced-motion` media query for users who prefer minimal animations.
+    * **Interruptible:** Animations can be interrupted and smoothly transition to new states.
+    * **Hardware Accelerated:** Use only `transform` and `opacity` properties for optimal performance.
 * **Security:**
     * **CSP (Content Security Policy):** Strict CSP defined in `manifest.json`.
     * **Sanitize User Input:** If any user-generated content is displayed, ensure it's properly sanitized.
@@ -281,6 +291,7 @@ This document outlines the features, user experience, and technical specificatio
 * Prioritize core functionality first, then refine UI/UX following Apple Watch design principles.
 * All UI components must adhere to the Apple Watch design system from initial development.
 * Implement feedback systems early to reinforce user trust in the "Later" concept.
+* All animations must follow Emil Kowalski's principles for great animations.
 
 ### 7. Deliverables
 
@@ -289,4 +300,5 @@ This document outlines the features, user experience, and technical specificatio
 * README.md with build instructions, usage, and configuration options.
 * All UI components following Apple Watch design principles for optimal glanceability.
 * Comprehensive feedback systems for user actions.
+* **Animation System:** Fast, natural, and accessible animations following Emil Kowalski's principles.
 * (Optional, but good to think about) Basic test suite.

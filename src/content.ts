@@ -11,6 +11,8 @@ import { VideoFocusManager, supportsVideoFocus } from './utils/videoFocusUtils';
 let modal: HTMLElement | null = null;
 let input: HTMLInputElement | null = null;
 let isAnimating = false;
+let focusAttempts = 0;
+const MAX_FOCUS_ATTEMPTS = 10;
 
 // Clean up any existing overlays on page load/refresh
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,8 +29,6 @@ document.addEventListener('keydown', (e) => {
 });
 
 function toggleModal() {
-  if (isAnimating) return;
-  
   if (modal && modal.style.display === 'flex') {
     closeModal();
   } else {
@@ -39,6 +39,14 @@ function toggleModal() {
 function openModal() {
   if (isAnimating) return;
   isAnimating = true;
+  focusAttempts = 0;
+  
+  // Ensure we're not in a restricted page context
+  if (window.location.protocol === 'chrome:' || window.location.protocol === 'chrome-extension:') {
+    console.warn('Modal cannot be opened on restricted pages');
+    isAnimating = false;
+    return;
+  }
   
   // Create modal if it doesn't exist
   if (!modal) {
@@ -48,50 +56,112 @@ function openModal() {
     resetModalContent();
   }
   
-  // Set quick animation for opening
-  modal!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
-  const content = modal!.querySelector('#modal-content') as HTMLElement;
-  content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
+  // Check for reduced motion preference
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   
-  // Show modal
-  modal!.style.display = 'flex';
-  modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
-  
-  // Animate in
-  requestAnimationFrame(() => {
+  // Set animation based on user preference
+  if (prefersReducedMotion) {
+    // Instant animation for users who prefer reduced motion
+    modal!.style.transition = 'none';
+    const content = modal!.querySelector('#modal-content') as HTMLElement;
+    content.style.transition = 'none';
+    
+    // Show modal instantly
+    modal!.style.display = 'flex';
     modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
     content.style.transform = `${MODAL_CONSTANTS.TRANSFORM.FINAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.FINAL_SCALE}`;
-  });
-  
-  // Focus input
-  setTimeout(() => {
-    if (input) {
-      input.focus();
-      input.select();
-    }
+    
+    // Focus immediately
+    attemptFocus();
+  } else {
+    // Smooth animation with spring-like easing for natural motion
+    modal!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
+    const content = modal!.querySelector('#modal-content') as HTMLElement;
+    content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_OPEN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
+    
+    // Show modal
+    modal!.style.display = 'flex';
+    modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
+    
+    // Animate in with spring-like motion
+    requestAnimationFrame(() => {
+      modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
+      content.style.transform = `${MODAL_CONSTANTS.TRANSFORM.FINAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.FINAL_SCALE}`;
+      
+      // Start focus attempts immediately after animation starts
+      attemptFocus();
+    });
+  }
+}
+
+function attemptFocus() {
+  if (focusAttempts >= MAX_FOCUS_ATTEMPTS) {
+    console.warn('Failed to focus input after maximum attempts');
     isAnimating = false;
-  }, ANIMATION_CONSTANTS.TIMING.QUICK_FOCUS_DELAY);
+    return;
+  }
+  
+  focusAttempts++;
+  
+  // Try to focus the input
+  if (input && input.offsetParent !== null) { // Check if input is visible
+    try {
+      input.focus();
+      
+      // If there's text, select all of it for easy replacement
+      if (input.value) {
+        input.select();
+      } else {
+        // If no text, just place cursor at the end
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+      
+      isAnimating = false;
+      return;
+    } catch (error) {
+      console.warn('Focus attempt failed:', error);
+    }
+  }
+  
+  // If focus failed, try again using requestAnimationFrame for better timing
+  if (focusAttempts <= 3) {
+    // First few attempts use requestAnimationFrame for immediate response
+    requestAnimationFrame(attemptFocus);
+  } else {
+    // Later attempts use setTimeout with increasing delays
+    setTimeout(attemptFocus, Math.min(50 * focusAttempts, 200));
+  }
 }
 
 function closeModal() {
   if (isAnimating) return;
   isAnimating = true;
   
-  // Set quick animation for closing
-  modal!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
-  const content = modal!.querySelector('#modal-content') as HTMLElement;
-  content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
+  // Check for reduced motion preference
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   
-  // Animate out
-  modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
-  content.style.transform = `${MODAL_CONSTANTS.TRANSFORM.INITIAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.INITIAL_SCALE}`;
-  
-  // Hide after animation and reset content
-  setTimeout(() => {
+  if (prefersReducedMotion) {
+    // Instant close for users who prefer reduced motion
     modal!.style.display = 'none';
     resetModalContent();
     isAnimating = false;
-  }, ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE_DELAY);
+  } else {
+    // Smooth animation with spring-like easing for natural motion
+    modal!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_IN}`;
+    const content = modal!.querySelector('#modal-content') as HTMLElement;
+    content.style.transition = `transform ${ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE}ms ${ANIMATION_CONSTANTS.EASING.EASE_IN}`;
+    
+    // Animate out
+    modal!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
+    content.style.transform = `${MODAL_CONSTANTS.TRANSFORM.INITIAL_TRANSLATE_Y} ${MODAL_CONSTANTS.TRANSFORM.INITIAL_SCALE}`;
+    
+    // Hide after animation and reset content
+    setTimeout(() => {
+      modal!.style.display = 'none';
+      resetModalContent();
+      isAnimating = false;
+    }, ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE_DELAY);
+  }
 }
 
 function resetModalContent() {
@@ -103,10 +173,15 @@ function resetModalContent() {
   // Clear content and recreate input
   content.innerHTML = '';
   
+  // Get selected text if any
+  const selectedText = window.getSelection()?.toString().trim() || '';
+  
   // Recreate input
   input = document.createElement('input');
   input.type = 'text';
   input.placeholder = 'Enter your thought...';
+  input.autocomplete = 'off'; // Prevent browser autocomplete interference
+  input.value = selectedText; // Pre-populate with selected text
   input.style.cssText = `
     width: 100%;
     padding: ${MODAL_CONSTANTS.INPUT.PADDING};
@@ -131,6 +206,9 @@ function resetModalContent() {
   
   // Add to content
   content.appendChild(input);
+  
+  // Force a reflow to ensure the input is properly rendered
+  input.offsetHeight;
 }
 
 function createModal() {
@@ -167,10 +245,15 @@ function createModal() {
     box-shadow: ${MODAL_CONSTANTS.CONTENT.BOX_SHADOW};
   `;
   
+  // Get selected text if any
+  const selectedText = window.getSelection()?.toString().trim() || '';
+  
   // Create input
   input = document.createElement('input');
   input.type = 'text';
   input.placeholder = 'Enter your thought...';
+  input.autocomplete = 'off'; // Prevent browser autocomplete interference
+  input.value = selectedText; // Pre-populate with selected text
   input.style.cssText = `
     width: 100%;
     padding: ${MODAL_CONSTANTS.INPUT.PADDING};
@@ -222,12 +305,11 @@ function saveThought() {
 function showConfirmation() {
   const content = modal!.querySelector('#modal-content') as HTMLElement;
   
-  // Fade out input
-  input!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
-  input!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_OUT}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
+  // Check for reduced motion preference
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   
-  setTimeout(() => {
-    // Replace with confirmation
+  if (prefersReducedMotion) {
+    // Instant confirmation for users who prefer reduced motion
     content.innerHTML = `
       <div style="text-align: center; padding: 20px;">
         <div style="margin-bottom: 16px;">
@@ -239,19 +321,42 @@ function showConfirmation() {
       </div>
     `;
     
-    // Fade in confirmation
-    content.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
-    content.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_IN}ms ${ANIMATION_CONSTANTS.EASING.EASE_OUT}`;
-    
-    requestAnimationFrame(() => {
-      content.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
-    });
-    
-    // Auto close
+    // Auto close after a short delay
     setTimeout(() => {
       closeModal();
-    }, ANIMATION_CONSTANTS.TIMING.CONFIRMATION_AUTO_CLOSE);
-  }, ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_OUT);
+    }, 800);
+  } else {
+    // Smooth animation with spring-like easing for natural motion
+    input!.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
+    input!.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_OUT}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
+    
+    setTimeout(() => {
+      // Replace with confirmation
+      content.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <div style="margin-bottom: 16px;">
+            <svg width="48" height="48" fill="none" stroke="${UI_CONSTANTS.COLORS.SUCCESS}" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div style="font-size: 18px; font-weight: 600; color: white;">Saved for later</div>
+      </div>
+    `;
+      
+      // Fade in confirmation with spring-like motion
+      content.style.opacity = ANIMATION_CONSTANTS.OPACITY.HIDDEN.toString();
+      content.style.transition = `opacity ${ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_IN}ms ${ANIMATION_CONSTANTS.EASING.SPRING}`;
+      
+      requestAnimationFrame(() => {
+        content.style.opacity = ANIMATION_CONSTANTS.OPACITY.VISIBLE.toString();
+      });
+      
+      // Auto close
+      setTimeout(() => {
+        closeModal();
+      }, ANIMATION_CONSTANTS.TIMING.CONFIRMATION_AUTO_CLOSE);
+    }, ANIMATION_CONSTANTS.TIMING.CONFIRMATION_FADE_OUT);
+  }
 }
 
 // Create countdown timer in top right corner

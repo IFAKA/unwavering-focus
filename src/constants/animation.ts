@@ -1,37 +1,41 @@
-// Animation Constants
+// Animation Constants - Following Emil Kowalski's animation principles
+// https://emilkowal.ski/ui/great-animations#great-animations-are-fast
 export const ANIMATION_CONSTANTS = {
-  // Timing values (in milliseconds)
+  // Timing values (in milliseconds) - Fast animations for better perceived performance
   TIMING: {
-    // Quick animations for opening
-    QUICK_OPEN: 150,
-    QUICK_FOCUS_DELAY: 150,
+    // Quick animations for opening - Under 300ms for snappy feel
+    QUICK_OPEN: 200, // Reduced from 150ms for better balance
+    QUICK_FOCUS_DELAY: 100, // Reduced for faster response
     
-    // Quick animations for closing
-    QUICK_CLOSE: 300,
-    QUICK_CLOSE_DELAY: 300,
+    // Quick animations for closing - Slightly longer for natural exit
+    QUICK_CLOSE: 250, // Reduced from 300ms
+    QUICK_CLOSE_DELAY: 250, // Reduced from 300ms
     
-    // Confirmation animations
-    CONFIRMATION_FADE_OUT: 150,
-    CONFIRMATION_FADE_IN: 200,
-    CONFIRMATION_DISPLAY: 800,
-    CONFIRMATION_AUTO_CLOSE: 800,
+    // Confirmation animations - Fast feedback
+    CONFIRMATION_FADE_OUT: 120, // Reduced from 150ms
+    CONFIRMATION_FADE_IN: 150, // Reduced from 200ms
+    CONFIRMATION_DISPLAY: 600, // Reduced from 800ms
+    CONFIRMATION_AUTO_CLOSE: 600, // Reduced from 800ms
     
-    // Status feedback timing
-    STATUS_DISPLAY: 2000,
-    ERROR_DISPLAY: 3000,
-    COPY_FEEDBACK: 800,
+    // Status feedback timing - Quick but readable
+    STATUS_DISPLAY: 1500, // Reduced from 2000ms
+    ERROR_DISPLAY: 2500, // Reduced from 3000ms
+    COPY_FEEDBACK: 600, // Reduced from 800ms
     
-    // Eye care timing
+    // Eye care timing (unchanged - functional requirements)
     EYE_CARE_REMINDER_INTERVAL: 20 * 60 * 1000, // 20 minutes
     EYE_CARE_BREAK_DURATION: 20 * 1000, // 20 seconds
     EYE_CARE_GRACE_PERIOD: 20000, // 20 seconds grace period
   },
   
-  // Transition easing
+  // Transition easing - Using ease-out for snappy, responsive feel
   EASING: {
-    EASE_OUT: 'ease-out',
-    EASE_IN: 'ease-in',
+    EASE_OUT: 'cubic-bezier(0.0, 0.0, 0.2, 1)', // Material Design ease-out
+    EASE_IN: 'cubic-bezier(0.4, 0.0, 1, 1)', // Material Design ease-in
+    EASE_IN_OUT: 'cubic-bezier(0.4, 0.0, 0.2, 1)', // Material Design ease-in-out
     LINEAR: 'linear',
+    // Spring-like easing for natural motion
+    SPRING: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Natural spring feel
   },
   
   // Opacity values
@@ -41,17 +45,26 @@ export const ANIMATION_CONSTANTS = {
     TRANSPARENT: 0,
   },
   
-  // Scale values
+  // Scale values - Subtle scaling for natural feel
   SCALE: {
     NORMAL: 1,
-    SMALL: 0.95,
-    LARGE: 1.1,
+    SMALL: 0.96, // More subtle than 0.95
+    LARGE: 1.02, // More subtle than 1.1
+    SPRING_IN: 0.98, // Spring-like entrance
   },
   
-  // Transform values
+  // Transform values - Hardware accelerated transforms only
   TRANSFORM: {
-    TRANSLATE_Y_UP: '-20px',
+    TRANSLATE_Y_UP: '-16px', // Reduced from -20px for subtlety
     TRANSLATE_Y_CENTER: '0',
-    TRANSLATE_Y_DOWN: '20px',
+    TRANSLATE_Y_DOWN: '16px', // Reduced from 20px for subtlety
+    SPRING_UP: '-12px', // Spring-like entrance
+  },
+  
+  // Spring animation parameters for natural motion
+  SPRING: {
+    STIFFNESS: 300, // Higher stiffness for snappy feel
+    DAMPING: 30, // Moderate damping for natural motion
+    MASS: 1, // Standard mass
   },
 } as const;
