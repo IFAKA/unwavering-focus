@@ -3,10 +3,10 @@ import { SearchQuery } from '../../types';
 import { useSearch } from '../../hooks/useSearch';
 import { useConfig } from '../../hooks/useConfig';
 import AppleWatchStatusBar from '../ui/AppleWatchStatusBar';
-import AppleWatchIcon from '../ui/AppleWatchIcon';
 import MetricsRow from '../metrics/MetricsRow';
 import SearchList from '../search/SearchList';
 import { searchService } from '../../services/SearchService';
+import FeatureToggleButtons from './FeatureToggleButtons';
 
 interface PopupMainProps {
   onNavigateToSettings: () => void;
@@ -58,8 +58,6 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
       const eyeCare = await getFeatureStatus('eyeCare');
       const tabLimiter = await getFeatureStatus('tabLimiter');
       const smartSearch = await getFeatureStatus('smartSearch');
-      const habits = await getFeatureStatus('habits');
-      const pillars = await getFeatureStatus('pillars');
       const blocker = await getFeatureStatus('blocker');
       const videoFocus = await getFeatureStatus('videoFocus');
       const contentFocus = await getFeatureStatus('contentFocus');
@@ -70,8 +68,6 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
         eyeCare,
         tabLimiter,
         smartSearch,
-        habits,
-        pillars,
         blocker,
         videoFocus,
         contentFocus
@@ -146,11 +142,6 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
     }
   };
 
-  const handleFocusMode = () => {
-    // Navigate to focus page
-    chrome.tabs.create({ url: chrome.runtime.getURL('focus-page.html') });
-  };
-
   const handleFeatureClick = () => {
     // Navigate to settings for the specific feature
     onNavigateToSettings();
@@ -178,22 +169,6 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
         case 'videoFocus':
           await updateConfig('videoFocus.enabled', newStatus === 'enabled');
           break;
-        case 'habits':
-          // For habits, we need to check if there are any habits configured
-          if (newStatus === 'enabled') {
-            // Navigate to settings to configure habits
-            onNavigateToSettings();
-            return;
-          }
-          break;
-        case 'pillars':
-          // For pillars, we need to check if there are any pillars configured
-          if (newStatus === 'enabled') {
-            // Navigate to settings to configure pillars
-            onNavigateToSettings();
-            return;
-          }
-          break;
       }
       
       // Reload feature statuses after update
@@ -201,8 +176,6 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
         const eyeCare = await getFeatureStatus('eyeCare');
         const tabLimiter = await getFeatureStatus('tabLimiter');
         const smartSearch = await getFeatureStatus('smartSearch');
-        const habits = await getFeatureStatus('habits');
-        const pillars = await getFeatureStatus('pillars');
         const blocker = await getFeatureStatus('blocker');
         const videoFocus = await getFeatureStatus('videoFocus');
         const contentFocus = await getFeatureStatus('contentFocus');
@@ -213,8 +186,6 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
           eyeCare,
           tabLimiter,
           smartSearch,
-          habits,
-          pillars,
           blocker,
           videoFocus,
           contentFocus
@@ -246,7 +217,6 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
         tabLimiterStatus={tabLimiterStatus}
         onEyeCareClick={handleFeatureClick}
         onTabLimiterClick={handleFeatureClick}
-        onFocusModeClick={handleFocusMode}
         onSettingsClick={onNavigateToSettings}
       />
 
@@ -259,95 +229,11 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
         copyStatus={copyStatus}
       />
 
-      {/* Footer with Feature Toggle Buttons - Apple Watch Style */}
-      <div className="p-md ds-border-top">
-        <div className="ds-flex-center gap-sm">
-          {/* Eye Care */}
-          <button
-            onClick={() => handleFeatureToggle('eyeCare')}
-            className={`ds-button ds-button-small rounded-full transition-all duration-200 ${
-              eyeCareStatus === 'enabled' 
-                ? 'bg-accent-primary text-white shadow-sm' 
-                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
-            }`}
-            title={`Eye Care: ${eyeCareStatus} (Click to toggle)`}
-          >
-            <AppleWatchIcon 
-              name="eye" 
-              size="sm" 
-              color={eyeCareStatus === 'enabled' ? '#ffffff' : '#8e8e93'} 
-            />
-          </button>
-          
-          {/* Tab Limiter */}
-          <button
-            onClick={() => handleFeatureToggle('tabLimiter')}
-            className={`ds-button ds-button-small rounded-full transition-all duration-200 ${
-              tabLimiterStatus === 'enabled' 
-                ? 'bg-accent-primary text-white shadow-sm' 
-                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
-            }`}
-            title={`Tab Limiter: ${tabLimiterStatus} (Click to toggle)`}
-          >
-            <AppleWatchIcon 
-              name="tabs" 
-              size="sm" 
-              color={tabLimiterStatus === 'enabled' ? '#ffffff' : '#8e8e93'} 
-            />
-          </button>
-          
-          {/* Smart Search */}
-          <button
-            onClick={() => handleFeatureToggle('smartSearch')}
-            className={`ds-button ds-button-small rounded-full transition-all duration-200 ${
-              featureStatuses.smartSearch === 'enabled' 
-                ? 'bg-accent-primary text-white shadow-sm' 
-                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
-            }`}
-            title={`Smart Search: ${featureStatuses.smartSearch || 'disabled'} (Click to toggle)`}
-          >
-            <AppleWatchIcon 
-              name="search" 
-              size="sm" 
-              color={featureStatuses.smartSearch === 'enabled' ? '#ffffff' : '#8e8e93'} 
-            />
-          </button>
-          
-          {/* Distraction Blocker */}
-          <button
-            onClick={() => handleFeatureToggle('blocker')}
-            className={`ds-button ds-button-small rounded-full transition-all duration-200 ${
-              featureStatuses.blocker === 'enabled' 
-                ? 'bg-accent-primary text-white shadow-sm' 
-                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
-            }`}
-            title={`Distraction Blocker: ${featureStatuses.blocker || 'disabled'} (Click to toggle)`}
-          >
-            <AppleWatchIcon 
-              name="ban" 
-              size="sm" 
-              color={featureStatuses.blocker === 'enabled' ? '#ffffff' : '#8e8e93'} 
-            />
-          </button>
-          
-          {/* Video Focus */}
-          <button
-            onClick={() => handleFeatureToggle('videoFocus')}
-            className={`ds-button ds-button-small rounded-full transition-all duration-200 ${
-              featureStatuses.videoFocus === 'enabled' 
-                ? 'bg-accent-primary text-white shadow-sm' 
-                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
-            }`}
-            title={`Video Focus: ${featureStatuses.videoFocus || 'disabled'} (Click to toggle)`}
-          >
-            <AppleWatchIcon 
-              name="video" 
-              size="sm" 
-              color={featureStatuses.videoFocus === 'enabled' ? '#ffffff' : '#8e8e93'} 
-            />
-          </button>
-        </div>
-      </div>
+      {/* Feature Toggle Buttons */}
+      <FeatureToggleButtons
+        featureStatuses={featureStatuses}
+        onFeatureToggle={handleFeatureToggle}
+      />
     </>
   );
 };

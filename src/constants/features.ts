@@ -69,18 +69,7 @@ export const FEATURE_CONSTANTS = {
     },
   },
   
-  // Focus Page
-  FOCUS_PAGE: {
-    DEFAULT_MOTIVATIONAL_MESSAGE: "Enfócate. Tu tiempo es oro.",
-    REINFORCEMENT_MESSAGES: {
-      HIGH: "Your discipline forges your excellence.",
-      MEDIUM: "Stay consistent. Progress builds momentum.",
-      LOW: "Regain control. Small actions today build momentum.",
-    },
-    MAX_HABITS: 10,
-    MAX_PILLARS: 5,
-    MAX_DOPAMINE_TRIGGERS: 20,
-  },
+
   
   // Keyboard Shortcuts
   KEYBOARD_SHORTCUTS: {
@@ -93,7 +82,7 @@ export const FEATURE_CONSTANTS = {
     SHOW_SMART_SEARCH_MODAL: 'SHOW_SMART_SEARCH_MODAL',
     SAVE_SEARCH: 'SAVE_SEARCH',
     GET_STORAGE_DATA: 'GET_STORAGE_DATA',
-    GET_DOMAIN_TIME_INFO: 'GET_DOMAIN_TIME_INFO',
+
     SET_EYE_CARE_ALARM: 'SET_EYE_CARE_ALARM',
     CLEAR_EYE_CARE_ALARM: 'CLEAR_EYE_CARE_ALARM',
     UPDATE_TAB_COUNT: 'UPDATE_TAB_COUNT',

@@ -6,29 +6,9 @@ export interface SearchQuery {
 
 export interface DistractingDomain {
   domain: string;
-  dailyTimeLimit: number; // in minutes
-  timeUsedToday: number; // in minutes
-  lastResetDate: string;
 }
 
-export interface HabitEntry {
-  habitId: string;
-  date: string;
-  status: 'excellent' | 'good' | 'not-done';
-}
 
-export interface Habit {
-  id: string;
-  name: string;
-  color: string;
-}
-
-export interface Pillar {
-  id: string;
-  quote: string;
-  description: string;
-  color: string;
-}
 
 export interface ExtensionConfig {
   smartSearch: { 
@@ -37,7 +17,7 @@ export interface ExtensionConfig {
   };
   distractionBlocker: { 
     enabled: boolean; 
-    domains: DistractingDomain[] 
+    domains: DistractingDomain[];
   };
   eyeCare: { 
     enabled: boolean; 
@@ -48,17 +28,7 @@ export interface ExtensionConfig {
     maxTabs: number; 
     excludedDomains: string[] 
   };
-  focusPage: {
-    motivationalMessage: string;
-    habits: Habit[];
-    pillars: Pillar[];
-    dopamineTriggers: string[];
-    reinforcementMessages: { 
-      high: string; 
-      medium: string; 
-      low: string 
-    };
-  };
+
   youtubeDistraction: {
     hideSecondary: boolean;
     hideMasthead: boolean;
@@ -95,7 +65,7 @@ export interface VideoState {
 export interface StorageData {
   savedSearches: SearchQuery[];
   distractingDomains: DistractingDomain[];
-  habitEntries: HabitEntry[];
+
   config: ExtensionConfig;
   tabCount: number;
   nextEyeCareAlarm?: number;
@@ -112,7 +82,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   },
   distractionBlocker: { 
     enabled: true, 
-    domains: [] 
+    domains: []
   },
   eyeCare: { 
     enabled: true, 
@@ -123,17 +93,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     maxTabs: 3, 
     excludedDomains: [] 
   },
-  focusPage: {
-    motivationalMessage: "Enfócate. Tu tiempo es oro.",
-    habits: [],
-    pillars: [],
-    dopamineTriggers: [],
-    reinforcementMessages: {
-      high: "Your discipline forges your excellence.",
-      medium: "Stay consistent. Progress builds momentum.",
-      low: "Regain control. Small actions today build momentum."
-    }
-  },
+
   youtubeDistraction: {
     hideSecondary: true,
     hideMasthead: true,

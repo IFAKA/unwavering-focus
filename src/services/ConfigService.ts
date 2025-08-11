@@ -64,10 +64,8 @@ export class ConfigService implements IConfigService {
           return config.tabLimiter?.enabled ? 'enabled' : 'disabled';
         case 'smartSearch':
           return config.smartSearch?.enabled ? 'enabled' : 'disabled';
-        case 'habits':
-          return config.focusPage?.habits?.length > 0 ? 'enabled' : 'disabled';
-        case 'pillars':
-          return config.focusPage?.pillars?.length > 0 ? 'enabled' : 'disabled';
+
+
         case 'blocker':
           return config.distractionBlocker?.enabled ? 'enabled' : 'disabled';
         case 'videoFocus':

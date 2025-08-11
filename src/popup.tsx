@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import ErrorBoundary from './components/ErrorBoundary';
 import PopupMain from './components/popup/PopupMain';
 import PopupSettings from './components/popup/PopupSettings';
@@ -30,11 +31,9 @@ const Popup: React.FC = () => {
 // Render the popup
 const root = document.getElementById('root');
 if (root) {
-  import('react-dom/client').then(({ createRoot }) => {
-    createRoot(root).render(
-      <ErrorBoundary>
-        <Popup />
-      </ErrorBoundary>
-    );
-  });
+  createRoot(root).render(
+    <ErrorBoundary>
+      <Popup />
+    </ErrorBoundary>
+  );
 }

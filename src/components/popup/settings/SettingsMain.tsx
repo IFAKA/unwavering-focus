@@ -4,7 +4,7 @@ import SettingsSection from '../../ui/SettingsSection';
 
 interface SettingsMainProps {
   onNavigateToMain: () => void;
-  onNavigateToSection: (section: 'main' | 'smartSearch' | 'tabLimiter' | 'habits' | 'pillars' | 'blocker' | 'care' | 'videoFocus' | 'contentFocus') => void;
+  onNavigateToSection: (section: 'main' | 'smartSearch' | 'tabLimiter' | 'blocker' | 'care' | 'videoFocus' | 'contentFocus') => void;
 }
 
 const SettingsMain: React.FC<SettingsMainProps> = ({ onNavigateToMain, onNavigateToSection }) => {
@@ -23,20 +23,7 @@ const SettingsMain: React.FC<SettingsMainProps> = ({ onNavigateToMain, onNavigat
       icon: 'document',
       onClick: () => onNavigateToSection('tabLimiter')
     },
-    {
-      id: 'habits',
-      title: 'Habits',
-      subtitle: 'Track daily routines',
-      icon: 'chart',
-      onClick: () => onNavigateToSection('habits')
-    },
-    {
-      id: 'pillars',
-      title: 'Pillars',
-      subtitle: 'Core principles',
-      icon: 'building',
-      onClick: () => onNavigateToSection('pillars')
-    },
+
     {
       id: 'blocker',
       title: 'Blocker',

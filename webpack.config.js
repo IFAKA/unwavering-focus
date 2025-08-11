@@ -6,13 +6,14 @@ module.exports = {
   entry: {
     background: './src/background.ts',
     content: './src/content.ts',
-    popup: './src/popup.tsx',
-    'focus-page': './src/focus-page.tsx'
+    popup: './src/popup.tsx'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].js',
-    clean: true
+    clean: true,
+    // Remove the problematic publicPath that causes CSP issues
+    chunkFilename: '[id].js'
   },
   module: {
     rules: [
@@ -74,17 +75,26 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './src/popup.html',
       filename: 'popup.html',
-      chunks: ['popup']
+      chunks: ['popup'],
+      inject: true
     }),
-    new HtmlWebpackPlugin({
-      template: './src/focus-page.html',
-      filename: 'focus-page.html',
-      chunks: ['focus-page']
-    })
+
   ],
   optimization: {
     splitChunks: {
-      chunks: 'all'
-    }
+      chunks: (chunk) => {
+        // Don't split chunks for content script to avoid CSP issues
+        return chunk.name !== 'content';
+      },
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+          enforce: true
+        }
+      }
+    },
+    minimize: false // Temporarily disable minification for testing
   }
 }; 

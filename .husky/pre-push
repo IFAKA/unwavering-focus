@@ -1,0 +1,29 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Checking file sizes before push..."
+npm run check-size
+if [ $? -ne 0 ]; then
+  echo "❌ File size check failed! Refactor files exceeding 300 lines before pushing."
+  exit 1
+fi
+
+echo "✅ File size check passed!"
+echo "🔍 Running linter..."
+npm run lint
+if [ $? -ne 0 ]; then
+  echo "❌ Linting failed! Fix lint errors before pushing."
+  exit 1
+fi
+
+echo "✅ Linting passed!"
+echo "🏗️ Building project..."
+npm run build | cat
+if [ $? -ne 0 ]; then
+  echo "❌ Build failed! Fix build errors before pushing."
+  exit 1
+fi
+
+echo "✅ Pre-push checks completed successfully!"
+
+

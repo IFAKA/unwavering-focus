@@ -14,7 +14,8 @@
     "storage",
     "tabs",
     "scripting",
-    "alarms"
+    "alarms",
+    "history"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -41,7 +42,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["focus-page.html", "sounds/*", "assets/*"],
+      "resources": ["sounds/*", "assets/*"],
       "matches": ["<all_urls>"]
     }
   ],

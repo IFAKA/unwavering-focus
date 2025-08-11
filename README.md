@@ -26,6 +26,61 @@ In today's digital world, distractions are everywhere. Social media feeds, endle
 
 ---
 
+## 📋 Development Standards
+
+### 🚨 Critical File Size Rules
+This project enforces strict file size limits to maintain code quality and prevent technical debt:
+
+- **MANDATORY**: No source code file can exceed 300 lines
+- **ENFORCEMENT**: Automatic checks run on every commit
+- **REFACTORING**: Files exceeding the limit must be atomized before new features
+
+#### Running File Size Checks
+```bash
+# Check for files exceeding 300 lines
+npm run check-size
+
+# Run all pre-commit checks (size, lint, format)
+npm run pre-commit
+```
+
+#### Refactoring Strategies
+When a file exceeds 300 lines:
+1. **Extract utilities** into separate `.utils.ts` files
+2. **Break components** into smaller, focused components
+3. **Move business logic** into service files
+4. **Separate types** into `.types.ts` files
+5. **Create constants** files for configuration
+
+#### Example Refactoring
+```
+Before: large-file.ts (400 lines)
+After:
+├── large-file.ts (150 lines - main logic)
+├── large-file.utils.ts (100 lines - utilities)
+├── large-file.types.ts (50 lines - types)
+└── large-file.constants.ts (50 lines - constants)
+```
+
+### 🛠️ Code Quality Standards
+- **TypeScript**: Strict mode with no `any` types
+- **ESLint**: Strict linting rules enforced
+- **Prettier**: Consistent code formatting
+- **Testing**: Unit tests for critical functionality
+- **Documentation**: Comprehensive JSDoc comments
+
+### 📁 Project Structure
+```
+src/
+├── components/          # React components
+├── services/           # Business logic
+├── utils/              # Helper functions
+├── types/              # TypeScript definitions
+├── constants/          # Configuration constants
+├── hooks/              # Custom React hooks
+└── infrastructure/     # External integrations
+```
+
 ## 🎯 Core Features
 
 ### 🎯 Smart Search & Thought Capture

@@ -1,0 +1,25 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Checking file sizes..."
+npm run check-size
+
+if [ $? -ne 0 ]; then
+  echo "❌ File size check failed! Please refactor files exceeding 300 lines before committing."
+  exit 1
+fi
+
+echo "✅ File size check passed!"
+echo "🔍 Running linter..."
+npm run lint
+
+if [ $? -ne 0 ]; then
+  echo "❌ Linting failed! Please fix linting errors before committing."
+  exit 1
+fi
+
+echo "✅ Linting passed!"
+echo "🎨 Formatting code..."
+npm run format
+
+echo "✅ Pre-commit checks completed successfully!"

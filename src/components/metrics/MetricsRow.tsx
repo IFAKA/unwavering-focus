@@ -9,7 +9,6 @@ interface MetricsRowProps {
   tabLimiterStatus: 'enabled' | 'disabled';
   onEyeCareClick?: () => void;
   onTabLimiterClick?: () => void;
-  onFocusModeClick?: () => void;
   onSettingsClick?: () => void;
 }
 
@@ -21,7 +20,6 @@ const MetricsRow: React.FC<MetricsRowProps> = ({
   tabLimiterStatus,
   onEyeCareClick,
   onTabLimiterClick,
-  onFocusModeClick,
   onSettingsClick
 }) => {
   return (
@@ -43,12 +41,7 @@ const MetricsRow: React.FC<MetricsRowProps> = ({
           onClick={onTabLimiterClick}
         />
         
-        <AppleWatchMetric
-          icon="focus"
-          value="Focus"
-          label="Focus Mode"
-          onClick={onFocusModeClick}
-        />
+
         
         <AppleWatchMetric
           icon="settings"

@@ -1,0 +1,232 @@
+# Unwavering Focus - Cursor Rules
+# Strict code quality standards to prevent hallucinations and maintain code excellence
+
+## CRITICAL: File Size Limits
+- **MANDATORY**: No file can exceed 300 lines of code
+- **REQUIRED**: If a file exceeds 300 lines, it MUST be atomized into smaller, focused files
+- **ENFORCEMENT**: Always check line count before suggesting code changes
+- **EXCEPTIONS**: Only configuration files (package.json, tsconfig.json, etc.) are exempt
+
+## Code Organization Rules
+- **Single Responsibility**: Each file should have one clear purpose
+- **Atomic Components**: Break large components into smaller, reusable pieces
+- **Separation of Concerns**: Keep business logic, UI, and utilities separate
+- **File Naming**: Use descriptive, kebab-case names that indicate purpose
+
+## TypeScript Standards
+- **STRICT MODE**: Always use strict TypeScript configuration
+- **Type Safety**: No `any` types without explicit justification
+- **Interface First**: Prefer interfaces over types for object shapes
+- **Explicit Returns**: Always specify return types for functions
+- **Null Safety**: Use optional chaining and nullish coalescing
+
+## React/Component Rules
+- **Functional Components**: Use functional components with hooks
+- **Props Interface**: Always define interfaces for component props
+- **Error Boundaries**: Wrap components in error boundaries
+- **Performance**: Use React.memo, useMemo, and useCallback appropriately
+- **State Management**: Keep state as local as possible
+
+## Chrome Extension Specific
+- **Manifest V3**: Follow Chrome Extension Manifest V3 standards
+- **Content Scripts**: Keep content scripts focused and minimal
+- **Background Scripts**: Use service workers for background tasks
+- **Storage**: Use chrome.storage.local for persistent data
+- **Permissions**: Request minimal required permissions
+
+## Code Quality Standards
+- **ESLint**: Follow strict ESLint rules
+- **Prettier**: Use consistent formatting
+- **Comments**: Write clear, concise comments for complex logic
+- **Error Handling**: Implement proper error handling and logging
+- **Testing**: Write unit tests for critical functionality
+
+## File Structure Rules
+- **Components**: Place in `src/components/` with subdirectories by feature
+- **Services**: Place in `src/services/` for business logic
+- **Utils**: Place in `src/utils/` for helper functions
+- **Types**: Place in `src/types/` for TypeScript definitions
+- **Constants**: Place in `src/constants/` for configuration
+
+## Naming Conventions
+- **Files**: kebab-case (e.g., `popup-main.tsx`)
+- **Components**: PascalCase (e.g., `PopupMain`)
+- **Functions**: camelCase (e.g., `handleClick`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `MODAL_CONSTANTS`)
+- **Interfaces**: PascalCase with 'I' prefix (e.g., `IPopupProps`)
+
+## Performance Rules
+- **Bundle Size**: Keep bundle size minimal
+- **Lazy Loading**: Use dynamic imports for large components
+- **Memory Leaks**: Clean up event listeners and timers
+- **Rendering**: Optimize re-renders with proper dependencies
+
+## Security Rules
+- **XSS Prevention**: Sanitize user input
+- **CSP**: Follow Content Security Policy guidelines
+- **Permissions**: Request minimal required permissions
+- **Data Validation**: Validate all external data
+
+## Accessibility Rules
+- **ARIA Labels**: Use proper ARIA attributes
+- **Keyboard Navigation**: Ensure keyboard accessibility
+- **Screen Readers**: Test with screen readers
+- **Color Contrast**: Maintain proper color contrast ratios
+
+## Documentation Rules
+- **README**: Keep README.md updated and comprehensive
+- **Code Comments**: Document complex algorithms and business logic
+- **API Documentation**: Document public APIs and interfaces
+- **Changelog**: Maintain a changelog for version changes
+
+## Git Rules
+- **Commit Messages**: Use conventional commit format
+- **Branch Naming**: Use feature/ prefix for feature branches
+- **Pull Requests**: Require code review before merging
+- **History**: Keep git history clean and linear
+
+## Testing Rules
+- **Unit Tests**: Write tests for all critical functions
+- **Integration Tests**: Test component interactions
+- **E2E Tests**: Test user workflows
+- **Coverage**: Maintain high test coverage
+
+## Error Handling
+- **Try-Catch**: Use try-catch blocks for async operations
+- **Error Boundaries**: Implement React error boundaries
+- **Logging**: Log errors with appropriate context
+- **User Feedback**: Provide clear error messages to users
+
+## Code Review Checklist
+Before suggesting any code changes, verify:
+1. File is under 300 lines
+2. TypeScript types are properly defined
+3. Error handling is implemented
+4. Performance considerations are addressed
+5. Accessibility requirements are met
+6. Security best practices are followed
+7. Code follows established patterns
+8. Tests are included for new functionality
+
+## Refactoring Rules
+When a file exceeds 300 lines:
+1. **ANALYZE**: Identify distinct responsibilities
+2. **EXTRACT**: Move related functions to separate files
+3. **ORGANIZE**: Group by feature or functionality
+4. **TEST**: Ensure all functionality still works
+5. **DOCUMENT**: Update imports and documentation
+
+## Import/Export Rules
+- **Named Exports**: Prefer named exports over default exports
+- **Barrel Exports**: Use index files for clean imports
+- **Circular Dependencies**: Avoid circular dependencies
+- **Tree Shaking**: Structure exports for optimal tree shaking
+
+## State Management
+- **Local State**: Use useState for component-local state
+- **Global State**: Use chrome.storage for cross-component state
+- **Context**: Use React Context sparingly and only when necessary
+- **Persistence**: Persist important state to chrome.storage
+
+## Animation Rules
+- **Performance**: Use CSS transforms and opacity for animations
+- **Accessibility**: Respect prefers-reduced-motion
+- **Smooth**: Use cubic-bezier easing for natural motion
+- **Duration**: Keep animations under 300ms for responsiveness
+
+## UI/UX Rules
+- **Consistency**: Maintain consistent design patterns
+- **Feedback**: Provide immediate visual feedback for user actions
+- **Loading States**: Show loading states for async operations
+- **Error States**: Display clear error messages and recovery options
+
+## Memory Management
+- **Event Listeners**: Remove event listeners on component unmount
+- **Timers**: Clear intervals and timeouts
+- **Subscriptions**: Unsubscribe from observables
+- **DOM References**: Clean up DOM references
+
+## Browser Compatibility
+- **Chrome**: Primary target is Chrome 88+
+- **Manifest V3**: Use only Manifest V3 APIs
+- **Polyfills**: Avoid polyfills when possible
+- **Feature Detection**: Check for feature support before use
+
+## Security Best Practices
+- **Content Security Policy**: Follow CSP guidelines
+- **Input Validation**: Validate and sanitize all inputs
+- **XSS Prevention**: Use safe DOM manipulation methods
+- **Permission Minimization**: Request only necessary permissions
+
+## Performance Optimization
+- **Code Splitting**: Split code into logical chunks
+- **Lazy Loading**: Load components and features on demand
+- **Memoization**: Use React.memo and useMemo appropriately
+- **Bundle Analysis**: Regularly analyze bundle size
+
+## Monitoring and Logging
+- **Error Tracking**: Implement error tracking for production
+- **Performance Monitoring**: Monitor key performance metrics
+- **User Analytics**: Track user interactions (privacy-compliant)
+- **Debug Logging**: Include debug logs for development
+
+## Deployment Rules
+- **Build Process**: Ensure clean builds before deployment
+- **Version Management**: Use semantic versioning
+- **Changelog**: Update changelog with each release
+- **Testing**: Run full test suite before deployment
+
+## Code Style Enforcement
+- **Prettier**: Use Prettier for consistent formatting
+- **ESLint**: Follow strict ESLint rules
+- **TypeScript**: Use strict TypeScript configuration
+- **Import Order**: Maintain consistent import order
+
+## Documentation Standards
+- **JSDoc**: Use JSDoc for function documentation
+- **README**: Keep README comprehensive and up-to-date
+- **API Docs**: Document public APIs clearly
+- **Examples**: Provide usage examples for complex features
+
+## Testing Standards
+- **Unit Tests**: Test individual functions and components
+- **Integration Tests**: Test component interactions
+- **E2E Tests**: Test complete user workflows
+- **Mocking**: Use appropriate mocks for external dependencies
+
+## Error Recovery
+- **Graceful Degradation**: Handle errors gracefully
+- **Fallbacks**: Provide fallback UI for failed operations
+- **Retry Logic**: Implement retry logic for transient failures
+- **User Guidance**: Guide users through error recovery
+
+## Accessibility Compliance
+- **WCAG 2.1**: Follow WCAG 2.1 AA standards
+- **Keyboard Navigation**: Ensure full keyboard accessibility
+- **Screen Reader Support**: Test with screen readers
+- **Color Contrast**: Maintain 4.5:1 contrast ratio minimum
+
+## Performance Budgets
+- **Bundle Size**: Keep total bundle under 500KB
+- **Load Time**: Target sub-2-second initial load
+- **Memory Usage**: Monitor memory usage and optimize
+- **CPU Usage**: Minimize CPU usage during animations
+
+## Code Review Process
+1. **Line Count Check**: Verify file is under 300 lines
+2. **Type Safety**: Ensure all types are properly defined
+3. **Error Handling**: Verify proper error handling
+4. **Performance**: Check for performance issues
+5. **Security**: Review for security vulnerabilities
+6. **Accessibility**: Verify accessibility compliance
+7. **Testing**: Ensure adequate test coverage
+8. **Documentation**: Check documentation completeness
+
+## Emergency Rules
+- **CRITICAL**: If a file exceeds 300 lines, it MUST be refactored immediately
+- **NO EXCEPTIONS**: The 300-line limit is absolute for source code files
+- **IMMEDIATE ACTION**: When suggesting changes, always check line count first
+- **REFACTOR FIRST**: Before adding new features to large files, refactor them
+
+## Final Reminder
+**ALWAYS CHECK THE LINE COUNT BEFORE SUGGESTING ANY CODE CHANGES. IF A FILE EXCEEDS 300 LINES, REFACTOR IT FIRST. THIS IS THE MOST IMPORTANT RULE.**

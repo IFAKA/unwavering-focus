@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import SettingsMain from './settings/SettingsMain';
 import SmartSearchSettings from './settings/SmartSearchSettings';
 import TabLimiterSettings from './settings/TabLimiterSettings';
-import HabitsSettings from './settings/HabitsSettings';
-import PillarsSettings from './settings/PillarsSettings';
+
+
 import BlockerSettings from './settings/BlockerSettings';
 import EyeCareSettings from './settings/EyeCareSettings';
 import VideoFocusSettings from './settings/VideoFocusSettings';
@@ -13,7 +13,7 @@ interface PopupSettingsProps {
   onNavigateToMain: () => void;
 }
 
-type SettingsSection = 'main' | 'smartSearch' | 'tabLimiter' | 'habits' | 'pillars' | 'blocker' | 'care' | 'videoFocus' | 'contentFocus';
+type SettingsSection = 'main' | 'smartSearch' | 'tabLimiter' | 'blocker' | 'care' | 'videoFocus' | 'contentFocus';
 
 const PopupSettings: React.FC<PopupSettingsProps> = ({ onNavigateToMain }) => {
   const [currentSection, setCurrentSection] = useState<SettingsSection>('main');
@@ -47,18 +47,7 @@ const PopupSettings: React.FC<PopupSettingsProps> = ({ onNavigateToMain }) => {
             onNavigateBack={navigateToMain}
           />
         );
-      case 'habits':
-        return (
-          <HabitsSettings
-            onNavigateBack={navigateToMain}
-          />
-        );
-      case 'pillars':
-        return (
-          <PillarsSettings
-            onNavigateBack={navigateToMain}
-          />
-        );
+
       case 'blocker':
         return (
           <BlockerSettings

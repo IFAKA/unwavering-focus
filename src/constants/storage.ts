@@ -4,7 +4,7 @@ export const STORAGE_CONSTANTS = {
   KEYS: {
     SAVED_SEARCHES: 'savedSearches',
     DISTRACTING_DOMAINS: 'distractingDomains',
-    HABIT_ENTRIES: 'habitEntries',
+  
     CONFIG: 'config',
     TAB_COUNT: 'tabCount',
     NEXT_EYE_CARE_ALARM: 'nextEyeCareAlarm',
