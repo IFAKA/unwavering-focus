@@ -1,0 +1,92 @@
+<svg width="900" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="workflowBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c2c2e;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <rect width="900" height="400" fill="url(#workflowBg)"/>
+  
+  <!-- Title -->
+  <text x="450" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#007aff">Your Focus Journey</text>
+  
+  <!-- Workflow Steps -->
+  <!-- Step 1: Distraction -->
+  <rect x="50" y="80" width="120" height="80" rx="12" fill="#ff3b30" opacity="0.2" stroke="#ff3b30" stroke-width="2"/>
+  <text x="110" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff3b30">🚫 Distraction</text>
+  <text x="110" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Social media</text>
+  <text x="110" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Tab overload</text>
+  
+  <!-- Arrow 1 -->
+  <path d="M 180 120 L 220 120" stroke="#007aff" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- Step 2: Capture -->
+  <rect x="240" y="80" width="120" height="80" rx="12" fill="#34c759" opacity="0.2" stroke="#34c759" stroke-width="2"/>
+  <text x="300" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#34c759">🎯 Capture</text>
+  <text x="300" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Alt+Shift+I</text>
+  <text x="300" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Save for later</text>
+  
+  <!-- Arrow 2 -->
+  <path d="M 370 120 L 410 120" stroke="#007aff" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- Step 3: Focus -->
+  <rect x="430" y="80" width="120" height="80" rx="12" fill="#007aff" opacity="0.2" stroke="#007aff" stroke-width="2"/>
+  <text x="490" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#007aff">⚡ Focus</text>
+  <text x="490" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Stay on task</text>
+  <text x="490" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Eye care alerts</text>
+  
+  <!-- Arrow 3 -->
+  <path d="M 560 120 L 600 120" stroke="#007aff" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- Step 4: Review -->
+  <rect x="620" y="80" width="120" height="80" rx="12" fill="#ff9500" opacity="0.2" stroke="#ff9500" stroke-width="2"/>
+  <text x="680" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff9500">📋 Review</text>
+  <text x="680" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Search saved</text>
+  <text x="680" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">items later</text>
+  
+  <!-- Arrow 4 -->
+  <path d="M 750 120 L 790 120" stroke="#007aff" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- Step 5: Success -->
+  <rect x="810" y="80" width="80" height="80" rx="12" fill="#34c759" opacity="0.2" stroke="#34c759" stroke-width="2"/>
+  <text x="850" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#34c759">✅ Done</text>
+  <text x="850" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Task</text>
+  <text x="850" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">complete</text>
+  
+  <!-- Arrow definitions -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#007aff"/>
+    </marker>
+  </defs>
+  
+  <!-- Benefits Section -->
+  <rect x="50" y="200" width="840" height="160" rx="12" fill="#ffffff" opacity="0.05" stroke="#007aff" stroke-width="1"/>
+  <text x="470" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#007aff">Key Benefits</text>
+  
+  <!-- Benefit 1 -->
+  <rect x="80" y="250" width="240" height="80" rx="8" fill="#34c759" opacity="0.1" stroke="#34c759" stroke-width="1"/>
+  <text x="95" y="275" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#34c759">🚀 Productivity Boost</text>
+  <text x="95" y="295" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Eliminate distractions</text>
+  <text x="95" y="310" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Stay focused on tasks</text>
+  
+  <!-- Benefit 2 -->
+  <rect x="340" y="250" width="240" height="80" rx="8" fill="#ff9500" opacity="0.1" stroke="#ff9500" stroke-width="1"/>
+  <text x="355" y="275" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff9500">👁️ Eye Health</text>
+  <text x="355" y="295" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">20-20-20 reminders</text>
+  <text x="355" y="310" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Reduce eye strain</text>
+  
+  <!-- Benefit 3 -->
+  <rect x="600" y="250" width="240" height="80" rx="8" fill="#5856d6" opacity="0.1" stroke="#5856d6" stroke-width="1"/>
+  <text x="615" y="275" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#5856d6">📊 Habit Tracking</text>
+  <text x="615" y="295" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Monitor progress</text>
+  <text x="615" y="310" font-family="Arial, sans-serif" font-size="12" fill="#ffffff">Build discipline</text>
+</svg>

@@ -34,7 +34,7 @@ This document outlines the features, user experience, and technical specificatio
 
 **Objective:** Prevent "rabbit-holing" by deferring thoughts and ideas for later review.
 
-* **Trigger:** User presses the keyboard shortcut `Option+Shift+S`.
+* **Trigger:** User presses the keyboard shortcut `Option+Shift+I`.
 * **Action:**
     1.  A small, non-intrusive, floating input modal appears centrally on the current active tab/window with natural spring-like animation.
     2.  If text is selected on the page, this text should pre-populate the input field. The user can edit or type new text.

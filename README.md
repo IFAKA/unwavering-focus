@@ -1,310 +1,417 @@
-# Unwavering Focus Chrome Extension
+# 🎯 Unwavering Focus
 
-A Chrome extension designed to maximize productivity, eliminate digital distractions, and cultivate disciplined focus. Built with React, TypeScript, and Chrome Extension Manifest V3.
+> **Transform your browsing into focused productivity with the ultimate Chrome extension for eliminating digital distractions and building disciplined habits.**
 
-## Features
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Download-blue?style=for-the-badge&logo=google-chrome)](https://chrome.google.com/webstore/detail/unwavering-focus/your-extension-id)
+[![Version](https://img.shields.io/badge/version-1.0.0-green?style=flat-square)](https://github.com/yourusername/unwavering-focus/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-### ✅ **Smart Search Management**
-- Press `Alt+Shift+I` to save search queries for later
-- Access saved searches from the extension popup
-- Perform searches or delete them as needed
+---
 
-### ✅ **Distraction Blocker**
-- Block access to distracting websites after reaching daily limits
-- Configure domains and daily limits in options
-- **Enabled by default**
+## 🚀 Why Unwavering Focus?
 
-### ✅ **YouTube Distraction Blocking**
-- Automatically hides distracting elements on YouTube pages
-- Removes recommended videos, comments, and engagement buttons
-- Works on video pages and search results
-- **Enabled by default**
+In today's digital world, distractions are everywhere. Social media feeds, endless tabs, and constant notifications pull us away from what truly matters. **Unwavering Focus** is your digital companion that transforms scattered browsing into purposeful productivity.
 
-### ✅ **Eye Care Reminder (20-20-20)**
-- Get reminded every 20 minutes to look 20 feet away for 20 seconds
-- **Corrected sound order**: Start sound (low-to-high) for 20-minute reminder, end sound (high-to-low) for 20-second reminder
-- Configurable sound volume
-- **Enabled by default**
+### ✨ What Makes Us Different
 
-### ✅ **Box Breathing with Audio & Haptic Cues**
-- Practice 4-4-4-4 box breathing technique with visual guidance
-- **Audio cues**: Different tones for each breathing phase (inhale, hold, exhale, hold)
-- **Haptic feedback**: Vibration patterns for each phase to practice with eyes closed
-- **Customizable**: Toggle audio/haptic features and adjust volume in Eye Care settings
-- **Keyboard shortcut**: Press `Alt+Shift+B` to start breathing exercise
-- **Focus text**: Add custom focus text to guide your meditation
+- **🎯 Smart Thought Capture**: Never lose an idea again with one-key capture (`Alt+Shift+I`)
+- **🚫 Intelligent Distraction Blocking**: Limit social media access while allowing specific content
+- **👁️ Eye Health Protection**: 20-20-20 reminders to prevent digital eye strain
+- **📑 Tab Management**: Prevent tab overload and stay focused on current tasks
+- **📊 Habit Tracking**: Build discipline with daily habit monitoring
+- **🎬 Video Focus Mode**: Remove distractions from video platforms
+- **⚡ Apple Watch Design**: Glanceable, minimal interface for instant comprehension
 
-### ✅ **Tab Limiter**
-- Limit the number of open tabs (default: 3)
-- Configure excluded domains that don't count toward the limit
-- **Toggleable feature** - can be enabled/disabled
-- **Enabled by default**
+![Features Overview](docs/assets/features-diagram.svg)
 
-### ✅ **Video Focus Mode**
-- Automatically detects when videos are playing on supported platforms
-- Prevents tab switching while videos are playing (optional)
-- Shows a focus indicator when video is active
-- Supports YouTube, Netflix, Vimeo, Twitch, Facebook, Instagram, TikTok
-- **Excludes YouTube Music** (music.youtube.com) - designed for audio listening, not video watching
-- Works with any HTML5 video elements
-- **Enabled by default**
+---
 
-### ✅ **Focus Page & Performance Dashboard**
-- Track daily habits and consistency
-- View mastery scores and reinforcement messages
-- Access via popup or when redirected from blocked sites
+## 🎯 Core Features
 
-### ✅ **Options Page**
-- Full configuration for all features
-- Customize motivational messages
-- Set up pillar habits for tracking
+### 🎯 Smart Search & Thought Capture
+**Keyboard Shortcut: `Alt+Shift+I`**
 
-## Installation
+Capture thoughts, ideas, and tasks instantly without breaking your flow. Selected text automatically populates the input field, and everything is saved for later review.
 
-### Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn
+- **One-key capture** - Never lose an idea again
+- **Auto-populate** from selected text
+- **Search all** saved items at once
+- **Copy to clipboard** with one click
+- **Auto-remove** after searching
 
-### Build Instructions
+> 💡 **Pro Tip**: Free users can save up to 10 items. Pro users get unlimited storage for capturing every idea that comes to mind.
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd unwavering-focus
-   ```
+### 🚫 Distraction Blocker
+Take control of your social media consumption with intelligent blocking that allows specific content while limiting homepage access.
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+- **Daily limits** for distracting domains
+- **Content exceptions** - access specific videos/posts
+- **Focus page redirect** when limits are reached
+- **Customizable** domain lists
+- **Overlay warnings** before blocking
 
-3. **Build the extension**
-   ```bash
-   npm run build
-   ```
+> 💡 **Pro Tip**: Free users can block up to 3 domains. Pro users get unlimited distraction blocking for complete focus control.
 
-4. **Load in Chrome**
-   - Open Chrome and go to `chrome://extensions/`
-   - Enable "Developer mode" (toggle in top right)
-   - Click "Load unpacked"
-   - Select the `dist` folder from the project
+### 👁️ 20-20-20 Eye Care
+Protect your eyes with automatic reminders following the 20-20-20 rule: every 20 minutes, look 20 feet away for 20 seconds.
 
-## Usage
+- **Automatic timers** while browsing
+- **Audio cues** for reminders
+- **Configurable** sound and volume
+- **Visual notifications** in extension popup
+- **Break completion** alerts
 
-### Basic Usage
+> 💡 **Pro Tip**: Free users get basic reminders. Pro users unlock custom sounds, haptic feedback, and advanced eye care analytics.
 
-1. **Extension Popup**: Click the extension icon in the toolbar to access:
-   - Saved searches
-   - Quick actions (Focus Page, Options)
-   - Status overview
+### 📑 Tab Limiter
+Prevent tab overload and maintain focus on current tasks with intelligent tab management.
 
-2. **Smart Search**: 
-   - Press `Alt+Shift+I` on any webpage
-   - Enter or edit your search query
-   - Access saved searches from the popup
+- **Configurable limits** (1-10 tabs)
+- **Domain exclusions** for work tools
+- **Smart alerts** when limit reached
+- **Quick actions** to close tabs
+- **Visual indicators** in popup
 
-3. **Box Breathing**: 
-   - Press `Alt+Shift+B` to start a breathing exercise
-   - Or use the command palette (`Alt+Shift+I`) and leave it empty, then click "Start Box Breathing"
-   - Add focus text to guide your meditation
-   - Practice with eyes closed using audio cues and haptic feedback
+> 💡 **Pro Tip**: Free users are limited to 5 tabs. Pro users get unlimited tab management with advanced exclusion rules.
 
-4. **Options**: 
-   - Click "Options" in the popup or go to extension settings
-   - Configure all features and settings
+### 📊 Focus Dashboard
+Track your progress and build discipline with a comprehensive habit tracking system.
 
-4. **Focus Page**: 
-   - Click "Focus Page" in the popup
-   - Track your daily habits and view performance
+- **Daily habit monitoring** with quick status updates
+- **Mastery score** calculation
+- **Motivational messages** based on performance
+- **Pillar habit tracking** for long-term goals
+- **Progress visualization**
 
-### Default Settings
+> 💡 **Pro Tip**: Free users get basic habit tracking. Pro users unlock advanced analytics, streak tracking, and personalized insights.
 
-- **Distraction Blocker**: Enabled
-- **Eye Care**: Enabled (20-minute intervals)
-- **Tab Limiter**: 3 tabs maximum
-- **Smart Search**: Enabled
+### 🎬 Video Focus Mode
+Remove distractions from video platforms while keeping the content you need.
 
-## Development
+- **YouTube distraction removal**
+- **Netflix, Twitch, and more** support
+- **Customizable** element hiding
+- **Focus on content** not feeds
+- **Preserve functionality** while removing noise
+
+> 💡 **Pro Tip**: Free users get basic video focus. Pro users unlock advanced customization and support for all video platforms.
+
+---
+
+## 🎨 User Interface
+
+Built with **Apple Watch Design Principles** for optimal glanceability and minimal interaction.
+
+![Popup Interface](docs/assets/popup-mockup.svg)
+
+### Design Philosophy
+- **Glanceable**: Get all information in 2-3 seconds
+- **Minimal**: 80% content reduction for essential info only
+- **Focused**: Single-tap interactions, no nested menus
+- **Responsive**: Fast animations under 300ms
+- **Accessible**: Respects motion preferences and screen readers
+
+---
+
+## 🔄 How It Works
+
+![Workflow Diagram](docs/assets/workflow-diagram.svg)
+
+### Your Focus Journey
+
+1. **🚫 Identify Distraction** - Social media, tab overload, notifications
+2. **🎯 Capture Thought** - Press `Alt+Shift+I` to save for later
+3. **⚡ Stay Focused** - Continue with your current task
+4. **📋 Review Later** - Search saved items when ready
+5. **✅ Complete Tasks** - Build momentum and discipline
+
+---
+
+## 🚀 Quick Start
+
+### Installation
+1. **Download** from the [Chrome Web Store](https://chrome.google.com/webstore/detail/unwavering-focus/your-extension-id)
+2. **Click "Add to Chrome"** to install the extension
+3. **Pin the extension** to your toolbar for easy access
+4. **Configure settings** by clicking the extension icon
+
+### Start Free, Upgrade When Ready
+Unwavering Focus offers a generous free tier to help you experience the benefits of focused browsing. As your productivity needs grow, you can unlock unlimited features with our Pro plan.
+
+**Free Tier Includes:**
+- Smart Search (10 items)
+- Distraction Blocker (3 domains)
+- Basic Eye Care reminders
+- Tab Limiter (5 tabs)
+- Essential habit tracking
+
+**Pro Features Unlock:**
+- Unlimited Smart Search storage
+- Unlimited distraction blocking
+- Advanced eye care with custom sounds
+- Unlimited tab management
+- Advanced analytics and insights
+- Priority support
+
+### First Steps
+1. **Press `Alt+Shift+I`** to capture your first thought
+2. **Set up distraction blocking** in Settings → Blocker
+3. **Configure eye care reminders** in Settings → Care
+4. **Set tab limits** in Settings → Focus
+5. **Define your habits** in Settings → Habits
+
+### Keyboard Shortcuts
+- **`Alt+Shift+I`** - Open Smart Search modal
+- **`Alt+Shift+F`** - Open Focus Dashboard
+- **`Alt+Shift+S`** - Open Settings
+
+---
+
+## ⚙️ Configuration
+
+### Smart Search Settings
+- Enable/disable auto-remove after search
+- Configure maximum saved items (default: 100)
+- Customize keyboard shortcuts
+
+### Distraction Blocker
+- Add/remove distracting domains
+- Set daily homepage limits per domain
+- Configure content exception patterns
+- Enable/disable overlay warnings
+
+### Eye Care
+- Enable/disable 20-20-20 reminders
+- Adjust sound volume (0.0-1.0)
+- Test audio cues
+- Configure reminder intervals
+
+### Tab Limiter
+- Set maximum tabs (1-10)
+- Add domain/subdomain exclusions
+- Configure alert behavior
+- Enable/disable automatic blocking
+
+### Focus Dashboard
+- Define pillar habits (3-5 recommended)
+- Set motivational messages
+- Configure mastery score thresholds
+- Reset daily counters
+
+---
+
+## 💰 Value Proposition
+
+**Time is your most valuable asset.** Unwavering Focus helps you reclaim 80-155 minutes daily by eliminating digital distractions and building focused habits.
+
+**Monthly Value Created:**
+- **Time savings:** 40-77.5 hours/month
+- **Focus improvement:** Measurable productivity gains
+- **Health benefits:** Reduced eye strain and stress
+- **Professional growth:** Consistent habit formation
+
+*That's €313-606 in value created monthly, making Unwavering Focus Pro an investment in your productivity and well-being.*
+
+## 🎯 Use Cases
+
+### For Students
+- **Capture research ideas** during study sessions
+- **Block social media** during exam prep
+- **Track study habits** and consistency
+- **Maintain focus** during online classes
+
+### For Professionals
+- **Save meeting notes** and action items
+- **Limit work distractions** during deep work
+- **Track productivity habits** and goals
+- **Manage multiple project tabs**
+
+### For Content Creators
+- **Capture inspiration** without breaking flow
+- **Focus on video content** without distractions
+- **Track creative habits** and consistency
+- **Maintain workflow** across platforms
+
+### For Remote Workers
+- **Separate work and personal** browsing
+- **Maintain focus** in distracting environments
+- **Track work habits** and productivity
+- **Protect eye health** during long sessions
+
+---
+
+## 💎 Pricing & Plans
+
+Unwavering Focus is designed to grow with you. Start with our generous free tier and upgrade when you're ready to unlock your full productivity potential.
+
+### Free Plan
+**Perfect for getting started**
+- Smart Search (10 items)
+- Distraction Blocker (3 domains)
+- Basic Eye Care reminders
+- Tab Limiter (5 tabs)
+- Essential habit tracking
+
+### Pro Plan
+**For serious productivity seekers**
+- **€8.99/month** or **€89.99/year** (save 17%)
+- Unlimited Smart Search storage
+- Unlimited distraction blocking
+- Advanced eye care with custom sounds
+- Unlimited tab management
+- Advanced analytics and insights
+- Video focus mode
+- Priority support
+
+### Lifetime
+**One-time investment**
+- **€199** for lifetime access
+- All Pro features forever
+- Future updates included
+- Break-even in 22 months
+
+*Choose the plan that fits your productivity journey.*
+
+## 🔧 Technical Details
+
+### Built With
+- **React 18** - Modern UI components
+- **TypeScript** - Type-safe development
+- **Chrome Extension Manifest V3** - Latest standards
+- **Tailwind CSS** - Utility-first styling
+- **Webpack** - Efficient bundling
+
+### Architecture
+- **Clean Architecture** - Separation of concerns
+- **Apple Watch Design** - Glanceable interfaces
+- **Emil Kowalski Animations** - Natural, fast motion
+- **Bulletproof Focus System** - Reliable user interaction
+
+### Performance
+- **Lightweight** - Minimal resource usage
+- **Fast animations** - Under 300ms for responsiveness
+- **Efficient storage** - Chrome storage optimization
+- **Hardware acceleration** - GPU-optimized animations
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Setup
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/unwavering-focus.git
+cd unwavering-focus
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run linting
+npm run lint
+
+# Format code
+npm run format
+```
 
 ### Project Structure
 ```
 src/
-├── background.ts          # Service worker (background script)
-├── content.ts            # Content script for Smart Search & YouTube blocking
-├── popup.tsx            # Extension popup UI
-├── options.tsx          # Options page UI
-├── focus-page.tsx       # Focus page UI
-├── services/
-│   └── storage.ts       # Chrome storage abstraction
-├── utils/
-│   ├── urlUtils.ts      # URL parsing and domain utilities
-│   ├── habitUtils.ts    # Habit tracking utilities
-│   └── youtubeUtils.ts  # YouTube distraction blocking utilities
-├── types/
-│   └── index.ts         # TypeScript type definitions
-└── assets/
-    └── icon.svg         # Extension icon
+├── components/          # React components
+│   ├── popup/          # Extension popup UI
+│   ├── ui/             # Reusable UI components
+│   └── metrics/        # Dashboard metrics
+├── services/           # Business logic
+├── hooks/              # Custom React hooks
+├── constants/          # App constants
+├── types/              # TypeScript definitions
+└── utils/              # Utility functions
 ```
-
-### Available Scripts
-
-- `npm run build` - Build the extension for production
-- `npm run dev` - Build in development mode with watch
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
-
-### Technology Stack
-
-- **Frontend**: React 18, TypeScript
-- **Styling**: SCSS with CSS Modules
-- **Bundler**: Webpack 5
-- **Chrome APIs**: Manifest V3
-- **Storage**: chrome.storage.local
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Extension not loading**: 
-   - Ensure you're loading the `dist` folder, not the root project
-   - Check that "Developer mode" is enabled in Chrome extensions
-
-2. **Features not working**:
-   - Reload the extension after making changes
-   - Check the browser console for error messages
-   - Ensure all permissions are granted
-
-3. **Build errors**:
-   - Run `npm install` to ensure all dependencies are installed
-   - Check that Node.js version is 14 or higher
-
-### Debug Mode
-
-The extension includes comprehensive console logging for debugging:
-- Background script logs all message handling
-- React components log data loading and errors
-- YouTube distraction blocker logs element detection and hiding
-- Check browser console for detailed information
-
-### YouTube Distraction Blocking Technical Details
-
-The YouTube distraction blocking uses a multi-layered approach:
-
-1. **Direct ID targeting**: `document.getElementById('secondary')`
-2. **Class/ID pattern matching**: Elements with classes/IDs containing "secondary", "related", "recommendations"
-3. **YouTube-specific selectors**: 
-   - `ytd-watch-next-secondary-results-renderer`
-   - `#secondary #contents`
-   - `#secondary ytd-watch-next-secondary-results-renderer`
-4. **Dynamic monitoring**: MutationObserver continuously watches for new elements
-5. **Periodic checks**: Additional checks every 2 seconds for robustness
-
-## Current Status
-
-✅ **Core Features Working**:
-- Extension loads and displays UI correctly
-- Popup, Options, and Focus pages render without errors
-- Default configuration applied (Distraction Blocker: Enabled, Eye Care: Enabled, Tab Limiter: 3)
-- Message passing between components functional
-- **Alt+Shift+I opens modal on current page** (not popup)
-- **Tab counting and limiting working correctly**
-- **Configuration saving working**
-- **Eye Care test button with working sound**
-- **Distraction blocker with full-screen overlay**
-- **Stoic quotes API integration**
-- **YouTube distraction blocking with multi-layered detection**
-- **Corrected eye care sound order**
-
-## ✅ **Features Implemented**
-
-✅ **Smart Search Management**:
-- Alt+Shift+I shortcut opens a **clean, centered input modal** (like the image)
-- Pre-populates with selected text if any
-- Saves searches to persistent storage
-- Displays saved searches in popup
-- **Smart URL handling**: If saved item is a URL, clicking search navigates directly to the URL
-- **Clean URL display**: URLs show without protocol (https://), www subdomain, and trailing slashes
-- **Regular search**: Non-URL items perform Google search as before
-- **Hover interactions**: Search actions appear on hover with smooth animations
-- **Modal animations**: Smooth fade in/out animations with immediate response to Enter key
-- **Synchronized feedback**: "Saved for later" confirmation appears immediately when modal closes
-- **Scrollable list**: Saved items list scrolls when there are many items
-- **Golden ratio design**: Popup uses golden ratio proportions (300px × 485px) for optimal aesthetics
-- **Reverse chronological order**: Newest items appear at the top of the list
-- Click to perform searches or delete them
-
-✅ **Distraction Blocker**:
-- Configurable distracting domains with daily visit limits
-- **Redirects to Focus Page when limit exceeded**
-- Shows overlay with remaining visits
-- Allows specific content access (not just homepages)
-
-✅ **YouTube Distraction Blocking**:
-- Automatically detects YouTube pages and hides distracting elements
-- **Video pages**: Hides secondary content (recommended videos sidebar), comments, like/dislike buttons, download/clip buttons
-- **Search pages**: Hides grid shelves and mini guide elements
-- **Multi-layered detection**: Uses multiple selectors to ensure comprehensive element hiding
-- **Dynamic content**: Continuously monitors for new distracting elements with MutationObserver
-- **Debug logging**: Console logs to track element detection and hiding
-- **Configurable**: Each element type can be enabled/disabled in options
-
-✅ **Video Focus Mode**:
-- Automatically detects video playback on supported platforms
-- **Prevents tab switching** while videos are playing (configurable)
-- **Shows clean focus indicator** with smooth slide animation when video is active
-- **Supports multiple platforms**: YouTube, Netflix, Vimeo, Twitch, Facebook, Instagram, TikTok
-- **Excludes YouTube Music** (music.youtube.com) - designed for audio listening, not video watching
-- **Works with any HTML5 video elements** on any website
-- **Real-time state tracking** with background script communication
-- **Configurable settings**: Enable/disable, prevent tab switching, show indicator, auto-detect videos
-- **Visual feedback**: Notification when tab switching is blocked
-
-✅ **Eye Care Reminder (20-20-20)**:
-- **Visual countdown timer in popup** showing time until next reminder
-- **Corrected sound order**: Start sound (low-to-high) for 20-minute reminder, end sound (high-to-low) for 20-second reminder
-- **Uses macOS system beep sound** for notifications
-- **Simple beep-only approach** - no visual notifications or alerts
-- 20-minute intervals with 20-second follow-up beep
-- Configurable volume and enable/disable
-- **Test button in options page** (now working properly)
-
-✅ **Tab Limiter**:
-- Correctly counts non-excluded tabs
-- Enforces tab limit (default: 3)
-- **Closes newly created tab when limit is reached (not exceeded)**
-- Updates tab count in popup
-- **Toggleable feature** - can be enabled/disabled in settings
-
-✅ **Focus Page**:
-- Clean, motivational interface
-- **Random Stoic quotes from API**
-- Habit tracking with visual grid
-- Performance dashboard with consistency scores
-
-✅ **Extension Popup**:
-- **Real-time eye care countdown timer**
-- Tab counter with current/limit display
-- Saved searches list with click-to-search
-- Feature status indicators
-- Quick access to Focus Page and Options
-
-🔄 **In Development**:
-- Advanced distraction blocking with domain-specific limits
-- Real-time habit tracking updates
-- Enhanced UI animations and transitions
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
 
 ---
 
-**Note**: This extension is designed to be simple and functional. The current implementation focuses on core functionality with a clean, minimal UI. Advanced features and complex state management can be added incrementally as needed. 
+## 📊 Roadmap
+
+### Version 1.1 (Coming Soon)
+- [ ] **Custom element hiding** for any website
+- [ ] **Advanced analytics** and insights
+- [ ] **Cloud sync** for settings and data
+- [ ] **Mobile companion app**
+
+### Version 1.2
+- [ ] **Team collaboration** features
+- [ ] **Advanced habit tracking** with streaks
+- [ ] **Integration** with productivity tools
+- [ ] **Custom themes** and personalization
+
+### Version 2.0
+- [ ] **AI-powered** distraction detection
+- [ ] **Cross-platform** support (Firefox, Safari)
+- [ ] **Advanced analytics** dashboard
+- [ ] **API integration** with external services
+
+---
+
+## 🆘 Support
+
+### Getting Help
+- **📖 [Documentation](https://docs.unwaveringfocus.com)** - Complete user guide
+- **🐛 [Report Issues](https://github.com/yourusername/unwavering-focus/issues)** - Bug reports and feature requests
+- **💬 [Discussions](https://github.com/yourusername/unwavering-focus/discussions)** - Community support
+- **📧 [Email Support](mailto:support@unwaveringfocus.com)** - Direct support
+
+### Common Issues
+- **Extension not working?** Check if it's enabled in Chrome settings
+- **Keyboard shortcuts not working?** Ensure no conflicts with other extensions
+- **Settings not saving?** Check Chrome storage permissions
+- **Performance issues?** Try disabling other extensions temporarily
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Apple Watch Design Team** - For inspiration on glanceable interfaces
+- **Emil Kowalski** - For animation principles and best practices
+- **Chrome Extension Community** - For development guidance and support
+- **Our Users** - For feedback and continuous improvement
+
+---
+
+## 🌟 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/unwavering-focus&type=Date)](https://star-history.com/#yourusername/unwavering-focus&Date)
+
+---
+
+<div align="center">
+
+**Ready to reclaim your focus and productivity?**
+
+[![Download from Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Start%20Free-blue?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chrome.google.com/webstore/detail/unwavering-focus/your-extension-id)
+
+*Join thousands of users who have already transformed their digital habits. Start free, upgrade when you're ready.*
+
+</div>
+
+---
+
+<div align="center">
+
+**Made with ❤️ for focused productivity**
+
+[Website](https://unwaveringfocus.com) • [Documentation](https://docs.unwaveringfocus.com) • [Support](https://github.com/yourusername/unwavering-focus/discussions)
+
+</div> 

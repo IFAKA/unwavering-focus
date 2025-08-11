@@ -1,0 +1,66 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c2c2e;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <rect width="800" height="600" fill="url(#bg)"/>
+  
+  <!-- Title -->
+  <text x="400" y="60" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#007aff">Unwavering Focus</text>
+  <text x="400" y="90" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">Chrome Extension Features</text>
+  
+  <!-- Feature Cards -->
+  <!-- Smart Search -->
+  <rect x="50" y="120" width="300" height="80" rx="12" fill="#34c759" opacity="0.2" stroke="#34c759" stroke-width="2"/>
+  <text x="70" y="150" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#34c759">🎯 Smart Search</text>
+  <text x="70" y="170" font-family="Arial, sans-serif" font-size="14" fill="#ffffff">Alt+Shift+I to capture thoughts</text>
+  <text x="70" y="185" font-family="Arial, sans-serif" font-size="12" fill="#cccccc">Save ideas for later review</text>
+  
+  <!-- Distraction Blocker -->
+  <rect x="450" y="120" width="300" height="80" rx="12" fill="#ff3b30" opacity="0.2" stroke="#ff3b30" stroke-width="2"/>
+  <text x="470" y="150" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#ff3b30">🚫 Distraction Blocker</text>
+  <text x="470" y="170" font-family="Arial, sans-serif" font-size="14" fill="#ffffff">Limit social media access</text>
+  <text x="470" y="185" font-family="Arial, sans-serif" font-size="12" fill="#cccccc">Prevent doomscrolling</text>
+  
+  <!-- Eye Care -->
+  <rect x="50" y="220" width="300" height="80" rx="12" fill="#ff9500" opacity="0.2" stroke="#ff9500" stroke-width="2"/>
+  <text x="70" y="250" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#ff9500">👁️ 20-20-20 Eye Care</text>
+  <text x="70" y="270" font-family="Arial, sans-serif" font-size="14" fill="#ffffff">Reminders every 20 minutes</text>
+  <text x="70" y="285" font-family="Arial, sans-serif" font-size="12" fill="#cccccc">Look 20 feet away for 20 seconds</text>
+  
+  <!-- Tab Limiter -->
+  <rect x="450" y="220" width="300" height="80" rx="12" fill="#5856d6" opacity="0.2" stroke="#5856d6" stroke-width="2"/>
+  <text x="470" y="250" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#5856d6">📑 Tab Limiter</text>
+  <text x="470" y="270" font-family="Arial, sans-serif" font-size="14" fill="#ffffff">Control tab overload</text>
+  <text x="470" y="285" font-family="Arial, sans-serif" font-size="12" fill="#cccccc">Stay focused on current tasks</text>
+  
+  <!-- Focus Dashboard -->
+  <rect x="50" y="320" width="300" height="80" rx="12" fill="#007aff" opacity="0.2" stroke="#007aff" stroke-width="2"/>
+  <text x="70" y="350" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#007aff">📊 Focus Dashboard</text>
+  <text x="70" y="370" font-family="Arial, sans-serif" font-size="14" fill="#ffffff">Track habits and progress</text>
+  <text x="70" y="385" font-family="Arial, sans-serif" font-size="12" fill="#cccccc">Monitor your discipline</text>
+  
+  <!-- Video Focus -->
+  <rect x="450" y="320" width="300" height="80" rx="12" fill="#34c759" opacity="0.2" stroke="#34c759" stroke-width="2"/>
+  <text x="470" y="350" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#34c759">🎬 Video Focus Mode</text>
+  <text x="470" y="370" font-family="Arial, sans-serif" font-size="14" fill="#ffffff">Remove video distractions</text>
+  <text x="470" y="385" font-family="Arial, sans-serif" font-size="12" fill="#cccccc">Focus on content, not feeds</text>
+  
+  <!-- Call to Action -->
+  <rect x="250" y="440" width="300" height="60" rx="12" fill="#007aff" opacity="0.8"/>
+  <text x="400" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#ffffff">Download from Chrome Web Store</text>
+  
+  <!-- Apple Watch Design -->
+  <text x="400" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#007aff">Built with Apple Watch Design Principles</text>
+  <text x="400" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#cccccc">Glanceable • Minimal • Focused</text>
+</svg>
