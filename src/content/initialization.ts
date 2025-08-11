@@ -1,8 +1,8 @@
 import { FEATURE_CONSTANTS } from '../constants';
 import { YouTubeDistractionBlocker, isYouTubePage } from '../utils/youtubeUtils';
 import { VideoFocusManager, supportsVideoFocus } from '../utils/videoFocusUtils';
-import { createPinnedTaskElements, removePinnedTaskElements } from './ui/pinned-task';
-import { createCountdownTimerElement, removeCountdownTimerElement } from './ui/countdown-timer';
+import { createPinnedTaskElements } from './ui/pinned-task';
+import { createCountdownTimerElement } from './ui/countdown-timer';
 import { startTimeTracking } from './utils/time-tracking';
 import { startBoxBreathing } from './actions/breathing-exercise';
 import { showTimerCompletionNotification } from './ui/countdown-timer';

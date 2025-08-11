@@ -1,8 +1,9 @@
-import { FEATURE_CONSTANTS } from '../../constants';
+
 import { saveThought } from './thought-manager';
 import { pinTask, hasExistingPinnedTask } from './task-manager';
 import { startBoxBreathing } from './breathing-exercise';
 import { startTimer, hasExistingTimer } from './timer-manager';
+
 
 export interface IActionResult {
   success: boolean;
@@ -191,7 +192,7 @@ export function getActionDisplayText(actionId: ActionType, inputValue: string): 
 /**
  * Validates if an action can be executed
  */
-export async function canExecuteAction(actionId: ActionType, inputValue: string): Promise<boolean> {
+export async function canExecuteAction(actionId: ActionType): Promise<boolean> {
   try {
     switch (actionId) {
       case 'timer':
@@ -212,8 +213,8 @@ export async function canExecuteAction(actionId: ActionType, inputValue: string)
 /**
  * Gets the disabled state for an action
  */
-export async function isActionDisabled(actionId: ActionType, inputValue: string): Promise<boolean> {
-  return !(await canExecuteAction(actionId, inputValue));
+export async function isActionDisabled(actionId: ActionType, _inputValue: string): Promise<boolean> {
+  return !(await canExecuteAction(actionId));
 }
 
 /**

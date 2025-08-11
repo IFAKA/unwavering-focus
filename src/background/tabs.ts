@@ -1,5 +1,5 @@
 import StorageService from '../services/storage';
-import { extractDomain, isHomepage } from '../utils/urlUtils';
+import { extractDomain } from '../utils/urlUtils';
 import { DistractingDomain } from '../types';
 
 const storage = StorageService.getInstance();
@@ -169,7 +169,7 @@ export async function handleTabUpdated(tabId: number, changeInfo: chrome.tabs.Ta
   }
 }
 
-export function clearTabStateForRemovedTab(tabId: number): void {
+export function clearTabStateForRemovedTab(): void {
   // This function is no longer needed as state is managed by StorageService
   // Keeping it for now as it might be called from other parts of the app
   // If it's truly unused, it can be removed.

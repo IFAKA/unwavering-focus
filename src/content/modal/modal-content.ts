@@ -1,4 +1,4 @@
-import { UI_CONSTANTS } from '../../constants';
+
 import { setInput } from './modal-state';
 import { createDynamicActionButton } from './modal-button';
 import { handleKeyboardInput } from './keyboard-handler';

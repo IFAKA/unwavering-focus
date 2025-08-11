@@ -201,7 +201,7 @@ export function createPinnedTaskElements(tasks: IPinnedTask[]): void {
   }
   
   // Create pinned task elements for each task
-  tasks.forEach((taskData, _index) => {
+  tasks.forEach((taskData) => {
     if (taskData && taskData.text) {
       createPinnedTaskElementWithEntrance(taskData);
     }

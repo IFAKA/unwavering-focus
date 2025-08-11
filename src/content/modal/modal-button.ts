@@ -1,8 +1,8 @@
-import { closeModal } from './modal-manager';
+
 import { determineAction, getActionDisplayText, canExecuteAction } from '../actions/action-executor';
 import { handleKeyboardInput } from './keyboard-handler';
 
-const DOUBLE_ENTER_TIMEOUT = 500;
+
 
 /**
  * Creates a dynamic action button based on input content
@@ -66,7 +66,7 @@ export async function createDynamicActionButton(content: HTMLElement, input: HTM
     button.addEventListener('click', async () => {
       if (button.disabled) return;
       
-      const inputValue = input.value.trim();
+  
       
       // Use the new keyboard handler for consistent behavior
       // Create a synthetic keyboard event for the click
