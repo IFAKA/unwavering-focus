@@ -7,7 +7,7 @@ export const FEATURE_CONSTANTS = {
     MAX_MAX_TABS: 10,
     CHECK_INTERVAL: 2000, // 2 seconds
   },
-  
+
   // Eye Care
   EYE_CARE: {
     REMINDER_INTERVAL: 20 * 60 * 1000, // 20 minutes
@@ -17,7 +17,7 @@ export const FEATURE_CONSTANTS = {
     MIN_SOUND_VOLUME: 0.0,
     MAX_SOUND_VOLUME: 1.0,
   },
-  
+
   // Distraction Blocker
   DISTRACTION_BLOCKER: {
     DEFAULT_DAILY_LIMIT: 30, // minutes
@@ -25,7 +25,7 @@ export const FEATURE_CONSTANTS = {
     MAX_DAILY_LIMIT: 480, // 8 hours
     CHECK_INTERVAL: 60000, // 1 minute
   },
-  
+
   // Video Focus
   VIDEO_FOCUS: {
     CHECK_INTERVAL: 2000, // 2 seconds
@@ -43,7 +43,7 @@ export const FEATURE_CONSTANTS = {
       'music.youtube.com', // YouTube Music - designed for audio
     ],
   },
-  
+
   // Smart Search
   SMART_SEARCH: {
     MIN_QUERY_LENGTH: 1,
@@ -51,7 +51,7 @@ export const FEATURE_CONSTANTS = {
     MAX_SAVED_ITEMS: 100,
     AUTO_REMOVE_AFTER_SEARCH: true,
   },
-  
+
   // YouTube Distraction Blocking
   YOUTUBE_DISTRACTION: {
     SELECTORS: {
@@ -68,15 +68,13 @@ export const FEATURE_CONSTANTS = {
       BUTTONS: 'ytd-button-renderer',
     },
   },
-  
 
-  
   // Keyboard Shortcuts
   KEYBOARD_SHORTCUTS: {
     SMART_SEARCH: 'Alt+Shift+I',
     COMMAND_NAME: 'open-smart-search',
   },
-  
+
   // Message Types
   MESSAGE_TYPES: {
     SHOW_SMART_SEARCH_MODAL: 'SHOW_SMART_SEARCH_MODAL',

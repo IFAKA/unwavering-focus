@@ -4,10 +4,10 @@ export function generateHashedClassName(baseName: string): string {
   let hash = 0;
   for (let i = 0; i < baseName.length; i++) {
     const char = baseName.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
-  
+
   // Convert to positive hex string and take first 6 characters
   const hashHex = Math.abs(hash).toString(16).padStart(6, '0').substring(0, 6);
   return `uf-${baseName}-${hashHex}`;

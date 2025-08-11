@@ -10,7 +10,9 @@ export interface IConfigService {
 export class ConfigService implements IConfigService {
   async getConfig(): Promise<ExtensionConfig> {
     try {
-      const response = await chrome.runtime.sendMessage({ type: 'GET_STORAGE_DATA' });
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_STORAGE_DATA',
+      });
       return response.config || DEFAULT_CONFIG;
     } catch (error) {
       console.error('Error getting config:', error);
@@ -18,22 +20,22 @@ export class ConfigService implements IConfigService {
     }
   }
 
-  async updateConfig(path: string, value: any): Promise<void> {
+  async updateConfig(path: string, value: unknown): Promise<void> {
     try {
       const config = await this.getConfig();
       const newConfig = { ...config } as any;
       const pathParts = path.split('.');
       let current = newConfig;
-      
+
       for (let i = 0; i < pathParts.length - 1; i++) {
         if (!current[pathParts[i]]) {
           current[pathParts[i]] = {};
         }
         current = current[pathParts[i]];
       }
-      
+
       current[pathParts[pathParts.length - 1]] = value;
-      
+
       await this.saveConfig(newConfig);
     } catch (error) {
       console.error('Error updating config:', error);
@@ -45,7 +47,7 @@ export class ConfigService implements IConfigService {
     try {
       await chrome.runtime.sendMessage({
         type: 'UPDATE_CONFIG',
-        config: config
+        config: config,
       });
     } catch (error) {
       console.error('Error saving config:', error);
@@ -56,7 +58,7 @@ export class ConfigService implements IConfigService {
   async getFeatureStatus(feature: string): Promise<'enabled' | 'disabled'> {
     try {
       const config = await this.getConfig();
-      
+
       switch (feature) {
         case 'eyeCare':
           return config.eyeCare?.enabled ? 'enabled' : 'disabled';
@@ -64,7 +66,6 @@ export class ConfigService implements IConfigService {
           return config.tabLimiter?.enabled ? 'enabled' : 'disabled';
         case 'smartSearch':
           return config.smartSearch?.enabled ? 'enabled' : 'disabled';
-
 
         case 'blocker':
           return config.distractionBlocker?.enabled ? 'enabled' : 'disabled';
@@ -82,4 +83,4 @@ export class ConfigService implements IConfigService {
   }
 }
 
-export const configService = new ConfigService(); 
+export const configService = new ConfigService();

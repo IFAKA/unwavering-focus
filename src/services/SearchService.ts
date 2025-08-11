@@ -40,7 +40,7 @@ export class SearchService implements ISearchService {
     try {
       await chrome.runtime.sendMessage({
         type: 'SAVE_SEARCH',
-        query: query
+        query: query,
       });
     } catch (error) {
       console.error('Error saving search:', error);
@@ -52,7 +52,7 @@ export class SearchService implements ISearchService {
     try {
       await chrome.runtime.sendMessage({
         type: 'DELETE_SEARCH',
-        id: id
+        id: id,
       });
     } catch (error) {
       console.error('Error deleting search:', error);
@@ -63,7 +63,7 @@ export class SearchService implements ISearchService {
   async clearAllSearches(): Promise<void> {
     try {
       await chrome.runtime.sendMessage({
-        type: 'CLEAR_ALL_SEARCHES'
+        type: 'CLEAR_ALL_SEARCHES',
       });
     } catch (error) {
       console.error('Error clearing all searches:', error);
@@ -73,7 +73,9 @@ export class SearchService implements ISearchService {
 
   async getSavedSearches(): Promise<SearchQuery[]> {
     try {
-      const response = await chrome.runtime.sendMessage({ type: 'GET_STORAGE_DATA' });
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_STORAGE_DATA',
+      });
       return response.savedSearches || [];
     } catch (error) {
       console.error('Error getting saved searches:', error);
@@ -91,4 +93,4 @@ export class SearchService implements ISearchService {
   }
 }
 
-export const searchService = new SearchService(); 
+export const searchService = new SearchService();

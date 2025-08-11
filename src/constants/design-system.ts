@@ -9,59 +9,64 @@ export const DESIGN_SYSTEM = {
       SECONDARY: '#1c1c1e',
       TERTIARY: '#2c2c2e',
     },
-    
+
     // Text Colors - High contrast for readability
     TEXT: {
       PRIMARY: '#ffffff',
       SECONDARY: '#8e8e93',
       TERTIARY: '#48484a',
     },
-    
+
     // Accent Colors - Apple Watch standard
     ACCENT: {
       PRIMARY: '#007aff', // Apple Blue
       SUCCESS: '#34c759', // Apple Green
       WARNING: '#ff9500', // Apple Orange
-      ERROR: '#ff3b30',   // Apple Red
+      ERROR: '#ff3b30', // Apple Red
     },
-    
+
     // Border Colors - Subtle and minimal
     BORDER: {
       PRIMARY: '#38383a',
       SECONDARY: 'rgba(255, 255, 255, 0.1)',
     },
   },
-  
+
   // Typography - Apple Watch Style
   TYPOGRAPHY: {
     // Font Family - Apple Watch standard
     FONT_FAMILY: {
-      PRIMARY: ['SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+      PRIMARY: [
+        'SF Pro Display',
+        '-apple-system',
+        'BlinkMacSystemFont',
+        'sans-serif',
+      ],
     },
-    
+
     // Font Sizes - Apple Watch optimized
     FONT_SIZE: {
-      XS: '10px',    // Small labels
-      SM: '12px',    // Body text
-      MD: '14px',    // Headers
-      LG: '16px',    // Large headers
-      XL: '18px',    // Important text
+      XS: '10px', // Small labels
+      SM: '12px', // Body text
+      MD: '14px', // Headers
+      LG: '16px', // Large headers
+      XL: '18px', // Important text
     },
-    
+
     // Font Weights - Apple Watch standard
     FONT_WEIGHT: {
       NORMAL: 400,
       MEDIUM: 500,
       SEMIBOLD: 600,
     },
-    
+
     // Line Heights - Optimized for small screens
     LINE_HEIGHT: {
       TIGHT: 1.2,
       NORMAL: 1.3,
     },
   },
-  
+
   // Spacing - Apple Watch optimized
   SPACING: {
     XS: '4px',
@@ -70,7 +75,7 @@ export const DESIGN_SYSTEM = {
     LG: '16px',
     XL: '20px',
   },
-  
+
   // Border Radius - Apple Watch standard
   BORDER_RADIUS: {
     NONE: '0px',
@@ -78,26 +83,26 @@ export const DESIGN_SYSTEM = {
     MD: '8px',
     LG: '12px',
   },
-  
+
   // Shadows - Minimal and subtle
   SHADOW: {
     NONE: 'none',
     SM: '0 1px 3px rgba(0, 0, 0, 0.2)',
   },
-  
+
   // Layout - Apple Watch dimensions
   LAYOUT: {
     CONTAINER: {
       POPUP_WIDTH: '300px',
       POPUP_HEIGHT: '485px',
     },
-    
+
     Z_INDEX: {
       BASE: 1,
       MODAL: 1000,
     },
   },
-  
+
   // Animation - Following Emil Kowalski's principles for great animations
   // https://emilkowal.ski/ui/great-animations#great-animations-are-fast
   ANIMATION: {
@@ -107,7 +112,7 @@ export const DESIGN_SYSTEM = {
       NORMAL: '250ms', // Slightly longer for natural exit
       SPRING: '180ms', // Spring-like for natural motion
     },
-    
+
     // Easing - Using Material Design curves for natural motion
     EASING: {
       LINEAR: 'linear',
@@ -115,15 +120,17 @@ export const DESIGN_SYSTEM = {
       EASE_IN: 'cubic-bezier(0.4, 0.0, 1, 1)', // Material Design ease-in
       SPRING: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Natural spring feel
     },
-    
+
     // Transitions - Hardware accelerated transforms only
     TRANSITION: {
-      QUICK: 'transform 200ms cubic-bezier(0.0, 0.0, 0.2, 1), opacity 200ms cubic-bezier(0.0, 0.0, 0.2, 1)',
-      NORMAL: 'transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      QUICK:
+        'transform 200ms cubic-bezier(0.0, 0.0, 0.2, 1), opacity 200ms cubic-bezier(0.0, 0.0, 0.2, 1)',
+      NORMAL:
+        'transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
       SPRING: 'transform 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
     },
   },
-  
+
   // Component Variants - Apple Watch Style
   COMPONENTS: {
     // Button Variants - Simple and clear
@@ -151,7 +158,7 @@ export const DESIGN_SYSTEM = {
         color: '#ffffff',
       },
     },
-    
+
     // Card Variants - Clean and simple
     CARD: {
       DEFAULT: {
@@ -167,7 +174,7 @@ export const DESIGN_SYSTEM = {
         shadow: 'none',
       },
     },
-    
+
     // Input Variants - Simple and functional
     INPUT: {
       DEFAULT: {
@@ -197,28 +204,31 @@ export const designSystemUtils = {
     }
     return value;
   },
-  
+
   // Spacing utilities
   getSpacing: (size: keyof typeof DESIGN_SYSTEM.SPACING) => {
     return DESIGN_SYSTEM.SPACING[size];
   },
-  
+
   // Typography utilities
-  getTypography: (type: 'fontSize' | 'fontWeight' | 'lineHeight', size: string) => {
+  getTypography: (
+    type: 'fontSize' | 'fontWeight' | 'lineHeight',
+    size: string
+  ) => {
     const typographyMap = {
       fontSize: DESIGN_SYSTEM.TYPOGRAPHY.FONT_SIZE,
       fontWeight: DESIGN_SYSTEM.TYPOGRAPHY.FONT_WEIGHT,
-      lineHeight: DESIGN_SYSTEM.TYPOGRAPHY.LINE_HEIGHT
+      lineHeight: DESIGN_SYSTEM.TYPOGRAPHY.LINE_HEIGHT,
     };
     return (typographyMap[type] as any)[size];
   },
-  
+
   // Animation utilities
   getAnimation: (type: 'timing' | 'easing' | 'transition', value: string) => {
     const animationMap = {
       timing: DESIGN_SYSTEM.ANIMATION.TIMING,
       easing: DESIGN_SYSTEM.ANIMATION.EASING,
-      transition: DESIGN_SYSTEM.ANIMATION.TRANSITION
+      transition: DESIGN_SYSTEM.ANIMATION.TRANSITION,
     };
     return (animationMap[type] as any)[value];
   },

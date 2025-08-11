@@ -3,78 +3,86 @@ import { sendMessageToTab } from './tabs';
 
 const storage = StorageService.getInstance();
 
-export async function handleMessage(message: any, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void): Promise<void> {
+export async function handleMessage(
+  message: any,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (response: any) => void
+): Promise<void> {
   try {
     switch (message.type) {
       case 'GET_CONFIG':
         const config = await storage.get('config');
         sendResponse({ success: true, data: config });
         break;
-        
+
       case 'UPDATE_CONFIG':
         await storage.set('config', message.config);
         sendResponse({ success: true });
         break;
-        
+
       case 'GET_SAVED_SEARCHES':
-        const searches = await storage.get('savedSearches') || [];
+        const searches = (await storage.get('savedSearches')) || [];
         sendResponse({ success: true, data: searches });
         break;
-        
+
       case 'SAVE_SEARCH':
-        const existingSearches = await storage.get('savedSearches') || [];
+        const existingSearches = (await storage.get('savedSearches')) || [];
         const newSearch = {
           id: Date.now().toString(),
           query: message.query,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
         const updatedSearches = [newSearch, ...existingSearches.slice(0, 9)]; // Keep only 10 searches
         await storage.set('savedSearches', updatedSearches);
         sendResponse({ success: true, data: newSearch });
         break;
-        
+
       case 'DELETE_SEARCH':
-        const currentSearches = await storage.get('savedSearches') || [];
-        const filteredSearches = currentSearches.filter((s: any) => s.id !== message.id);
+        const currentSearches = (await storage.get('savedSearches')) || [];
+        const filteredSearches = currentSearches.filter(
+          (s: any) => s.id !== message.id
+        );
         await storage.set('savedSearches', filteredSearches);
         sendResponse({ success: true });
         break;
-        
+
       case 'GET_DISTRACTING_DOMAINS':
-        const domains = await storage.get('distractingDomains') || [];
+        const domains = (await storage.get('distractingDomains')) || [];
         sendResponse({ success: true, data: domains });
         break;
-        
+
       case 'ADD_DISTRACTING_DOMAIN':
-        const currentDomains = await storage.get('distractingDomains') || [];
+        const currentDomains = (await storage.get('distractingDomains')) || [];
         const newDomain = {
           id: Date.now().toString(),
           domain: message.domain,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
         const updatedDomains = [newDomain, ...currentDomains];
         await storage.set('distractingDomains', updatedDomains);
         sendResponse({ success: true, data: newDomain });
         break;
-        
+
       case 'REMOVE_DISTRACTING_DOMAIN':
-        const existingDomains = await storage.get('distractingDomains') || [];
-        const filteredDomains = existingDomains.filter((d: any) => d.id !== message.id);
+        const existingDomains = (await storage.get('distractingDomains')) || [];
+        const filteredDomains = existingDomains.filter(
+          (d: any) => d.id !== message.id
+        );
         await storage.set('distractingDomains', filteredDomains);
         sendResponse({ success: true });
         break;
-        
+
       case 'GET_TAB_COUNT':
-        const tabCount = await storage.get('tabCount') || 0;
+        const tabCount = (await storage.get('tabCount')) || 0;
         sendResponse({ success: true, data: tabCount });
         break;
-        
+
       case 'RESET_EYE_CARE_ALARM':
         const { resetEyeCareAlarm } = await import('./eye-care');
         await resetEyeCareAlarm();
         sendResponse({ success: true });
         break;
-        
+
       case 'SEND_MESSAGE_TO_TAB':
         if (message.tabId) {
           await sendMessageToTab(message.tabId, message.tabMessage);
@@ -83,7 +91,7 @@ export async function handleMessage(message: any, sender: chrome.runtime.Message
           sendResponse({ success: false, error: 'No tab ID provided' });
         }
         break;
-        
+
       default:
         sendResponse({ success: false, error: 'Unknown message type' });
     }
@@ -92,5 +100,3 @@ export async function handleMessage(message: any, sender: chrome.runtime.Message
     sendResponse({ success: false, error: error.message });
   }
 }
-
-

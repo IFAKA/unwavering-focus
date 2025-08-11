@@ -47,12 +47,12 @@ export function isSpecificContent(url: string): boolean {
     const contentPatterns = [
       /\/watch\?/, // YouTube videos
       /\/results\?/, // Search results
-      /\/r\/[^\/]+\/comments\//, // Reddit comments
+      /\/r\/[^/]+\/comments\//, // Reddit comments
       /\/status\//, // Twitter/X posts
       /\/posts\//, // Facebook posts
       /\/videos\//, // Video content
       /\/search\?/, // Search pages
-      /\/@[^\/]+/, // User profiles
+      /\/@[^/]+/, // User profiles
       /\/user\//, // User pages
       /\/channel\//, // YouTube channels
       /\/c\//, // YouTube custom URLs

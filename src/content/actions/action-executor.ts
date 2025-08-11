@@ -213,7 +213,7 @@ export async function canExecuteAction(actionId: ActionType): Promise<boolean> {
 /**
  * Gets the disabled state for an action
  */
-export async function isActionDisabled(actionId: ActionType, _inputValue: string): Promise<boolean> {
+export async function isActionDisabled(actionId: ActionType): Promise<boolean> {
   return !(await canExecuteAction(actionId));
 }
 

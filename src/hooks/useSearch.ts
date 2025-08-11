@@ -3,7 +3,9 @@ import { SearchQuery } from '../types';
 import { searchService } from '../services/SearchService';
 
 export const useSearch = () => {
-  const [searchStatus, setSearchStatus] = useState<'idle' | 'searching' | 'completed' | 'error'>('idle');
+  const [searchStatus, setSearchStatus] = useState<
+    'idle' | 'searching' | 'completed' | 'error'
+  >('idle');
   const [searchingQuery, setSearchingQuery] = useState<string>('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
 
@@ -11,13 +13,13 @@ export const useSearch = () => {
     try {
       setSearchStatus('searching');
       setSearchingQuery(query.query);
-      
+
       // Delete the search item first
       await searchService.deleteSearch(query.id);
-      
+
       // Then perform the search
       await searchService.performSearch(query.query);
-      
+
       setSearchStatus('completed');
       setTimeout(() => setSearchStatus('idle'), 2000);
     } catch (error) {
@@ -51,6 +53,6 @@ export const useSearch = () => {
     copyStatus,
     performSearch,
     copySearchQuery,
-    deleteSearch
+    deleteSearch,
   };
-}; 
+};

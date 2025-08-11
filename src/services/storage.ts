@@ -22,7 +22,10 @@ class StorageService {
     }
   }
 
-  async set<K extends StorageKey>(key: K, value: StorageData[K]): Promise<void> {
+  async set<K extends StorageKey>(
+    key: K,
+    value: StorageData[K]
+  ): Promise<void> {
     try {
       await chrome.storage.local.set({ [key]: value });
     } catch (error) {
@@ -31,7 +34,9 @@ class StorageService {
     }
   }
 
-  async getMultiple<K extends StorageKey[]>(keys: K): Promise<Partial<StorageData>> {
+  async getMultiple<K extends StorageKey[]>(
+    keys: K
+  ): Promise<Partial<StorageData>> {
     try {
       return await chrome.storage.local.get(keys);
     } catch (error) {
@@ -69,7 +74,7 @@ class StorageService {
 
   async getAll(): Promise<StorageData> {
     try {
-      return await chrome.storage.local.get() as StorageData;
+      return (await chrome.storage.local.get()) as StorageData;
     } catch (error) {
       console.error('Error getting all storage data:', error);
       return {} as StorageData;
@@ -77,4 +82,4 @@ class StorageService {
   }
 }
 
-export default StorageService; 
+export default StorageService;

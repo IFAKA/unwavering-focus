@@ -1,6 +1,12 @@
 import { FEATURE_CONSTANTS } from '../constants';
-import { YouTubeDistractionBlocker, isYouTubePage } from '../utils/youtubeUtils';
-import { VideoFocusManager, supportsVideoFocus } from '../utils/videoFocusUtils';
+import {
+  YouTubeDistractionBlocker,
+  isYouTubePage,
+} from '../utils/youtubeUtils';
+import {
+  VideoFocusManager,
+  supportsVideoFocus,
+} from '../utils/videoFocusUtils';
 import { createPinnedTaskElements } from './ui/pinned-task';
 import { createCountdownTimerElement } from './ui/countdown-timer';
 import { startTimeTracking } from './utils/time-tracking';
@@ -17,12 +23,14 @@ let videoFocusManager: VideoFocusManager | null = null;
 export async function initializeContentScript(): Promise<void> {
   // Clean up any existing overlays on page load/refresh
   document.addEventListener('DOMContentLoaded', () => {
-    const existingOverlays = document.querySelectorAll('[data-extension="unwavering-focus"]');
+    const existingOverlays = document.querySelectorAll(
+      '[data-extension="unwavering-focus"]'
+    );
     existingOverlays.forEach(overlay => overlay.remove());
   });
 
   // Add keyboard shortcut for breathing box (Alt+Shift+B)
-  document.addEventListener('keydown', (e) => {
+  document.addEventListener('keydown', e => {
     if (e.altKey && e.shiftKey && e.key === 'B') {
       e.preventDefault();
       startBoxBreathing('');
@@ -58,7 +66,9 @@ async function initializeYouTubeBlocker(): Promise<void> {
   try {
     const data = await chrome.runtime.sendMessage({ type: 'GET_STORAGE_DATA' });
     if (data?.config?.youtubeDistraction) {
-      youtubeBlocker = new YouTubeDistractionBlocker(data.config.youtubeDistraction);
+      youtubeBlocker = new YouTubeDistractionBlocker(
+        data.config.youtubeDistraction
+      );
     } else {
       youtubeBlocker = new YouTubeDistractionBlocker();
     }
@@ -84,7 +94,7 @@ async function initializeVideoFocusManager(): Promise<void> {
         preventTabSwitch: true,
         showIndicator: true,
         allowedDomains: [],
-        autoDetectVideos: true
+        autoDetectVideos: true,
       });
     }
     videoFocusManager.start();
@@ -95,7 +105,7 @@ async function initializeVideoFocusManager(): Promise<void> {
       preventTabSwitch: true,
       showIndicator: true,
       allowedDomains: [],
-      autoDetectVideos: true
+      autoDetectVideos: true,
     });
     videoFocusManager.start();
   }
@@ -106,16 +116,19 @@ async function initializeVideoFocusManager(): Promise<void> {
  */
 async function checkExistingPinnedTasks(): Promise<void> {
   try {
-    const result = await chrome.storage.local.get(['pinnedTasks', 'pinnedTask']);
+    const result = await chrome.storage.local.get([
+      'pinnedTasks',
+      'pinnedTask',
+    ]);
     let tasks = result.pinnedTasks || [];
-    
+
     // Migrate old single pinnedTask to new pinnedTasks array if needed
     if (!tasks.length && result.pinnedTask) {
       tasks = [result.pinnedTask.text || result.pinnedTask];
       await chrome.storage.local.set({ pinnedTasks: tasks });
       await chrome.storage.local.remove('pinnedTask');
     }
-    
+
     if (tasks.length > 0) {
       createPinnedTaskElements(tasks);
     }
@@ -129,20 +142,26 @@ async function checkExistingPinnedTasks(): Promise<void> {
  */
 async function checkExistingTimer(): Promise<void> {
   try {
-    const result = await chrome.storage.local.get(['countdownTimer', 'timerCompletionOverlay']);
-    
+    const result = await chrome.storage.local.get([
+      'countdownTimer',
+      'timerCompletionOverlay',
+    ]);
+
     if (result.countdownTimer) {
       const { startTime, remainingSeconds } = result.countdownTimer;
       const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-      const actualRemainingSeconds = Math.max(0, remainingSeconds - elapsedSeconds);
-      
+      const actualRemainingSeconds = Math.max(
+        0,
+        remainingSeconds - elapsedSeconds
+      );
+
       if (actualRemainingSeconds > 0) {
         createCountdownTimerElement();
       } else {
         await chrome.storage.local.remove('countdownTimer');
       }
     }
-    
+
     if (result.timerCompletionOverlay === true) {
       showTimerCompletionNotification();
     }
@@ -156,11 +175,11 @@ async function checkExistingTimer(): Promise<void> {
  */
 async function checkDistractingDomain(): Promise<void> {
   try {
-    const response = await chrome.runtime.sendMessage({ 
-      type: FEATURE_CONSTANTS.MESSAGE_TYPES.CHECK_DISTRACTING_DOMAIN, 
-      url: window.location.href 
+    const response = await chrome.runtime.sendMessage({
+      type: FEATURE_CONSTANTS.MESSAGE_TYPES.CHECK_DISTRACTING_DOMAIN,
+      url: window.location.href,
     });
-    
+
     if (response?.shouldBlock) {
       window.history.back();
     } else if (response?.shouldShowOverlay) {

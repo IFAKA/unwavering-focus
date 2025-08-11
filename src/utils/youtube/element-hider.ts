@@ -3,7 +3,7 @@ import { YouTubeDistractionConfig } from './types';
 /**
  * Hides a YouTube element with optional setting check
  */
-export function hideElement(element: HTMLElement, _setting?: keyof YouTubeDistractionConfig): void {
+export function hideElement(element: HTMLElement): void {
   if (element && !element.dataset.unwaveringFocusHidden) {
     element.dataset.unwaveringFocusHidden = 'true';
     element.style.display = 'none';

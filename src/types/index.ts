@@ -8,25 +8,23 @@ export interface DistractingDomain {
   domain: string;
 }
 
-
-
 export interface ExtensionConfig {
-  smartSearch: { 
-    enabled: boolean; 
-    searchAllEnabled: boolean 
+  smartSearch: {
+    enabled: boolean;
+    searchAllEnabled: boolean;
   };
-  distractionBlocker: { 
-    enabled: boolean; 
+  distractionBlocker: {
+    enabled: boolean;
     domains: DistractingDomain[];
   };
-  eyeCare: { 
-    enabled: boolean; 
-    soundVolume: number 
-  };
-  tabLimiter: { 
+  eyeCare: {
     enabled: boolean;
-    maxTabs: number; 
-    excludedDomains: string[] 
+    soundVolume: number;
+  };
+  tabLimiter: {
+    enabled: boolean;
+    maxTabs: number;
+    excludedDomains: string[];
   };
 
   youtubeDistraction: {
@@ -76,22 +74,22 @@ export type StorageKey = keyof StorageData;
 
 // Centralized default configuration
 export const DEFAULT_CONFIG: ExtensionConfig = {
-  smartSearch: { 
+  smartSearch: {
     enabled: true,
-    searchAllEnabled: false 
+    searchAllEnabled: false,
   },
-  distractionBlocker: { 
-    enabled: true, 
-    domains: []
-  },
-  eyeCare: { 
-    enabled: true, 
-    soundVolume: 0.5 
-  },
-  tabLimiter: { 
+  distractionBlocker: {
     enabled: true,
-    maxTabs: 3, 
-    excludedDomains: [] 
+    domains: [],
+  },
+  eyeCare: {
+    enabled: true,
+    soundVolume: 0.5,
+  },
+  tabLimiter: {
+    enabled: true,
+    maxTabs: 3,
+    excludedDomains: [],
   },
 
   youtubeDistraction: {
@@ -105,13 +103,13 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     hideMiniGuide: true,
     hideSections: true,
     hideStart: true,
-    hideButtons: true
+    hideButtons: true,
   },
   videoFocus: {
     enabled: true,
     preventTabSwitch: true,
     showIndicator: true,
     allowedDomains: [],
-    autoDetectVideos: true
-  }
-}; 
+    autoDetectVideos: true,
+  },
+};

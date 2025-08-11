@@ -18,7 +18,7 @@ export class VideoFocusManager {
     this.detectVideoElements();
     this.setupObserver();
     this.createFocusIndicator();
-    
+
     // Check for videos periodically (but clear any existing interval first)
     if (this.intervalId) {
       clearInterval(this.intervalId);
@@ -33,12 +33,12 @@ export class VideoFocusManager {
       this.observer.disconnect();
       this.observer = null;
     }
-    
+
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
-    
+
     this.removeFocusIndicator();
     this.videoElements.clear();
     this.currentState = { isPlaying: false, platform: '' };
@@ -46,7 +46,7 @@ export class VideoFocusManager {
 
   public updateConfig(newConfig: VideoFocusConfig) {
     this.config = newConfig;
-    
+
     if (newConfig.enabled) {
       this.start();
     } else {
@@ -65,21 +65,21 @@ export class VideoFocusManager {
   private detectVideoElements() {
     const videos = document.querySelectorAll('video');
     const newVideoElements = new Set<HTMLVideoElement>();
-    
+
     videos.forEach(video => {
       if (!this.videoElements.has(video)) {
         this.setupVideoListeners(video);
         newVideoElements.add(video);
       }
     });
-    
+
     this.videoElements = new Set([...this.videoElements, ...newVideoElements]);
     this.updateVideoState();
   }
 
   private setupVideoListeners(video: HTMLVideoElement) {
     const events = ['play', 'pause', 'ended', 'timeupdate', 'loadedmetadata'];
-    
+
     events.forEach(event => {
       video.addEventListener(event, () => {
         this.updateVideoState();
@@ -88,15 +88,18 @@ export class VideoFocusManager {
   }
 
   private setupObserver() {
-    this.observer = new MutationObserver((mutations) => {
+    this.observer = new MutationObserver(mutations => {
       let shouldCheck = false;
-      
+
       for (const mutation of mutations) {
         if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
           for (const node of mutation.addedNodes) {
             if (node.nodeType === Node.ELEMENT_NODE) {
               const element = node as Element;
-              if (element.tagName === 'VIDEO' || element.querySelector('video')) {
+              if (
+                element.tagName === 'VIDEO' ||
+                element.querySelector('video')
+              ) {
                 shouldCheck = true;
                 break;
               }
@@ -104,7 +107,7 @@ export class VideoFocusManager {
           }
         }
       }
-      
+
       if (shouldCheck) {
         setTimeout(() => {
           this.detectVideoElements();
@@ -114,7 +117,7 @@ export class VideoFocusManager {
 
     this.observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
   }
 
@@ -141,7 +144,7 @@ export class VideoFocusManager {
       platform,
       title,
       duration,
-      currentTime
+      currentTime,
     };
 
     // Only update if state actually changed
@@ -154,7 +157,7 @@ export class VideoFocusManager {
 
   private detectPlatform(): string {
     const hostname = window.location.hostname.toLowerCase();
-    
+
     if (hostname.includes('youtube.com')) {
       // Check for YouTube Music specifically
       if (hostname === 'music.youtube.com') {
@@ -166,27 +169,30 @@ export class VideoFocusManager {
     if (hostname.includes('vimeo.com')) return 'vimeo';
     if (hostname.includes('dailymotion.com')) return 'dailymotion';
     if (hostname.includes('twitch.tv')) return 'twitch';
-    if (hostname.includes('facebook.com') || hostname.includes('fb.com')) return 'facebook';
+    if (hostname.includes('facebook.com') || hostname.includes('fb.com'))
+      return 'facebook';
     if (hostname.includes('instagram.com')) return 'instagram';
     if (hostname.includes('tiktok.com')) return 'tiktok';
-    
+
     return 'other';
   }
 
   private extractVideoTitle(): string {
     // Try to get title from various sources
     const hostname = window.location.hostname.toLowerCase();
-    
+
     if (hostname.includes('youtube.com')) {
-      const titleElement = document.querySelector('h1.ytd-video-primary-info-renderer, h1.title');
+      const titleElement = document.querySelector(
+        'h1.ytd-video-primary-info-renderer, h1.title'
+      );
       return titleElement?.textContent?.trim() || '';
     }
-    
+
     if (hostname.includes('netflix.com')) {
       const titleElement = document.querySelector('[data-uia="title"]');
       return titleElement?.textContent?.trim() || '';
     }
-    
+
     // Generic fallback
     return document.title || '';
   }
@@ -206,7 +212,7 @@ export class VideoFocusManager {
         <div class="focus-text">Focus Mode</div>
       </div>
     `;
-    
+
     // Add styles
     this.focusIndicator.style.cssText = `
       position: fixed;
@@ -226,9 +232,11 @@ export class VideoFocusManager {
       pointer-events: none;
       opacity: 0;
     `;
-    
+
     // Add styles for the content to display icon and text side by side
-    const content = this.focusIndicator.querySelector('.focus-indicator-content') as HTMLElement;
+    const content = this.focusIndicator.querySelector(
+      '.focus-indicator-content'
+    ) as HTMLElement;
     if (content) {
       content.style.cssText = `
         display: flex;
@@ -236,7 +244,7 @@ export class VideoFocusManager {
         gap: 8px;
       `;
     }
-    
+
     document.body.appendChild(this.focusIndicator);
   }
 
@@ -260,34 +268,15 @@ export class VideoFocusManager {
   }
 
   private notifyBackgroundScript() {
-    chrome.runtime.sendMessage({
-      type: 'VIDEO_FOCUS_STATE_CHANGED',
-      state: this.currentState
-    }).catch(error => {
-      console.error('Error notifying background script:', error);
-    });
+    chrome.runtime
+      .sendMessage({
+        type: 'VIDEO_FOCUS_STATE_CHANGED',
+        state: this.currentState,
+      })
+      .catch(error => {
+        console.error('Error notifying background script:', error);
+      });
   }
 }
 
-// Helper function to check if current page supports video focus
-export function supportsVideoFocus(): boolean {
-  const hostname = window.location.hostname.toLowerCase();
-  const supportedDomains = [
-    'youtube.com',
-    'netflix.com',
-    'vimeo.com',
-    'dailymotion.com',
-    'twitch.tv',
-    'facebook.com',
-    'fb.com',
-    'instagram.com',
-    'tiktok.com'
-  ];
-  
-  // Exclude YouTube Music
-  if (hostname === 'music.youtube.com') {
-    return false;
-  }
-  
-  return supportedDomains.some(domain => hostname.includes(domain));
-} 
+export { supportsVideoFocus } from './video-platform-detector';

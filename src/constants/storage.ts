@@ -4,14 +4,14 @@ export const STORAGE_CONSTANTS = {
   KEYS: {
     SAVED_SEARCHES: 'savedSearches',
     DISTRACTING_DOMAINS: 'distractingDomains',
-  
+
     CONFIG: 'config',
     TAB_COUNT: 'tabCount',
     NEXT_EYE_CARE_ALARM: 'nextEyeCareAlarm',
     VIDEO_FOCUS_STATES: 'videoFocusStates',
     TAB_MODAL_STATES: 'tabModalStates',
   },
-  
+
   // Default values
   DEFAULTS: {
     SAVED_SEARCHES: [],
@@ -21,7 +21,7 @@ export const STORAGE_CONSTANTS = {
     EYE_CARE_SOUND_VOLUME: 0.5,
     TAB_LIMITER_MAX_TABS: 3,
   },
-  
+
   // Storage limits
   LIMITS: {
     MAX_SAVED_SEARCHES: 100,

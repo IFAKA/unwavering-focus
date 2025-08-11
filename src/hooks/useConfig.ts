@@ -21,15 +21,18 @@ export const useConfig = () => {
     }
   }, []);
 
-  const updateConfig = useCallback(async (path: string, value: any) => {
-    try {
-      await configService.updateConfig(path, value);
-      await loadConfig(); // Reload config after update
-    } catch (err) {
-      setError('Failed to update configuration');
-      console.error('Error updating config:', err);
-    }
-  }, [loadConfig]);
+  const updateConfig = useCallback(
+    async (path: string, value: any) => {
+      try {
+        await configService.updateConfig(path, value);
+        await loadConfig(); // Reload config after update
+      } catch (err) {
+        setError('Failed to update configuration');
+        console.error('Error updating config:', err);
+      }
+    },
+    [loadConfig]
+  );
 
   const getFeatureStatus = useCallback(async (feature: string) => {
     try {
@@ -50,6 +53,6 @@ export const useConfig = () => {
     error,
     loadConfig,
     updateConfig,
-    getFeatureStatus
+    getFeatureStatus,
   };
-}; 
+};

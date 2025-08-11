@@ -19,7 +19,7 @@
   --shadow: rgba(0, 0, 0, 0.3);
   --glass-bg: rgba(28, 28, 30, 0.8);
   --glass-border: rgba(255, 255, 255, 0.1);
-  
+
   /* Geometry */
   --border-radius: 12px;
   --spacing-xs: 4px;
@@ -27,9 +27,10 @@
   --spacing-md: 12px;
   --spacing-lg: 16px;
   --spacing-xl: 20px;
-  
+
   /* Typography */
-  --font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family:
+    'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-size-xs: 10px;
   --font-size-sm: 12px;
   --font-size-md: 13px;
@@ -62,7 +63,9 @@
   width: 100%;
   height: 100%;
   z-index: 999999;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto,
+    sans-serif;
 }
 
 .smart-search-modal .modal-overlay {
@@ -244,12 +247,12 @@
     background: var(--bg-secondary);
     border-color: var(--glass-border);
   }
-  
+
   .visits-info {
     background: var(--bg-tertiary);
     border-color: var(--border-color);
   }
-  
+
   .btn-back {
     background: var(--bg-tertiary);
     color: var(--text-primary);
@@ -258,7 +261,7 @@
 }
 
 /* YouTube Distraction Blocking */
-[data-unwavering-focus-hidden="true"] {
+[data-unwavering-focus-hidden='true'] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -269,7 +272,7 @@
   width: 0 !important;
   height: 0 !important;
   overflow: hidden !important;
-} 
+}
 
 /* Save Confirmation */
 .save-confirmation {
@@ -343,4 +346,4 @@
     color: var(--text-primary);
     border-color: var(--glass-border);
   }
-} 
+}

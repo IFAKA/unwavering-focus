@@ -17,7 +17,7 @@ export async function toggleModal(): Promise<void> {
 /**
  * Add keyboard shortcut for smart search modal (Alt+Shift+S)
  */
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', e => {
   if (e.altKey && e.shiftKey && e.key === 'S') {
     e.preventDefault();
     toggleModal();
@@ -33,8 +33,10 @@ window.addEventListener('beforeunload', () => {
 });
 
 // Initialize the content script
-initializeContentScript().then(() => {
-  // Set up listeners after initialization
-  setupStorageListeners();
-  setupMessageListeners();
-}).catch(console.error);
+initializeContentScript()
+  .then(() => {
+    // Set up listeners after initialization
+    setupStorageListeners();
+    setupMessageListeners();
+  })
+  .catch(console.error);

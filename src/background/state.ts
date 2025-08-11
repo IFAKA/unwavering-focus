@@ -11,5 +11,3 @@ export const videoFocusStates: Map<number, VideoState> = new Map();
 
 // Modal state tracking per tabId -> set of domains
 export const tabModalStates: Map<number, Set<string>> = new Map();
-
-

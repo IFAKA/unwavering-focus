@@ -6,7 +6,7 @@
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch",
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
-    "format": "prettier --write src/**/*.{ts,tsx,js,jsx,css,scss}",
+    "format": "prettier --write src/**/*.{ts,tsx,css}",
     "check-size": "node scripts/check-file-sizes.js",
     "pre-commit": "npm run check-size && npm run lint && npm run format",
     "prepare": "husky install"
