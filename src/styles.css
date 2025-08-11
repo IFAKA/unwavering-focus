@@ -346,3 +346,188 @@
     transition: none !important;
   }
 } 
+
+/* Unwavering Focus Extension Styles */
+/* Using hashed class names to prevent conflicts with website styles */
+
+/* Pinned Task Styles */
+.uf-pinned-task-a1b2c3 {
+  max-width: 212px !important;
+  background: rgba(28, 28, 30, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px 0 0 12px !important;
+  padding: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  color: #ffffff !important;
+  line-height: 1.4 !important;
+  word-wrap: break-word !important;
+  white-space: pre-wrap !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  top: 20px !important;
+  right: 0px !important;
+  z-index: 1000 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+}
+
+.uf-pinned-task-container-d4e5f6 {
+  position: relative !important;
+}
+
+.uf-pinned-task-content-g7h8i9 {
+  position: relative !important;
+}
+
+.uf-pinned-task-checkbox-j0k1l2 {
+  position: absolute !important;
+  left: 0 !important;
+  top: 2px !important;
+  margin: 0 !important;
+  width: 16px !important;
+  height: 16px !important;
+  cursor: pointer !important;
+  accent-color: #007aff !important;
+}
+
+.uf-pinned-task-text-m3n4o5 {
+  line-height: 1.4 !important;
+  word-wrap: break-word !important;
+  white-space: pre-wrap !important;
+  text-indent: 24px !important;
+}
+
+/* Modal Styles */
+.uf-modal-p6q7r8 {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(10px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.uf-modal-input-s9t0u1 {
+  width: 100% !important;
+  max-width: 480px !important;
+  background: rgba(28, 28, 30, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  color: #ffffff !important;
+  font-size: 17px !important;
+  line-height: 1.4 !important;
+  resize: none !important;
+  outline: none !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+.uf-modal-button-v2w3x4 {
+  width: 100% !important;
+  background: #007aff !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+  margin-top: 12px !important;
+}
+
+.uf-modal-button-v2w3x4:hover {
+  background: #0056cc !important;
+}
+
+/* Countdown Timer Styles */
+.uf-countdown-timer-y5z6a7 {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  background: rgba(28, 28, 30, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  z-index: 1000 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* Breathing Overlay Styles */
+.uf-breathing-overlay-b8c9d0 {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #000000 !important;
+  backdrop-filter: blur(20px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Scroll transparency effect */
+.uf-pinned-task-a1b2c3.scrolling {
+  background: rgba(28, 28, 30, 0.7) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+/* Animation keyframes */
+@keyframes uf-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes uf-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+}
+
+@keyframes uf-strikethrough {
+  from {
+    text-decoration: none;
+  }
+  to {
+    text-decoration: line-through;
+    text-decoration-color: #ffffff;
+    text-decoration-thickness: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .uf-pinned-task-a1b2c3,
+  .uf-modal-p6q7r8,
+  .uf-countdown-timer-y5z6a7,
+  .uf-breathing-overlay-b8c9d0 {
+    animation: none !important;
+    transition: none !important;
+  }
+} 

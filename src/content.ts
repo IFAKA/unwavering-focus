@@ -6,6 +6,8 @@ import {
 } from './constants';
 import { YouTubeDistractionBlocker, isYouTubePage } from './utils/youtubeUtils';
 import { VideoFocusManager, supportsVideoFocus } from './utils/videoFocusUtils';
+import { HASHED_CLASSES } from './utils/classUtils';
+
 
 // Smart Search Modal - Command Palette Implementation
 let modal: HTMLElement | null = null;
@@ -529,6 +531,12 @@ function resetModalContent() {
           isDisabled = false;
         }
       });
+    } else if (actionId === 'save-thought') {
+      // Always show the normal button text when typing, regardless of existing pinned task
+      actionButton.textContent = buttonText;
+      actionButton.style.background = UI_CONSTANTS.COLORS.ACCENT_PRIMARY;
+      actionButton.style.cursor = 'pointer';
+      isDisabled = false;
     } else {
       actionButton.textContent = buttonText;
       actionButton.style.background = UI_CONSTANTS.COLORS.ACCENT_PRIMARY;
@@ -562,7 +570,30 @@ function resetModalContent() {
           clearTimeout(saveConfirmationTimeout);
           saveConfirmationTimeout = null;
         }
-        pinTask(inputValue);
+        
+        // Check if a pinned task already exists
+        hasExistingPinnedTask().then(hasTask => {
+          if (hasTask) {
+            // Show error message in the modal
+            const actionButton = document.getElementById('adaptive-action-button') as HTMLButtonElement;
+            if (actionButton) {
+              const originalText = actionButton.textContent;
+              actionButton.textContent = '❌ Task Already Pinned';
+              actionButton.style.background = UI_CONSTANTS.COLORS.ERROR;
+              
+              // Reset button after 2 seconds
+              setTimeout(() => {
+                if (actionButton) {
+                  actionButton.textContent = originalText;
+                  actionButton.style.background = UI_CONSTANTS.COLORS.ACCENT_PRIMARY;
+                }
+              }, 2000);
+            }
+          } else {
+            pinTask(inputValue);
+          }
+        });
+        
         lastEnterTime = 0; // Reset
         return; // Exit early to prevent single-enter logic
       } else {
@@ -708,8 +739,14 @@ function executeAction(actionId: string, text: string) {
       saveThought(text);
       break;
     case 'pin-task':
-      // Allow multiple pinned tasks - no limit check needed
-      pinTask(text);
+      // Check if a pinned task already exists
+      hasExistingPinnedTask().then(hasTask => {
+        if (hasTask) {
+          showConfirmation('Task already pinned. Complete the current task first.');
+        } else {
+          pinTask(text);
+        }
+      });
       break;
     case 'box-breathing':
       startBoxBreathing(text);
@@ -743,22 +780,37 @@ function pinTask(text: string) {
   const trimmedText = text.trim();
   if (!trimmedText) return;
   
-  // Get existing pinned tasks and add the new one
-  chrome.storage.local.get(['pinnedTasks'], (result) => {
-    const existingTasks = result.pinnedTasks || [];
-    
-    // Check if task already exists to prevent duplicates
-    if (existingTasks.includes(trimmedText)) {
-      showConfirmation('Task already pinned');
-      return;
+  // Check if the text is a URL (starts with http/https or contains %20 for URL encoding)
+  const isUrl = trimmedText.startsWith('http') || trimmedText.includes('%20');
+  
+  // Extract display text from URL if it contains #:~:text=
+  let displayText = trimmedText;
+  let url = isUrl ? trimmedText : null;
+  
+  if (isUrl && trimmedText.includes('#:~:text=')) {
+    const textMatch = trimmedText.match(/#:~:text=(.+)$/);
+    if (textMatch && textMatch[1]) {
+      displayText = decodeURIComponent(textMatch[1]);
+      url = trimmedText; // Keep the full URL for navigation
     }
+  }
+  
+  // Store single pinned task with URL if it's a URL
+  const pinnedTaskData = {
+    text: displayText,
+    url: url
+  };
+  
+  chrome.storage.local.set({ pinnedTask: pinnedTaskData }, () => {
+    showConfirmation('Task pinned to top-right corner');
     
-    const updatedTasks = [...existingTasks, trimmedText];
+    // Close modal and trigger entrance animation after modal closes
+    closeModal();
     
-    // Store pinned tasks array in chrome.storage for cross-tab persistence
-    chrome.storage.local.set({ pinnedTasks: updatedTasks }, () => {
-      showConfirmation('Task pinned to top-right corner');
-    });
+    // Wait for modal to close, then create task with entrance animation
+    setTimeout(() => {
+      createPinnedTaskElementWithEntrance(pinnedTaskData);
+    }, ANIMATION_CONSTANTS.TIMING.QUICK_CLOSE + 100); // Wait for modal close animation + buffer
   });
 }
 
@@ -1092,6 +1144,7 @@ function createCountdownTimerElement() {
   // Create countdown timer
   countdownTimerElement = document.createElement('div');
   countdownTimerElement.id = 'unwavering-focus-timer';
+  countdownTimerElement.className = HASHED_CLASSES.COUNTDOWN_TIMER;
   countdownTimerElement.style.cssText = `
     background: rgba(220, 38, 38, 0.9);
     color: white;
@@ -1111,6 +1164,7 @@ function createCountdownTimerElement() {
     pointer-events: auto;
     align-self: flex-end;
     position: relative;
+    z-index: ${MODAL_CONSTANTS.Z_INDEX.COUNTDOWN_TIMER};
   `;
   
   // Add hover effect
@@ -1220,24 +1274,15 @@ function createCountdownTimerElement() {
             countdownTimerElement = null;
             updateContainerVisibility();
           } else {
-            // Smooth slide-to-right animation for better UX
-            // Quick success feedback (120ms) - subtle scale down
-            countdownTimerElement.style.transition = 'transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            countdownTimerElement.style.transform = 'scale(0.95)';
+            // Simple slide-out animation
+            countdownTimerElement.style.transition = 'transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)';
+            countdownTimerElement.style.transform = 'translateX(100%)';
             
-            // Brief success state, then slide to the right
             setTimeout(() => {
-              // Slide to right animation (200ms) - hardware accelerated transform only
-              countdownTimerElement!.style.transition = 'transform 200ms cubic-bezier(0.0, 0.0, 0.2, 1)';
-              countdownTimerElement!.style.transform = 'translateX(100%) scale(0.95)';
-              
-              // Remove after animation completes
-              setTimeout(() => {
-                countdownTimerElement?.remove();
-                countdownTimerElement = null;
-                updateContainerVisibility();
-              }, 200);
-            }, 120);
+              countdownTimerElement?.remove();
+              countdownTimerElement = null;
+              updateContainerVisibility();
+            }, 200);
           }
         }
         return;
@@ -1288,24 +1333,15 @@ function removeCountdownTimerElement() {
       countdownTimerElement = null;
       updateContainerVisibility();
     } else {
-      // Smooth slide-to-right animation for better UX
-      // Quick success feedback (120ms) - subtle scale down
-      countdownTimerElement.style.transition = 'transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      countdownTimerElement.style.transform = 'scale(0.95)';
+      // Simple slide-out animation
+      countdownTimerElement.style.transition = 'transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)';
+      countdownTimerElement.style.transform = 'translateX(100%)';
       
-      // Brief success state, then slide to the right
       setTimeout(() => {
-        // Slide to right animation (200ms) - hardware accelerated transform only
-        countdownTimerElement!.style.transition = 'transform 200ms cubic-bezier(0.0, 0.0, 0.2, 1)';
-        countdownTimerElement!.style.transform = 'translateX(100%) scale(0.95)';
-        
-        // Remove after animation completes
-        setTimeout(() => {
-          countdownTimerElement?.remove();
-          countdownTimerElement = null;
-          updateContainerVisibility();
-        }, 200);
-      }, 120);
+        countdownTimerElement?.remove();
+        countdownTimerElement = null;
+        updateContainerVisibility();
+      }, 200);
     }
   }
 }
@@ -1326,12 +1362,11 @@ async function hasExistingTimer(): Promise<boolean> {
   });
 }
 
-// Function to check if any pinned tasks exist
+// Function to check if a pinned task exists
 async function hasExistingPinnedTask(): Promise<boolean> {
   return new Promise((resolve) => {
-    chrome.storage.local.get(['pinnedTasks'], (result) => {
-      const tasks = result.pinnedTasks || [];
-      resolve(tasks.length > 0);
+    chrome.storage.local.get(['pinnedTask'], (result) => {
+      resolve(!!result.pinnedTask);
     });
   });
 }
@@ -1470,281 +1505,335 @@ function startTimeTracking(domain: string) {
 
 console.log('Content script loaded on:', window.location.href);
 
-// Function to create pinned task elements
-function createPinnedTaskElements(tasks: string[]) {
+// Function to create single pinned task element with entrance animation
+function createPinnedTaskElementWithEntrance(taskData: { text: string; url: string | null }) {
   // Remove existing pinned task elements
   const existingElements = document.querySelectorAll('[data-pinned-task]');
   existingElements.forEach(element => element.remove());
   
-  // If no tasks, clean up and return
-  if (!tasks || tasks.length === 0) {
-    removePinnedTaskElements();
+  if (!taskData || !taskData.text) {
     updateContainerVisibility();
     return;
   }
   
-  // Get the scrollable pinned tasks container
-  const pinnedTasksContainer = getPinnedTasksContainer();
+  // Get the top-right container
+  const container = getTopRightContainer();
   
-  // Create pinned task elements for each task
-  tasks.forEach((text, index) => {
-    const pinnedTaskElement = document.createElement('div');
-    pinnedTaskElement.setAttribute('data-pinned-task', index.toString());
-    
-    // Apply different styles based on position for collapsed view
-    const isFirstTask = index === 0;
-    const isSecondTask = index === 1;
-    const isThirdTask = index === 2;
-    const isBeyondVisible = index >= 3;
-    
-    pinnedTaskElement.style.cssText = `
-      max-width: 212px;
-      width: 100%;
-      background: ${UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY};
-      border: 1px solid ${UI_CONSTANTS.COLORS.BORDER_PRIMARY};
-      border-radius: 12px 0 0 12px;
-      padding: 12px;
-      box-shadow: ${!isFirstTask ? '0 4px 12px rgba(0, 0, 0, 0.2)' : '0 8px 24px rgba(0, 0, 0, 0.3)'};
-      backdrop-filter: blur(10px);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
-      line-height: 1.4;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-      pointer-events: auto;
-      position: relative;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      ${!isFirstTask ? `
-        margin-top: var(--stack-offset-${index});
-        transform: scale(${isSecondTask ? '0.95' : isThirdTask ? '0.9' : '0.85'});
-        z-index: ${tasks.length - index};
-        pointer-events: ${isBeyondVisible ? 'none' : 'auto'};
-        border-radius: 12px;
-      ` : `
-        z-index: ${tasks.length + 20};
-        position: relative;
-      `}
-    `;
-    
-    // Create content wrapper with proper text flow
-    const contentWrapper = document.createElement('div');
-    contentWrapper.style.cssText = `
-      position: relative;
-    `;
-    
-    // Add checkbox positioned absolutely
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.style.cssText = `
-      position: absolute;
-      left: 0;
-      top: 2px;
-      margin: 0;
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      accent-color: ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
-    `;
-    
-    checkbox.addEventListener('change', () => {
-      if (checkbox.checked) {
-        // Task completed - compliant slide-to-right animation
-        if (pinnedTaskElement) {
-          // Check for reduced motion preference for accessibility
-          const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Create pinned task element
+  const pinnedTaskElement = document.createElement('div');
+  pinnedTaskElement.setAttribute('data-pinned-task', '0');
+  pinnedTaskElement.className = HASHED_CLASSES.PINNED_TASK;
+  
+  // Set styles for pinned task element
+  pinnedTaskElement.style.cssText = `
+    max-width: 212px;
+    background: ${UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY};
+    border: 1px solid ${UI_CONSTANTS.COLORS.BORDER_PRIMARY};
+    border-radius: 12px 0 0 12px;
+    padding: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    pointer-events: auto;
+    position: relative;
+    align-self: flex-end;
+    transition: background-color 0.3s ease;
+  `;
+
+  // Create content wrapper
+  const contentWrapper = document.createElement('div');
+  contentWrapper.style.cssText = `
+    position: relative;
+  `;
+  
+  // Add checkbox positioned absolutely
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.style.cssText = `
+    position: absolute;
+    left: 0;
+    top: 2px;
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
+  `;
+  
+  checkbox.addEventListener('change', () => {
+    if (checkbox.checked) {
+      // Disable checkbox to prevent multiple clicks
+      checkbox.disabled = true;
+      
+      // Enhanced completion animation with strikethrough
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReducedMotion) {
+        // Remove task from storage and navigate immediately
+        chrome.storage.local.remove('pinnedTask');
+        if (taskData.url) {
+          window.location.href = taskData.url;
+        }
+        pinnedTaskElement.remove();
+        updateContainerVisibility();
+      } else {
+        // 1. Scale down feedback (120ms)
+        pinnedTaskElement.style.transition = 'transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        pinnedTaskElement.style.transform = 'scale(0.95)';
+        
+        // 2. Strikethrough animation (120ms)
+        setTimeout(() => {
+          textContent.style.transition = 'text-decoration 0.12s cubic-bezier(0.4, 0.0, 0.2, 1)';
+          textContent.style.textDecoration = 'line-through';
+          textContent.style.textDecorationColor = UI_CONSTANTS.COLORS.TEXT_PRIMARY;
+          textContent.style.textDecorationThickness = '2px';
           
-          if (prefersReducedMotion) {
-            // Instant removal for users who prefer reduced motion
-            pinnedTaskElement.remove();
+          // 3. Slide out to right animation (200ms)
+          setTimeout(() => {
+            pinnedTaskElement.style.transition = 'transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)';
+            pinnedTaskElement.style.transform = 'translateX(100%) scale(0.95)';
             
-            // Remove the task from storage by content (not index to avoid sync issues)
-            chrome.storage.local.get(['pinnedTasks'], (result) => {
-              const existingTasks = result.pinnedTasks || [];
-              const updatedTasks = existingTasks.filter((task: string) => task !== text);
-              chrome.storage.local.set({ pinnedTasks: updatedTasks });
-            });
-            
-            updateContainerVisibility();
-          } else {
-            // Smooth slide-to-right animation for better UX
-            // Quick success feedback (120ms) - subtle scale down
-            pinnedTaskElement.style.transition = 'transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            pinnedTaskElement.style.transform = 'scale(0.95)';
-            
-            // Brief success state with strikethrough animation (120ms)
+            // 4. After animation completes, navigate to URL and cleanup
             setTimeout(() => {
-              // Add strikethrough animation to text content
-              const textContent = pinnedTaskElement!.querySelector('div:last-child') as HTMLElement;
-              if (textContent) {
-                textContent.style.transition = 'text-decoration 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-                textContent.style.textDecoration = 'line-through';
-                textContent.style.textDecorationColor = UI_CONSTANTS.COLORS.TEXT_PRIMARY;
-                textContent.style.textDecorationThickness = '2px';
+              // Remove task from storage
+              chrome.storage.local.remove('pinnedTask');
+              
+              // Navigate to URL if present
+              if (taskData.url) {
+                window.location.href = taskData.url;
               }
               
-              // Slide to right animation (200ms) - hardware accelerated transform only
-              setTimeout(() => {
-                pinnedTaskElement!.style.transition = 'transform 200ms cubic-bezier(0.0, 0.0, 0.2, 1)';
-                pinnedTaskElement!.style.transform = 'translateX(100%) scale(0.95)';
-                
-                // Remove after animation completes
-                setTimeout(() => {
-                  pinnedTaskElement?.remove();
-                  
-                  // Remove the task from storage by content (not index to avoid sync issues)
-                  chrome.storage.local.get(['pinnedTasks'], (result) => {
-                    const existingTasks = result.pinnedTasks || [];
-                    const updatedTasks = existingTasks.filter((task: string) => task !== text);
-                    chrome.storage.local.set({ pinnedTasks: updatedTasks });
-                  });
-                  
-                  updateContainerVisibility();
-                }, 200);
-              }, 120);
-            }, 120);
-          }
-        }
+              // Remove element and update visibility
+              pinnedTaskElement.remove();
+              updateContainerVisibility();
+            }, 200);
+          }, 120);
+        }, 120);
       }
-    });
-    
-    // Add the text content that flows naturally
-    const textContent = document.createElement('div');
-    textContent.innerHTML = text;
-    textContent.style.cssText = `
-      line-height: 1.4;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-      text-indent: 24px;
-    `;
-    
-    // Assemble the content
-    contentWrapper.appendChild(checkbox);
-    contentWrapper.appendChild(textContent);
-    pinnedTaskElement.appendChild(contentWrapper);
-    
-    // Add task count indicator to the first task if there are more than 1 task
-    if (isFirstTask && tasks.length > 1) {
-      const taskCountIndicator = document.createElement('div');
-      taskCountIndicator.style.cssText = `
-        position: absolute;
-        top: 0;
-        right: 0;
-        background: ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
-        color: white;
-        border-radius: 0 0 0 8px;
-        width: 20px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 1000;
-        cursor: pointer;
-      `;
-      taskCountIndicator.textContent = tasks.length.toString();
-      taskCountIndicator.title = `Click or hover to see all ${tasks.length} tasks`;
-      
-      // Add subtle entrance animation for new count indicators (following PRD animation principles)
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (!prefersReducedMotion) {
-        taskCountIndicator.style.transform = 'scale(0)';
-        taskCountIndicator.style.opacity = '0';
-        
-        // Fast, natural entrance animation (under 300ms as per PRD)
-        setTimeout(() => {
-          taskCountIndicator.style.transition = 'all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-          taskCountIndicator.style.transform = 'scale(1)';
-          taskCountIndicator.style.opacity = '1';
-        }, 50);
-      }
-      
-      pinnedTaskElement.appendChild(taskCountIndicator);
-      
-      // Add click functionality to expand the list
-      taskCountIndicator.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent event bubbling
-        const pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
-        if (pinnedTasksContainer && !pinnedTasksContainer.classList.contains('expanded')) {
-          // Trigger the same expansion as hover
-          pinnedTasksContainer.classList.add('expanded');
-          pinnedTasksContainer.style.overflowY = 'auto';
-          pinnedTasksContainer.style.overflowX = 'hidden';
-          pinnedTasksContainer.style.scrollbarWidth = 'thin';
-          pinnedTasksContainer.style.scrollbarColor = 'rgba(255, 255, 255, 0.2) transparent';
-          
-          // Make container focusable for keyboard scrolling (but don't auto-focus)
-          pinnedTasksContainer.setAttribute('tabindex', '0');
-          
-          // Trigger slide-down animation for all cards sequentially from second to last
-          const cards = pinnedTasksContainer.querySelectorAll('[data-pinned-task]');
-          const totalCards = cards.length;
-          
-          // Animate from second card to last card (forward order for hover)
-          for (let i = 1; i < totalCards; i++) {
-            setTimeout(() => {
-              const card = cards[i] as HTMLElement;
-              card.style.setProperty('--slide-down', 'true');
-            }, (i - 1) * 50); // 50ms delay between each card for faster animation
-          }
-          
-          // Start mouse tracking for auto-close
-          startMouseTracking(pinnedTasksContainer);
-        }
-      });
-      
-      // Hide indicator when expanded
-      const style = document.createElement('style');
-      style.textContent = `
-        #unwavering-focus-pinned-tasks-container.expanded [data-pinned-task="0"] > div:last-child {
-          opacity: 0 !important;
-          transform: scale(0.8) !important;
-        }
-      `;
-      document.head.appendChild(style);
     }
-    
-    // Add to the scrollable pinned tasks container
-    pinnedTasksContainer.appendChild(pinnedTaskElement);
   });
   
-  // Calculate dynamic offsets after first card is rendered
-  setTimeout(() => {
-    calculateDynamicOffsets(pinnedTasksContainer, tasks.length);
-  }, 0);
+  // Add the text content
+  const textContent = document.createElement('div');
+  textContent.innerHTML = taskData.text;
+  textContent.style.cssText = `
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    text-indent: 24px;
+  `;
+  
+  // Assemble the content
+  contentWrapper.appendChild(checkbox);
+  contentWrapper.appendChild(textContent);
+  pinnedTaskElement.appendChild(contentWrapper);
+  
+  // Add to container
+  container.appendChild(pinnedTaskElement);
+  
+  // Add scroll transparency functionality
+  let scrollTimeout: ReturnType<typeof setTimeout>;
+  const handleScroll = () => {
+    // Make more transparent when scrolling
+    pinnedTaskElement.style.background = 'rgba(28, 28, 30, 0.7)';
+    pinnedTaskElement.style.backdropFilter = 'blur(5px)';
+    
+    // Clear existing timeout
+    clearTimeout(scrollTimeout);
+    
+    // Return to normal opacity after scrolling stops
+    scrollTimeout = setTimeout(() => {
+      pinnedTaskElement.style.background = UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY;
+      pinnedTaskElement.style.backdropFilter = 'blur(10px)';
+    }, 300);
+  };
+  
+  // Add scroll listener
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  
+  // Store reference for cleanup
+  pinnedTaskElement.dataset.scrollListener = 'true';
+  
+
   
   updateContainerVisibility();
 }
 
-// Function to remove all pinned task elements
-function removePinnedTaskElements() {
+// Function to create single pinned task element (for existing tasks on page load)
+function createPinnedTaskElement(taskData: { text: string; url: string | null }) {
+  // Remove existing pinned task elements
   const existingElements = document.querySelectorAll('[data-pinned-task]');
   existingElements.forEach(element => element.remove());
   
-  // Clean up the pinned tasks container if it exists and has no children
-  const pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
-  if (pinnedTasksContainer && pinnedTasksContainer.children.length === 0) {
-    pinnedTasksContainer.remove();
+  if (!taskData || !taskData.text) {
+    updateContainerVisibility();
+    return;
   }
+  
+  // Get the top-right container
+  const container = getTopRightContainer();
+  
+  // Create pinned task element
+  const pinnedTaskElement = document.createElement('div');
+  pinnedTaskElement.setAttribute('data-pinned-task', '0');
+  pinnedTaskElement.className = HASHED_CLASSES.PINNED_TASK;
+  
+  pinnedTaskElement.style.cssText = `
+    max-width: 212px;
+    background: ${UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY};
+    border: 1px solid ${UI_CONSTANTS.COLORS.BORDER_PRIMARY};
+    border-radius: 12px 0 0 12px;
+    padding: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: ${UI_CONSTANTS.COLORS.TEXT_PRIMARY};
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    pointer-events: auto;
+    position: relative;
+    align-self: flex-end;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  `;
+
+  // Create content wrapper
+  const contentWrapper = document.createElement('div');
+  contentWrapper.style.cssText = `
+    position: relative;
+  `;
+  
+  // Add checkbox positioned absolutely
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.style.cssText = `
+    position: absolute;
+    left: 0;
+    top: 2px;
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: ${UI_CONSTANTS.COLORS.ACCENT_PRIMARY};
+  `;
+  
+  checkbox.addEventListener('change', () => {
+    if (checkbox.checked) {
+      // Disable checkbox to prevent multiple clicks
+      checkbox.disabled = true;
+      
+      // Enhanced completion animation with strikethrough
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReducedMotion) {
+        // Remove task from storage and navigate immediately
+        chrome.storage.local.remove('pinnedTask');
+        if (taskData.url) {
+          window.location.href = taskData.url;
+        }
+        pinnedTaskElement.remove();
+        updateContainerVisibility();
+      } else {
+        // 1. Scale down feedback (120ms)
+        pinnedTaskElement.style.transition = 'transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        pinnedTaskElement.style.transform = 'scale(0.95)';
+        
+        // 2. Strikethrough animation (120ms)
+        setTimeout(() => {
+          textContent.style.transition = 'text-decoration 0.12s cubic-bezier(0.4, 0.0, 0.2, 1)';
+          textContent.style.textDecoration = 'line-through';
+          textContent.style.textDecorationColor = UI_CONSTANTS.COLORS.TEXT_PRIMARY;
+          textContent.style.textDecorationThickness = '2px';
+          
+          // 3. Slide out to right animation (200ms)
+          setTimeout(() => {
+            pinnedTaskElement.style.transition = 'transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)';
+            pinnedTaskElement.style.transform = 'translateX(100%) scale(0.95)';
+            
+            // 4. After animation completes, navigate to URL and cleanup
+            setTimeout(() => {
+              // Remove task from storage
+              chrome.storage.local.remove('pinnedTask');
+              
+              // Navigate to URL if present
+              if (taskData.url) {
+                window.location.href = taskData.url;
+              }
+              
+              // Remove element and update visibility
+              pinnedTaskElement.remove();
+              updateContainerVisibility();
+            }, 200);
+          }, 120);
+        }, 120);
+      }
+    }
+  });
+  
+  // Add the text content
+  const textContent = document.createElement('div');
+  textContent.innerHTML = taskData.text;
+  textContent.style.cssText = `
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    text-indent: 24px;
+  `;
+  
+  // Assemble the content
+  contentWrapper.appendChild(checkbox);
+  contentWrapper.appendChild(textContent);
+  pinnedTaskElement.appendChild(contentWrapper);
+  
+  // Add to container
+  container.appendChild(pinnedTaskElement);
+  
+  // Add scroll transparency functionality
+  let scrollTimeout: ReturnType<typeof setTimeout>;
+  const handleScroll = () => {
+    // Make more transparent when scrolling
+    pinnedTaskElement.style.background = 'rgba(28, 28, 30, 0.7)';
+    pinnedTaskElement.style.backdropFilter = 'blur(5px)';
+    
+    // Clear existing timeout
+    clearTimeout(scrollTimeout);
+    
+    // Return to normal opacity after scrolling stops
+    scrollTimeout = setTimeout(() => {
+      pinnedTaskElement.style.background = UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY;
+      pinnedTaskElement.style.backdropFilter = 'blur(10px)';
+    }, 300);
+  };
+  
+  // Add scroll listener
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  
+  // Store reference for cleanup
+  pinnedTaskElement.dataset.scrollListener = 'true';
+  
+  updateContainerVisibility();
 }
 
-// Check for existing pinned tasks on page load and migrate old data if needed
-chrome.storage.local.get(['pinnedTasks', 'pinnedTask'], (result) => {
-  let tasks = result.pinnedTasks || [];
-  
-  // Migrate old single pinnedTask to new pinnedTasks array if needed
-  if (!tasks.length && result.pinnedTask) {
-    tasks = [result.pinnedTask];
-    // Update storage to new format and remove old key
-    chrome.storage.local.set({ pinnedTasks: tasks }, () => {
-      chrome.storage.local.remove('pinnedTask');
-    });
-  }
-  
-  if (tasks.length > 0) {
-    createPinnedTaskElements(tasks);
+// Function to remove pinned task element
+function removePinnedTaskElement() {
+  const existingElements = document.querySelectorAll('[data-pinned-task]');
+  existingElements.forEach(element => {
+    // Clean up scroll listeners if they exist
+    if (element.dataset.scrollListener === 'true') {
+      // Remove scroll listener (we can't directly remove the specific listener,
+      // but we can mark it for cleanup)
+      element.dataset.scrollListener = 'false';
+    }
+    element.remove();
+  });
+}
+
+// Check for existing pinned task on page load
+chrome.storage.local.get(['pinnedTask'], (result) => {
+  if (result.pinnedTask) {
+    createPinnedTaskElement(result.pinnedTask);
   }
 });
 
@@ -1771,82 +1860,14 @@ chrome.storage.local.get(['countdownTimer', 'timerCompletionOverlay'], (result) 
 // Listen for storage changes to sync pinned tasks and timers across tabs
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local') {
-    // Handle pinned tasks changes
-    if (changes.pinnedTasks) {
-      const { newValue, oldValue } = changes.pinnedTasks;
+    // Handle pinned task changes
+    if (changes.pinnedTask) {
+      const { newValue, oldValue } = changes.pinnedTask;
       
-      // Ensure newValue is an array and handle edge cases
-      if (newValue && Array.isArray(newValue)) {
-        if (newValue.length > 0) {
-          // Check if this is an increase in task count (new task added)
-          const oldCount = oldValue && Array.isArray(oldValue) ? oldValue.length : 0;
-          const newCount = newValue.length;
-          const isCountIncrease = newCount > oldCount;
-          
-          createPinnedTaskElements(newValue);
-          
-          // Animate the count indicator if it increased and we have more than 3 tasks
-          if (isCountIncrease && newCount > 3) {
-            // Delay animation until modal is completely closed to ensure user can see it
-            // Check if modal is currently open
-            const isModalOpen = modal && modal.style.display === 'block';
-            
-            if (isModalOpen) {
-              // Wait for modal to close, then animate
-              const checkModalClosed = () => {
-                if (!modal || modal.style.display === 'none') {
-                  // Modal is closed, now animate the count increase
-                  setTimeout(() => {
-                    animateTaskCountIncrease(newCount);
-                  }, 200); // Additional delay for modal close animation
-                } else {
-                  // Modal still open, check again in 50ms
-                  setTimeout(checkModalClosed, 50);
-                }
-              };
-              checkModalClosed();
-            } else {
-              // Modal not open, animate immediately
-              setTimeout(() => {
-                animateTaskCountIncrease(newCount);
-              }, 100);
-            }
-          } else if (newCount > 3) {
-            // If we already have more than 3 tasks and the count changed, animate the update
-            const existingIndicator = document.querySelector('[data-pinned-task="0"] > div:last-child') as HTMLElement;
-            if (existingIndicator && existingIndicator.textContent !== newCount.toString()) {
-              // Check if modal is currently open
-              const isModalOpen = modal && modal.style.display === 'block';
-              
-              if (isModalOpen) {
-                // Wait for modal to close, then animate
-                const checkModalClosed = () => {
-                  if (!modal || modal.style.display === 'none') {
-                    // Modal is closed, now animate the count increase
-                    setTimeout(() => {
-                      animateTaskCountIncrease(newCount);
-                    }, 200); // Additional delay for modal close animation
-                  } else {
-                    // Modal still open, check again in 50ms
-                    setTimeout(checkModalClosed, 50);
-                  }
-                };
-                checkModalClosed();
-              } else {
-                // Modal not open, animate immediately
-                setTimeout(() => {
-                  animateTaskCountIncrease(newCount);
-                }, 100);
-              }
-            }
-          }
-        } else {
-          removePinnedTaskElements();
-          updateContainerVisibility();
-        }
-      } else if (!newValue) {
-        // Handle case where pinnedTasks is removed or set to null/undefined
-        removePinnedTaskElements();
+      if (newValue) {
+        createPinnedTaskElement(newValue);
+      } else {
+        removePinnedTaskElement();
         updateContainerVisibility();
       }
     }
@@ -1882,6 +1903,57 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
         showTimerCompletionNotification();
       }
     }
+  }
+});
+
+// Sync state when tab becomes visible (for old tabs that were in background)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Check for pinned task updates
+    chrome.storage.local.get(['pinnedTask'], (result) => {
+      const existingPinnedTask = document.querySelector('[data-pinned-task]');
+      
+      if (result.pinnedTask && !existingPinnedTask) {
+        // Pinned task exists in storage but not in DOM - create it
+        createPinnedTaskElement(result.pinnedTask);
+      } else if (!result.pinnedTask && existingPinnedTask) {
+        // Pinned task doesn't exist in storage but exists in DOM - remove it
+        removePinnedTaskElement();
+        updateContainerVisibility();
+      }
+    });
+    
+    // Check for countdown timer updates
+    chrome.storage.local.get(['countdownTimer'], (result) => {
+      const existingTimer = document.getElementById('unwavering-focus-timer');
+      
+      if (result.countdownTimer && !existingTimer) {
+        // Timer exists in storage but not in DOM - create it
+        const { startTime, remainingSeconds } = result.countdownTimer;
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const actualRemainingSeconds = Math.max(0, remainingSeconds - elapsedSeconds);
+        
+        if (actualRemainingSeconds > 0) {
+          createCountdownTimerElement();
+        } else {
+          // Timer has already expired, remove it
+          chrome.storage.local.remove('countdownTimer');
+        }
+      } else if (!result.countdownTimer && existingTimer) {
+        // Timer doesn't exist in storage but exists in DOM - remove it
+        removeCountdownTimerElement();
+      }
+    });
+    
+    // Check for timer completion overlay updates
+    chrome.storage.local.get(['timerCompletionOverlay'], (result) => {
+      const existingOverlay = document.querySelector('[data-extension="unwavering-focus"][data-type="timer-completion"]');
+      
+      if (result.timerCompletionOverlay === true && !existingOverlay) {
+        // Timer completion overlay should be shown but doesn't exist - show it
+        showTimerCompletionNotification();
+      }
+    });
   }
 });
 
@@ -2317,7 +2389,7 @@ function showTimerCompletionNotification() {
   
   // Create subtitle
   const subtitle = document.createElement('p');
-  subtitle.textContent = "Your timer has completed. Take a break or continue with your work.";
+  subtitle.textContent = "Your timer has completed. Did you finish your task or want to continue working?";
   subtitle.style.cssText = `
     font-size: 16px;
     font-weight: 400;
@@ -2361,9 +2433,9 @@ function showTimerCompletionNotification() {
     continueButton.style.transform = 'translateY(0)';
   });
   
-  // Take Break button
+  // Finish Task button
   const breakButton = document.createElement('button');
-  breakButton.textContent = "Take a Break";
+  breakButton.textContent = "Finish Task";
   breakButton.style.cssText = `
     background: rgba(255, 255, 255, 0.1);
     color: white;
@@ -2410,11 +2482,8 @@ function showTimerCompletionNotification() {
   continueButton.addEventListener('click', closeOverlay);
   breakButton.addEventListener('click', () => {
     closeOverlay();
-    // Optionally redirect to focus page or show breathing exercise
-    chrome.runtime.sendMessage({ type: 'OPEN_FOCUS_PAGE' }).catch(() => {
-      // Fallback: open focus page directly
-      window.open(chrome.runtime.getURL('focus-page.html'), '_blank');
-    });
+    // Navigate to focus page in the same tab
+    window.location.href = chrome.runtime.getURL('focus-page.html');
   });
   
   // Add ESC key handler
@@ -2455,17 +2524,7 @@ function showTimerCompletionNotification() {
     });
   }
   
-  // Auto-dismiss after 10 seconds if user doesn't interact
-  const autoDismiss = setTimeout(() => {
-    if (document.contains(overlay)) {
-      closeOverlay();
-    }
-  }, 10000);
-  
-  // Clear auto-dismiss if user interacts
-  overlay.addEventListener('click', () => {
-    clearTimeout(autoDismiss);
-  });
+
   
   // Play distinct timer completion sound using Web Audio API
   // This creates a unique ascending chime pattern (C-E-G) to distinguish from eye care sounds
@@ -2537,8 +2596,6 @@ function getTopRightContainer(): HTMLElement {
       top: 72px;
       right: 0;
       bottom: 0;
-      max-width: 212px;
-      width: 100%;
       z-index: ${MODAL_CONSTANTS.Z_INDEX.COUNTDOWN_TIMER};
       display: flex;
       gap: 12px;
@@ -2573,293 +2630,15 @@ function getTopRightContainer(): HTMLElement {
   return topRightContainer;
 }
 
-// Create or get the scrollable pinned tasks container
-function getPinnedTasksContainer(): HTMLElement {
-  let pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
-  
-  if (!pinnedTasksContainer) {
-    pinnedTasksContainer = document.createElement('div');
-    pinnedTasksContainer.id = 'unwavering-focus-pinned-tasks-container';
-    pinnedTasksContainer.style.cssText = `
-      flex: 1;
-      overflow: hidden;
-      pointer-events: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      min-height: 0;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-    `;
-    
-    // Custom scrollbar styling for webkit browsers
-    const style = document.createElement('style');
-    style.textContent = `
-      #unwavering-focus-pinned-tasks-container.expanded::-webkit-scrollbar {
-        width: 4px;
-      }
-      #unwavering-focus-pinned-tasks-container.expanded::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      #unwavering-focus-pinned-tasks-container.expanded::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 2px;
-      }
-      #unwavering-focus-pinned-tasks-container.expanded::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-      }
-      
-      /* Expanded state styles for pinned tasks */
-      #unwavering-focus-pinned-tasks-container.expanded {
-        gap: 8px !important;
-      }
-      
-      #unwavering-focus-pinned-tasks-container.expanded [data-pinned-task] {
-        position: relative !important;
-        top: auto !important;
-        left: auto !important;
-        right: auto !important;
-        margin-top: 0 !important;
-        transform: scale(1) !important;
-        z-index: auto !important;
-        pointer-events: auto !important;
-        overflow: visible !important;
-        max-height: none !important;
-        border-radius: 12px 0 0 12px !important;
-        transition: all 200ms cubic-bezier(0.0, 0.0, 0.2, 1) !important;
-      }
-      
-      /* Ensure proper z-index during animation */
-      #unwavering-focus-pinned-tasks-container.expanded [data-pinned-task="0"] {
-        z-index: 1000 !important;
-      }
-      
-      #unwavering-focus-pinned-tasks-container.expanded [data-pinned-task]:not([data-pinned-task="0"]) {
-        z-index: 999 !important;
-      }
-      
-      /* Slide-down animation for cards */
-      [data-pinned-task][style*="--slide-down: true"] {
-        margin-top: 0 !important;
-        transform: scale(1) !important;
-        border-radius: 12px 0 0 12px !important;
-        transition: all 200ms cubic-bezier(0.0, 0.0, 0.2, 1) !important;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    // Add hover behavior
-    let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
-    
-    pinnedTasksContainer.addEventListener('mouseenter', () => {
-      if (hoverTimeout) {
-        clearTimeout(hoverTimeout);
-        hoverTimeout = null;
-      }
-      
-      // Expand the container with smooth slide-down animation
-      pinnedTasksContainer.classList.add('expanded');
-      pinnedTasksContainer.style.overflowY = 'auto';
-      pinnedTasksContainer.style.overflowX = 'hidden';
-      pinnedTasksContainer.style.scrollbarWidth = 'thin';
-      pinnedTasksContainer.style.scrollbarColor = 'rgba(255, 255, 255, 0.2) transparent';
-      
-      // Trigger slide-down animation for all cards sequentially from second to last
-      const cards = pinnedTasksContainer.querySelectorAll('[data-pinned-task]');
-      const totalCards = cards.length;
-      
-      // Animate from second card to last card (forward order for hover)
-      for (let i = 1; i < totalCards; i++) {
-        setTimeout(() => {
-          const card = cards[i] as HTMLElement;
-          card.style.setProperty('--slide-down', 'true');
-        }, (i - 1) * 50); // 50ms delay between each card for faster animation
-      }
-    });
-    
-    pinnedTasksContainer.addEventListener('mouseleave', () => {
-      // Delay collapse to allow moving mouse to scrollbar
-      hoverTimeout = setTimeout(() => {
-        closePinnedTasksContainer(pinnedTasksContainer);
-      }, 300); // 300ms delay to prevent accidental collapse
-    });
-    
-    // Add ESC key functionality to close the list
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        const pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
-        if (pinnedTasksContainer && pinnedTasksContainer.classList.contains('expanded')) {
-          closePinnedTasksContainer(pinnedTasksContainer);
-        }
-      }
-    });
-    
-    // Add the container to the top-right container
-    const container = getTopRightContainer();
-    container.appendChild(pinnedTasksContainer);
-  }
-  
-  return pinnedTasksContainer;
-}
 
-// Function to start mouse tracking for auto-close
-function startMouseTracking(container: HTMLElement) {
-  let isMouseInside = false;
-  let closeTimeout: ReturnType<typeof setTimeout> | null = null;
-  
-  const checkMousePosition = (e: MouseEvent) => {
-    const rect = container.getBoundingClientRect();
-    const isInside = (
-      e.clientX >= rect.left &&
-      e.clientX <= rect.right &&
-      e.clientY >= rect.top &&
-      e.clientY <= rect.bottom
-    );
-    
-    if (isInside && !isMouseInside) {
-      // Mouse entered the container
-      isMouseInside = true;
-      if (closeTimeout) {
-        clearTimeout(closeTimeout);
-        closeTimeout = null;
-      }
-    } else if (!isInside && isMouseInside) {
-      // Mouse left the container
-      isMouseInside = false;
-      closeTimeout = setTimeout(() => {
-        closePinnedTasksContainer(container);
-      }, 300); // 300ms delay to prevent accidental close
-    } else if (!isInside && !isMouseInside) {
-      // Mouse is outside and was never inside - close immediately
-      closePinnedTasksContainer(container);
-    }
-  };
-  
-  // Add mouse move listener
-  document.addEventListener('mousemove', checkMousePosition);
-  
-  // Store the listener reference for cleanup
-  (container as any)._mouseTrackingListener = checkMousePosition;
-}
-
-// Function to close pinned tasks container
-function closePinnedTasksContainer(container: HTMLElement) {
-  if (!container.classList.contains('expanded')) return;
-  
-  // Remove mouse tracking
-  if ((container as any)._mouseTrackingListener) {
-    document.removeEventListener('mousemove', (container as any)._mouseTrackingListener);
-    delete (container as any)._mouseTrackingListener;
-  }
-  
-  // Collapse the container
-  container.classList.remove('expanded');
-  container.style.overflowY = 'hidden';
-  container.style.overflowX = 'hidden';
-  container.style.scrollbarWidth = 'none';
-  container.style.scrollbarColor = 'transparent transparent';
-  container.removeAttribute('tabindex');
-  
-  // Reset slide-down state for all cards sequentially from last to second
-  const cards = container.querySelectorAll('[data-pinned-task]');
-  const totalCards = cards.length;
-  
-  // Animate from last card to second card (reverse order)
-  for (let i = totalCards - 1; i > 0; i--) {
-    setTimeout(() => {
-      const card = cards[i] as HTMLElement;
-      card.style.removeProperty('--slide-down');
-    }, (totalCards - 1 - i) * 50); // 50ms delay between each card for faster animation
-  }
-}
-
-// Function to calculate dynamic offsets based on first card height
-function calculateDynamicOffsets(container: HTMLElement, totalTasks: number) {
-  const firstCard = container.querySelector('[data-pinned-task="0"]') as HTMLElement;
-  if (!firstCard) return;
-  
-  const firstCardHeight = firstCard.offsetHeight;
-  const bottomEdgeHeight = 16; // Height of visible bottom edge
-  
-  // Calculate offsets for each card
-  for (let i = 1; i < totalTasks; i++) {
-    const card = container.querySelector(`[data-pinned-task="${i}"]`) as HTMLElement;
-    if (!card) continue;
-    
-    // Show 2 cards behind the first one, then stack the rest
-    if (i === 1) {
-      // Second card: standard offset
-      const offset = -(firstCardHeight - bottomEdgeHeight);
-      card.style.setProperty('--stack-offset-' + i, `${offset}px`);
-    } else if (i === 2) {
-      // Third card: positioned to be visible but not covered by second card
-      const secondCardOffset = -(firstCardHeight - bottomEdgeHeight);
-      const thirdCardOffset = secondCardOffset - (bottomEdgeHeight * 0.3); // Reduced by 30% of 16px = 4.8px
-      card.style.setProperty('--stack-offset-' + i, `${thirdCardOffset}px`);
-    } else {
-      // Stack the rest behind the third card
-      const secondCardOffset = -(firstCardHeight - bottomEdgeHeight);
-      const thirdCardOffset = secondCardOffset - (bottomEdgeHeight * 0.3);
-      const offset = thirdCardOffset - (i - 2) * bottomEdgeHeight;
-      card.style.setProperty('--stack-offset-' + i, `${offset}px`);
-    }
-  }
-}
-
-// Function to animate task count indicator when it increases
-function animateTaskCountIncrease(newCount: number) {
-  const taskCountIndicator = document.querySelector('[data-pinned-task="0"] > div:last-child') as HTMLElement;
-  if (!taskCountIndicator) return;
-  
-  // Check for reduced motion preference for accessibility
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  
-  if (prefersReducedMotion) {
-    // Instant update for users who prefer reduced motion
-    taskCountIndicator.textContent = newCount.toString();
-    return;
-  }
-  
-  // Fast animation following Emil Kowalski's principles (under 300ms total)
-  // Use spring-like easing for natural motion
-  taskCountIndicator.style.transition = 'all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-  taskCountIndicator.style.transform = 'scale(1.2)';
-  taskCountIndicator.style.background = UI_CONSTANTS.COLORS.SUCCESS;
-  taskCountIndicator.style.boxShadow = '0 0 16px rgba(52, 199, 89, 0.5)';
-  
-  // Update the text content
-  taskCountIndicator.textContent = newCount.toString();
-  
-  // Add subtle haptic feedback if supported (following PRD requirements)
-  try {
-    if (typeof navigator.vibrate === 'function' && document.hasFocus()) {
-      navigator.vibrate(30); // Very short vibration for immediate feedback
-    }
-  } catch (error) {
-    // Ignore vibration errors gracefully
-  }
-  
-  // Animate back to normal (fast, natural motion)
-  setTimeout(() => {
-    taskCountIndicator.style.transform = 'scale(1)';
-    taskCountIndicator.style.background = UI_CONSTANTS.COLORS.ACCENT_PRIMARY;
-    taskCountIndicator.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
-  }, 150);
-  
-  // Reset transition after animation completes
-  setTimeout(() => {
-    taskCountIndicator.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-  }, 250);
-}
 
 // Function to update container visibility
 function updateContainerVisibility() {
   if (topRightContainer) {
     const hasTimer = countdownTimerElement !== null;
-    const pinnedTasksContainer = document.getElementById('unwavering-focus-pinned-tasks-container');
-    const hasPinnedTasks = pinnedTasksContainer && pinnedTasksContainer.children.length > 0;
+    const hasPinnedTask = document.querySelector('[data-pinned-task]') !== null;
     
-    const hasChildren = hasTimer || hasPinnedTasks;
+    const hasChildren = hasTimer || hasPinnedTask;
     topRightContainer.style.display = hasChildren ? 'flex' : 'none';
   }
 }
