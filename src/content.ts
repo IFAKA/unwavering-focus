@@ -1499,6 +1499,7 @@ function createPinnedTaskElements(tasks: string[]) {
     
     pinnedTaskElement.style.cssText = `
       max-width: 212px;
+      width: 100%;
       background: ${UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY};
       border: 1px solid ${UI_CONSTANTS.COLORS.BORDER_PRIMARY};
       border-radius: 12px 0 0 12px;
@@ -1621,8 +1622,8 @@ function createPinnedTaskElements(tasks: string[]) {
     contentWrapper.appendChild(textContent);
     pinnedTaskElement.appendChild(contentWrapper);
     
-    // Add task count indicator to the first task if there are more than 3 tasks
-    if (isFirstTask && tasks.length > 3) {
+    // Add task count indicator to the first task if there are more than 1 task
+    if (isFirstTask && tasks.length > 1) {
       const taskCountIndicator = document.createElement('div');
       taskCountIndicator.style.cssText = `
         position: absolute;
@@ -2536,6 +2537,8 @@ function getTopRightContainer(): HTMLElement {
       top: 72px;
       right: 0;
       bottom: 0;
+      max-width: 212px;
+      width: 100%;
       z-index: ${MODAL_CONSTANTS.Z_INDEX.COUNTDOWN_TIMER};
       display: flex;
       gap: 12px;
