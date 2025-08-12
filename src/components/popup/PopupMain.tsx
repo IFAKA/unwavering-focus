@@ -169,6 +169,9 @@ const PopupMain: React.FC<PopupMainProps> = ({ onNavigateToSettings }) => {
         case 'videoFocus':
           await updateConfig('videoFocus.enabled', newStatus === 'enabled');
           break;
+        case 'contentFocus':
+          await updateConfig('videoFocus.enabled', newStatus === 'enabled');
+          break;
       }
       
       // Reload feature statuses after update

@@ -74,6 +74,48 @@ export async function handleTabCreated(tab: chrome.tabs.Tab): Promise<void> {
     }
   }
 
+  // Check tab limiter on tab creation
+  if (config?.tabLimiter.enabled) {
+    const maxTabs = config.tabLimiter.maxTabs;
+    const excludedDomains = config.tabLimiter.excludedDomains || [];
+
+    // Skip if domain is excluded
+    if (excludedDomains.includes(domain)) {
+      await updateTabCount();
+      return;
+    }
+
+    // Get all tabs
+    const allTabs = await chrome.tabs.query({});
+    const validTabs = allTabs.filter(
+      t =>
+        t.url &&
+        !t.url.startsWith('chrome://') &&
+        !t.url.startsWith('chrome-extension://') &&
+        !excludedDomains.includes(extractDomain(t.url))
+    );
+
+    if (validTabs.length > maxTabs) {
+      // Find tabs to close (keep the most recently created ones)
+      const tabsToClose = validTabs
+        .sort((a, b) => {
+          // Sort by id ascending (older tabs have lower ids)
+          if (a.id !== undefined && b.id !== undefined) {
+            return (a.id as number) - (b.id as number);
+          }
+          return 0;
+        })
+        .slice(0, validTabs.length - maxTabs);
+
+      // Close old tabs
+      for (const tabToClose of tabsToClose) {
+        if (tabToClose.id && tabToClose.id !== tab.id) {
+          await chrome.tabs.remove(tabToClose.id);
+        }
+      }
+    }
+  }
+
   // Update tab count
   await updateTabCount();
 }

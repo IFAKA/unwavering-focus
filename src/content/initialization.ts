@@ -92,6 +92,7 @@ async function initializeVideoFocusManager(): Promise<void> {
       videoFocusManager = new VideoFocusManager({
         enabled: true,
         preventTabSwitch: true,
+        preventMouseMovement: true,
         showIndicator: true,
         allowedDomains: [],
         autoDetectVideos: true,
@@ -103,6 +104,7 @@ async function initializeVideoFocusManager(): Promise<void> {
     videoFocusManager = new VideoFocusManager({
       enabled: true,
       preventTabSwitch: true,
+      preventMouseMovement: true,
       showIndicator: true,
       allowedDomains: [],
       autoDetectVideos: true,
