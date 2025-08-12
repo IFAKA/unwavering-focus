@@ -41,107 +41,131 @@ export function showTimerCompletionNotification(): void {
   // Create timer icon with animation
   const icon = document.createElement('div');
   icon.innerHTML = `
-    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 20px; animation: pulse 2s infinite;">
-      <circle cx="12" cy="12" r="10"></circle>
-      <polyline points="12,6 12,12 16,14"></polyline>
+    <svg width="80" height="80" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom: 20px;">
+      <circle cx="12" cy="12" r="10" stroke-width="2"/>
+      <polyline points="12,6 12,12 16,14" stroke-width="2"/>
     </svg>
+  `;
+  icon.style.cssText = `
+    color: #34c759;
+    margin-bottom: 20px;
+    animation: pulse 2s infinite;
   `;
   
   // Create title
-  const title = document.createElement('h2');
-  title.textContent = 'Time\'s Up!';
+  const title = document.createElement('h1');
+  title.textContent = "Time's Up!";
   title.style.cssText = `
     font-size: 32px;
     font-weight: 700;
-    margin: 0 0 16px 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    margin: 0 0 10px 0;
+    color: white;
   `;
   
-  // Create message
-  const message = document.createElement('p');
-  message.textContent = 'Great job staying focused! Take a short break and then get back to work.';
-  message.style.cssText = `
-    font-size: 18px;
-    line-height: 1.6;
-    margin: 0 0 32px 0;
-    opacity: 0.9;
+  // Create subtitle
+  const subtitle = document.createElement('p');
+  subtitle.textContent = "Your timer has completed. Did you finish your task or want to continue working?";
+  subtitle.style.cssText = `
+    font-size: 16px;
+    font-weight: 400;
+    margin: 0 0 30px 0;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.5;
   `;
   
-  // Create close button
-  const closeButton = document.createElement('button');
-  closeButton.textContent = 'Got it!';
-  closeButton.style.cssText = `
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  // Create action buttons
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.cssText = `
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  `;
+  
+  // Continue button
+  const continueButton = document.createElement('button');
+  continueButton.textContent = "Continue Working";
+  continueButton.style.cssText = `
+    background: #007aff;
     color: white;
     border: none;
     padding: 12px 24px;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.2s ease;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    transition: all 0.2s ease;
+    min-width: 140px;
   `;
   
-  // Add hover effect to button
-  closeButton.addEventListener('mouseenter', () => {
-    closeButton.style.transform = 'translateY(-2px)';
+  continueButton.addEventListener('mouseenter', () => {
+    continueButton.style.background = '#0056cc';
+    continueButton.style.transform = 'translateY(-1px)';
   });
   
-  closeButton.addEventListener('mouseleave', () => {
-    closeButton.style.transform = 'translateY(0)';
+  continueButton.addEventListener('mouseleave', () => {
+    continueButton.style.background = '#007aff';
+    continueButton.style.transform = 'translateY(0)';
   });
   
-  // Assemble the notification
-  content.appendChild(icon);
-  content.appendChild(title);
-  content.appendChild(message);
-  content.appendChild(closeButton);
-  overlay.appendChild(content);
-  
-  // Add to page
-  document.body.appendChild(overlay);
-  
-  // Add CSS animations
-  const style = document.createElement('style');
-  style.setAttribute('data-timer-completion-style', 'true');
-  style.textContent = `
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
+  // Finish Task button
+  const breakButton = document.createElement('button');
+  breakButton.textContent = "Finish Task";
+  breakButton.style.cssText = `
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 140px;
   `;
-  document.head.appendChild(style);
   
-  // Animate in
-  requestAnimationFrame(() => {
-    overlay.style.opacity = '1';
-    content.style.transform = 'scale(1)';
+  breakButton.addEventListener('mouseenter', () => {
+    breakButton.style.background = 'rgba(255, 255, 255, 0.2)';
+    breakButton.style.transform = 'translateY(-1px)';
   });
   
-  // Play completion sound
-  playTimerCompletionSound();
+  breakButton.addEventListener('mouseleave', () => {
+    breakButton.style.background = 'rgba(255, 255, 255, 0.1)';
+    breakButton.style.transform = 'translateY(0)';
+  });
   
-  // Handle close
-  const closeOverlay = (): void => {
-    overlay.style.opacity = '0';
-    content.style.transform = 'scale(0.9)';
+  // Check for reduced motion preference
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  
+  // Add click handlers
+  const closeOverlay = () => {
+    // Remove the timer completion flag to sync across all tabs
+    chrome.storage.local.remove('timerCompletionOverlay');
     
-    setTimeout(() => {
+    if (prefersReducedMotion) {
+      // Instant close for users who prefer reduced motion
       overlay.remove();
       style.remove();
-      chrome.storage.local.remove('timerCompletionOverlay');
-    }, 300);
+    } else {
+      // Smooth close animation for users who don't mind motion
+      overlay.style.opacity = '0';
+      content.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        overlay.remove();
+        style.remove();
+      }, 300);
+    }
   };
   
-  // Close on button click
-  closeButton.addEventListener('click', closeOverlay);
+  continueButton.addEventListener('click', closeOverlay);
+  breakButton.addEventListener('click', () => {
+    closeOverlay();
+    // Navigate to focus page in the same tab
+    window.location.href = chrome.runtime.getURL('focus-page.html');
+  });
   
-  // Close on escape key
-  const handleKeydown = (e: KeyboardEvent): void => {
+  // Add ESC key handler
+  const handleKeydown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       closeOverlay();
       document.removeEventListener('keydown', handleKeydown);
@@ -150,42 +174,101 @@ export function showTimerCompletionNotification(): void {
   
   document.addEventListener('keydown', handleKeydown);
   
-  // Auto-close after 10 seconds
-  setTimeout(() => {
-    if (document.getElementById('timer-completion-overlay')) {
-      closeOverlay();
+  // Assemble the notification
+  buttonContainer.appendChild(continueButton);
+  buttonContainer.appendChild(breakButton);
+  
+  content.appendChild(icon);
+  content.appendChild(title);
+  content.appendChild(subtitle);
+  content.appendChild(buttonContainer);
+  
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+  
+  // Add CSS animation
+  const style = document.createElement('style');
+  style.setAttribute('data-timer-completion-style', 'true');
+  style.textContent = `
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
     }
-  }, 10000);
-}
-
-/**
- * Plays timer completion sound
- */
-function playTimerCompletionSound(): void {
-  try {
-    const audio = new Audio(chrome.runtime.getURL('sounds/eye-care-beep.mp3'));
-    audio.volume = 0.5;
-    audio.play().catch(() => {
-      // Fallback: try to play a simple beep using Web Audio API
-      try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.5);
-      } catch (error) {
-        console.log('Could not play timer completion sound');
-      }
+  `;
+  document.head.appendChild(style);
+  
+  // Animate in
+  if (prefersReducedMotion) {
+    // Instant appearance for users who prefer reduced motion
+    overlay.style.opacity = '1';
+    content.style.transform = 'scale(1)';
+  } else {
+    // Smooth animation for users who don't mind motion
+    requestAnimationFrame(() => {
+      overlay.style.opacity = '1';
+      content.style.transform = 'scale(1)';
     });
+  }
+  
+  // Play distinct timer completion sound using Web Audio API
+  // This creates a unique ascending chime pattern (C-E-G) to distinguish from eye care sounds
+  try {
+    if (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined') {
+      const audioContext = new (AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume audio context if it's suspended (required for autoplay policy)
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
+      // Create a distinct timer completion sound (different from eye care)
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Timer completion sound: ascending chime pattern (C-E-G)
+      // This is distinctly different from eye care sounds which use single tones
+      const now = audioContext.currentTime;
+      
+      // First note: C5 (523.25 Hz) - 0.3s duration
+      oscillator.frequency.setValueAtTime(523.25, now);
+      gainNode.gain.setValueAtTime(0.1, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      
+      // Second note: E5 (659.25 Hz) - 0.3s duration
+      oscillator.frequency.setValueAtTime(659.25, now + 0.3);
+      gainNode.gain.setValueAtTime(0.1, now + 0.3);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      
+      // Third note: G5 (783.99 Hz) - 0.3s duration
+      oscillator.frequency.setValueAtTime(783.99, now + 0.6);
+      gainNode.gain.setValueAtTime(0.1, now + 0.6);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.9);
+      
+      oscillator.start(now);
+      oscillator.stop(now + 0.9);
+      
+      console.log('Timer completion chime played (C-E-G pattern)');
+    } else {
+      // Fallback: try vibration with distinct pattern
+      if (navigator.vibrate) {
+        navigator.vibrate([300, 100, 300, 100, 300]);
+      }
+    }
   } catch (error) {
-    console.log('Could not play timer completion sound');
+    console.log('Could not play timer completion sound:', error);
+    // Final fallback: simple vibration
+    try {
+      if (navigator.vibrate) {
+        navigator.vibrate([300, 100, 300, 100, 300]);
+      }
+    } catch (vibrationError) {
+      console.log('Vibration also failed:', vibrationError);
+    }
   }
 }
+
+
