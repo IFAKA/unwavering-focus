@@ -14,12 +14,13 @@ export async function handleMessage(
         const config = await storage.get('config');
         sendResponse({ success: true, data: config });
         break;
-        
+
       case 'GET_STORAGE_DATA':
         const storageConfig = await storage.get('config');
         const storageTabCount = (await storage.get('tabCount')) || 0;
         const savedSearches = (await storage.get('savedSearches')) || [];
-        const distractingDomains = (await storage.get('distractingDomains')) || [];
+        const distractingDomains =
+          (await storage.get('distractingDomains')) || [];
         sendResponse({
           success: true,
           config: storageConfig,

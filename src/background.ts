@@ -28,6 +28,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true; // Keep message channel open for async response
 });
 
+// Handle keyboard commands
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'open-smart-search') {
+    try {
+      // Get the active tab
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (activeTab.id) {
+        // Send message to content script to open modal
+        await chrome.tabs.sendMessage(activeTab.id, {
+          type: 'SHOW_SMART_SEARCH_MODAL'
+        });
+      }
+    } catch (error) {
+      console.error('Error handling open-smart-search command:', error);
+    }
+  }
+});
+
 // Handle storage changes
 chrome.storage.onChanged.addListener(async (changes, namespace) => {
   if (namespace === 'local') {

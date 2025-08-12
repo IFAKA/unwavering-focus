@@ -197,8 +197,6 @@ export class VideoFocusManager {
     return document.title || '';
   }
 
-
-
   private createFocusIndicator() {
     if (!this.config.showIndicator) return;
 

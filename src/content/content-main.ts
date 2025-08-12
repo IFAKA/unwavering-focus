@@ -15,14 +15,9 @@ export async function toggleModal(): Promise<void> {
 }
 
 /**
- * Add keyboard shortcut for smart search modal (Alt+Shift+S)
+ * Note: Alt+Shift+I is handled by the background script via manifest commands
+ * The keyboard listener is removed to avoid conflicts
  */
-document.addEventListener('keydown', e => {
-  if (e.altKey && e.shiftKey && e.key === 'S') {
-    e.preventDefault();
-    toggleModal();
-  }
-});
 
 /**
  * Clean up when page is about to unload
