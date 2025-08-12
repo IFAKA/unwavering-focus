@@ -46,7 +46,6 @@ export interface ExtensionConfig {
 export interface VideoFocusConfig {
   enabled: boolean;
   preventTabSwitch: boolean;
-  preventMouseMovement: boolean;
   showIndicator: boolean;
   allowedDomains: string[];
   autoDetectVideos: boolean;
@@ -109,7 +108,6 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   videoFocus: {
     enabled: true,
     preventTabSwitch: true,
-    preventMouseMovement: true,
     showIndicator: true,
     allowedDomains: [],
     autoDetectVideos: true,

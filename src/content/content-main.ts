@@ -15,10 +15,10 @@ export async function toggleModal(): Promise<void> {
 }
 
 /**
- * Add keyboard shortcut for smart search modal (Alt+Shift+I)
+ * Add keyboard shortcut for smart search modal (Alt+Shift+S)
  */
 document.addEventListener('keydown', e => {
-  if (e.altKey && e.shiftKey && e.key === 'I') {
+  if (e.altKey && e.shiftKey && e.key === 'S') {
     e.preventDefault();
     toggleModal();
   }

@@ -11,17 +11,21 @@ export async function handleMessage(
   try {
     switch (message.type) {
       case 'GET_CONFIG':
-      case 'GET_STORAGE_DATA':
         const config = await storage.get('config');
-        const storageTabCount = await storage.get('tabCount') || 0;
-        const savedSearches = await storage.get('savedSearches') || [];
-        const distractingDomains = await storage.get('distractingDomains') || [];
-        sendResponse({ 
-          success: true, 
-          config,
+        sendResponse({ success: true, data: config });
+        break;
+        
+      case 'GET_STORAGE_DATA':
+        const storageConfig = await storage.get('config');
+        const storageTabCount = (await storage.get('tabCount')) || 0;
+        const savedSearches = (await storage.get('savedSearches')) || [];
+        const distractingDomains = (await storage.get('distractingDomains')) || [];
+        sendResponse({
+          success: true,
+          config: storageConfig,
           tabCount: storageTabCount,
           savedSearches,
-          distractingDomains
+          distractingDomains,
         });
         break;
 
@@ -61,7 +65,7 @@ export async function handleMessage(
         sendResponse({ success: true, data: domains });
         break;
 
-      case 'ADD_DISTRACTING_DOMAINS':
+      case 'ADD_DISTRACTING_DOMAIN':
         const currentDomains = (await storage.get('distractingDomains')) || [];
         const newDomain = {
           id: Date.now().toString(),
