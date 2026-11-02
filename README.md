@@ -469,4 +469,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 [Website](https://unwaveringfocus.com) • [Documentation](https://docs.unwaveringfocus.com) • [Support](https://github.com/yourusername/unwavering-focus/discussions)
 
-</div> 
+</div>
+
+---
+
+## Support
+
+If this project is useful to you, you can support my work:
+
+[![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/zfaka)
